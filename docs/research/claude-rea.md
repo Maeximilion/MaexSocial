@@ -6,7 +6,8 @@
 
 | Revision | Date (UTC) | Content |
 |---|---|---|
-| R1 — independent checkpoint | 2026-11-04T23:45Z | Sections 1–5 below. Written before the Codex report or manifest was read |
+| R1 — independent checkpoint | 2026-11-04T23:34:59Z, commit `35c61ac` | Sections 1–5. Written before the Codex report or manifest was read |
+| R1a — own evidence addendum | 2026-11-04T23:40Z | CE-028 REA route analysis completed after the freeze, still before reading the Codex lane |
 
 ## 1. Method, scope and access
 
@@ -20,7 +21,7 @@
 
 Evidence classes used below: **VC** vendor claim (public marketing/legal text), **RT** runtime observation, **ST** static artifact observation of client JavaScript served to an anonymous visitor, **INF** labelled inference, **UNK** unknown.
 
-Static bundle method. The dashboard HTML shell is served with HTTP 200 to anonymous visitors and lists its route chunks. The dashboard layout chunk names eleven sub-routes. Each sub-route's public HTML shell was fetched once and its chunk list collected. 36 JavaScript files were retained for local, non-executing analysis. REA's passive `analyze_web_bundle` saw only five scripts before the client redirect, so the downloaded chunk set is the primary static source. A REA MCP `analyze_javascript_application` call on that set exceeded the host tool deadline. It was not repeated unchanged; the CLI fallback is recorded in the manifest.
+Static bundle method. The dashboard HTML shell is served with HTTP 200 to anonymous visitors and lists its route chunks. The dashboard layout chunk names eleven sub-routes. Each sub-route's public HTML shell was fetched once and its chunk list collected. 36 JavaScript files were retained for local, non-executing analysis. REA's passive `analyze_web_bundle` saw only five scripts before the client redirect, so the downloaded chunk set is the primary static source. A REA MCP `analyze_javascript_application` call on that set exceeded the host tool deadline. It was not repeated unchanged. The CLI fallback on all chunks hit REA's per-source deadline on a React vendor chunk. A CLI run on the 15 route chunks completed (CE-028) and independently lists the eleven dashboard sub-routes, sign-in, billing and two PDF downloads as static route candidates.
 
 ## 2. Exposure disclosure
 
