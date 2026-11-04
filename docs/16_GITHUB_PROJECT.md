@@ -26,7 +26,7 @@ The provisioned Iteration field uses 14-day periods, beginning with I1 on 2026-1
 
 ## Automation state
 
-Repository Actions may maintain issue/PR metadata with the scoped built-in token. Account Project synchronization requires dedicated Project access. `PROJECT_TOKEN` has been provided. Hosted activation is being verified in issue #22. The coordinator can synchronize locally with existing authorized access and report what changed.
+Repository Actions may maintain issue/PR metadata with the scoped built-in token. Account Project synchronization requires dedicated Project access. `PROJECT_TOKEN` is configured and `PROJECT_SYNC_ENABLED=true`. Hosted activation passed in run [41929472537](https://github.com/Maeximilion/MaexSocial/actions/runs/41929472537). The coordinator can synchronize locally with existing authorized access and report what changed.
 
 Before enabling automation, configure the Project number and a dedicated token with the account Project read/write permissions and repository read permissions required to read its items. Never write a token to a file committed to Git. Test synchronization manually, inspect the resulting fields and run it again to verify no duplicates. Then enable scheduled/event execution and verify its Actions run.
 
@@ -51,5 +51,8 @@ gh workflow run project-sync.yml --repo Maeximilion/MaexSocial --ref main
 gh run list --repo Maeximilion/MaexSocial --workflow project-sync.yml --limit 5
 ```
 
-Inspect the triggered run before claiming automation works. The initial hosted setup remains pending until that verification succeeds. Direct, narrowly scoped GraphQL queries are used for Project access because generic `gh project` queries request unrelated organization/discussion scopes. The main ruleset requires the `foundation` and `metadata` checks, blocks deletion and force-push, and requires PRs. GitHub approval count is zero for this single-owner repository, so the required Astra review is a documented agent process rather than a second-account approval requirement.
+Inspect the triggered run before claiming automation works. Hosted setup was verified on 2026-11-04. Direct, narrowly scoped GraphQL queries are used for Project access because generic `gh project` queries request unrelated organization/discussion scopes. The main ruleset requires the `foundation` and `metadata` checks, blocks deletion and force-push, and requires PRs. GitHub approval count is zero for this single-owner repository, so the required Astra review is a documented agent process rather than a second-account approval requirement.
 
+
+
+Verification on 2026-11-04 also passed a [second hosted run](https://github.com/Maeximilion/MaexSocial/actions/runs/41929539432). Project item count stayed 25 with 25 unique IDs, and all existing Iteration assignments remained unchanged. Both checks preceded the documentation closeout PR and subsequent maintenance events.
