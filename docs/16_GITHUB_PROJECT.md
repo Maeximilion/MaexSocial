@@ -39,7 +39,7 @@ Human/fork PRs still require an explicit task reference. Use `Closes #N` in a PR
 
 The API-only maintenance workflow fills missing milestone, type/gate/priority/area labels and the dependencies label from the source task. Existing manual choices remain intact. New dependency tasks default to Maintenance, dependencies, type: chore and priority:p2. Issue metadata changes and PR updates replay the relevant work; manual dispatch and periodic reconciliation repair missed events. The workflow never checks out or executes PR code. Successful maintenance triggers Project reconciliation from trusted main because changes made by the built-in workflow token do not reliably produce another issue-event workflow.
 
-For manual backfill, run `gh workflow run issue-maintenance.yml --repo Maeximilion/MaexSocial --ref main`, inspect its result, then verify labels, milestones, native closing links and Project status. Re-running must not create duplicate dependency tasks. No bot-created task or green CI authorizes merging an unreviewed dependency upgrade.
+For manual backfill, run `gh workflow run issue-maintenance.yml --repo Maeximilion/MaexSocial --ref main`, inspect its result, then verify labels, milestones, native closing links and Project status. Re-running must not create duplicate dependency tasks. Bulk replay continues past individual PR errors and reports accumulated failures afterward, so a malformed reference cannot prevent later PRs from being maintained. No bot-created task or green CI authorizes merging an unreviewed dependency upgrade.
 
 ## Coding agents
 

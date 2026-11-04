@@ -135,5 +135,13 @@ jobs:
                 await assignOwner(changedIssue);
               }
               const prs = await github.paginate(github.rest.pulls.list, { ...context.repo, state: 'open', per_page: 100 });
-              for (const pr of prs) await maintain(pr.number, changedIssue);
+              const failures = [];
+              for (const pr of prs) {
+                try {
+                  await maintain(pr.number, changedIssue);
+                } catch (error) {
+                  failures.push(`PR #${pr.number}: ${error.message}`);
+                }
+              }
+              if (failures.length) throw new Error(`Metadata reconciliation failed for ${failures.length} PR(s):\n${failures.join('\n')}`);
             }

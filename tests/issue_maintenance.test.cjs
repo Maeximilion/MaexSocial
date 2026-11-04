@@ -176,3 +176,15 @@ test('untrusted generated marker does not capture a dependency PR', async () => 
   assert.equal(f.closing.get(10).has(40), false);
   assert.equal(f.writes.filter(w => w[0] === 'create').length, 1);
 });
+
+test('bulk replay reconciles later valid PRs and reports earlier invalid references', async () => {
+  const f = fixture({ user: owner, body: 'Refs #999' });
+  const second = { ...structuredClone(f.pr), number: 11, node_id: 'PR_11', body: 'Refs #7' };
+  f.prs.set(11, second);
+  let failure;
+  try { await f.run('workflow_dispatch', {}); } catch (error) { failure = error; }
+  assert.equal(second.milestone?.number, 2);
+  assert.ok(second.labels.some(label => label.name === 'type:ci'));
+  assert.ok(second.assignees.some(assignee => assignee.login === 'Maeximilion'));
+  assert.match(failure?.message || '', /PR #10.*Unknown issue 999/s);
+});

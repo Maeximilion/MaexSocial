@@ -15,7 +15,7 @@
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
 | Public product baseline, MS-002 | In progress, issue #2 open | Initial public SocialEdge sources identified |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
-| Claude Code REA, MS-004 | Pending independent session, issue #4 open | [Claude handover](handovers/claude-rea.md) |
+| Claude Code REA, MS-004 | Anonymous-scope report submitted; review and authenticated scope outstanding, issue #4 open | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [Claude handover](handovers/claude-rea.md); findings not yet accepted |
 | API feasibility and video demo, MS-005–006 | Planned, issues #5–6 open | Candidate demos exist in the Codex report, full feasibility/search deliverables remain open |
 | Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
@@ -29,7 +29,7 @@ GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is 
 
 ## What's next
 
-1. Run Claude's independent SocialEdge investigation under issue #4. Freeze its own findings before comparing Codex's report and manifest.
+1. Review Claude's submitted anonymous-scope investigation in PR #34 under issue #4. Verify its independent checkpoints and comparison evidence; resolve or explicitly bound the outstanding authenticated scope before discovery acceptance.
 2. Finish public inventory, official API/MCP feasibility and the video-demo investigation. Record any missing authenticated runtime access and ask for the exact scenario scope.
 3. Reconcile both research lanes in a new synthesis chat using claim IDs, independent evidence, source dates, scope and explicit comparison outcomes.
 4. Prepare and approve the G2 product design, then decompose the first slice into executable tasks and acceptance tests.
