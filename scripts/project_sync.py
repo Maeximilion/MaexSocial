@@ -12,8 +12,56 @@ import subprocess
 
 OWNER = "Maeximilion"
 REPOSITORY = f"{OWNER}/MaexSocial"
-PROJECT_NUMBER = "5"
-PROJECT_OWNER = "@me"
+PROJECT_ID = "PVT_kwHOBYWY284BqPE8"
+
+FIELDS_QUERY = """query($id:ID!, $after:String) {
+  node(id:$id) { id ... on ProjectV2 {
+    fields(first:100, after:$after) {
+      nodes { ... on ProjectV2SingleSelectField { id name options { id name } } }
+      pageInfo { hasNextPage endCursor }
+    }
+  } }
+}"""
+
+ITEMS_QUERY = """query($id:ID!, $after:String) {
+  node(id:$id) { id ... on ProjectV2 {
+    items(first:100, after:$after) {
+      nodes { id content { ... on Issue { url } ... on PullRequest { url } }
+        fieldValues(first:100) {
+          nodes { ... on ProjectV2ItemFieldSingleSelectValue {
+            name field { ... on ProjectV2SingleSelectField { name } }
+          } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  } }
+}"""
+
+VALUES_QUERY = """query($id:ID!, $after:String) {
+  node(id:$id) { id ... on ProjectV2Item {
+    fieldValues(first:100, after:$after) {
+      nodes { ... on ProjectV2ItemFieldSingleSelectValue {
+        name field { ... on ProjectV2SingleSelectField { name } }
+      } }
+      pageInfo { hasNextPage endCursor }
+    }
+  } }
+}"""
+
+ADD_ITEM = """mutation($project:ID!, $content:ID!) {
+  addProjectV2ItemById(input:{projectId:$project,contentId:$content}) { item { id } }
+}"""
+UPDATE_VALUE = """mutation($project:ID!, $item:ID!, $field:ID!, $option:String!) {
+  updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,
+    value:{singleSelectOptionId:$option}}) { projectV2Item { id } }
+}"""
+CLEAR_VALUE = """mutation($project:ID!, $item:ID!, $field:ID!) {
+  clearProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field}) {
+    projectV2Item { id }
+  }
+}"""
 
 
 def gh(*args):
@@ -21,6 +69,51 @@ def gh(*args):
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or f"GitHub CLI exited with {result.returncode}")
     return json.loads(result.stdout) if result.stdout.strip() else None
+
+
+def graphql(query, **variables):
+    args = ["api", "graphql", "-f", f"query={query}"]
+    for key, value in variables.items():
+        if value is not None:
+            args.extend(["-f", f"{key}={value}"])
+    result = gh(*args)
+    if result.get("errors"):
+        raise RuntimeError(f"GitHub GraphQL failed: {result['errors']}")
+    return result["data"]
+
+
+def connection_nodes(query, node_id, connection, after=None):
+    nodes = []
+    seen_cursors = set()
+    while True:
+        node = graphql(query, id=node_id, after=after)["node"]
+        if not node or node["id"] != node_id or connection not in node:
+            raise RuntimeError("The credential cannot read the expected MaexSocial Project connection.")
+        page = node[connection]
+        nodes.extend(page["nodes"])
+        if not page["pageInfo"]["hasNextPage"]:
+            return nodes
+        after = page["pageInfo"]["endCursor"]
+        if not after or after in seen_cursors:
+            raise RuntimeError("GitHub returned an invalid pagination cursor.")
+        seen_cursors.add(after)
+
+
+def project_inventory():
+    fields = connection_nodes(FIELDS_QUERY, PROJECT_ID, "fields")
+    items = connection_nodes(ITEMS_QUERY, PROJECT_ID, "items")
+    for item in items:
+        values = item.pop("fieldValues")
+        field_values = values["nodes"]
+        if values["pageInfo"]["hasNextPage"]:
+            cursor = values["pageInfo"]["endCursor"]
+            if not cursor:
+                raise RuntimeError("GitHub returned a missing field-value pagination cursor.")
+            field_values.extend(connection_nodes(VALUES_QUERY, item["id"], "fieldValues", after=cursor))
+        for value in field_values:
+            if (value.get("field") or {}).get("name"):
+                item[value["field"]["name"].lower()] = value["name"]
+    return [field for field in fields if "name" in field], items
 
 
 def labels_of(record):
@@ -63,15 +156,9 @@ def api_pages(endpoint):
 
 
 def reconcile():
-    project = gh("project", "view", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json")
-    if project["id"] != "PVT_kwHOBYWY284BqPE8":
-        raise RuntimeError("The credential does not resolve to the MaexSocial Project.")
-    fields = gh("project", "field-list", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json", "--limit", "100")["fields"]
+    fields, items = project_inventory()
     by_name = {field["name"]: field for field in fields}
-    items = gh("project", "item-list", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json", "--limit", "10000")
-    if items["totalCount"] > len(items["items"]):
-        raise RuntimeError("Project inventory truncated; increase item limit before reconciliation.")
-    by_url = {item.get("content", {}).get("url"): item for item in items["items"]}
+    by_url = {(item.get("content") or {}).get("url"): item for item in items}
     issues = [item for item in api_pages(f"repos/{REPOSITORY}/issues?state=all&per_page=100") if "pull_request" not in item]
     prs = api_pages(f"repos/{REPOSITORY}/pulls?state=all&per_page=100")
     open_prs = gh("pr", "list", "--repo", REPOSITORY, "--state", "open", "--limit", "1000", "--json", "number,closingIssuesReferences")
@@ -93,7 +180,7 @@ def reconcile():
         url = record["html_url"]
         item = by_url.get(url)
         if item is None:
-            item = gh("project", "item-add", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--url", url, "--format", "json")
+            item = graphql(ADD_ITEM, project=PROJECT_ID, content=record["node_id"])["addProjectV2ItemById"]["item"]
         status = desired_status(record, is_pr, active_issue_numbers)
         for name, desired in (("Status", status), ("Gate", desired_gate(record)), ("Priority", desired_priority(record))):
             field = by_name.get(name)
@@ -103,7 +190,7 @@ def reconcile():
             # A cancellation must clear a stale Done status after a reopen/close cycle.
             if name == "Status" and desired is None:
                 if current:
-                    gh("project", "item-edit", "--id", item["id"], "--project-id", project["id"], "--field-id", field["id"], "--clear")
+                    graphql(CLEAR_VALUE, project=PROJECT_ID, item=item["id"], field=field["id"])
                 continue
             if not desired:
                 continue
@@ -111,7 +198,7 @@ def reconcile():
             if option is None:
                 raise RuntimeError(f"Project field {name} has no option for {desired}")
             if current != option["name"]:
-                gh("project", "item-edit", "--id", item["id"], "--project-id", project["id"], "--field-id", field["id"], "--single-select-option-id", option["id"])
+                graphql(UPDATE_VALUE, project=PROJECT_ID, item=item["id"], field=field["id"], option=option["id"])
     print(f"Reconciled {len(issues)} issues and {len(prs)} pull requests. Iteration assignments preserved.")
 
 

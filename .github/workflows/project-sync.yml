@@ -35,7 +35,8 @@ jobs:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
         run: |
           test -n "$GH_TOKEN" || { echo 'PROJECT_TOKEN is required for personal Project access.'; exit 1; }
-          gh project view 5 --owner @me --format json --jq .id
+          project_id=$(gh api graphql -f query='query { node(id:"PVT_kwHOBYWY284BqPE8") { ... on ProjectV2 { id } } }' --jq .data.node.id)
+          test "$project_id" = 'PVT_kwHOBYWY284BqPE8' || { echo 'Credential cannot read the expected MaexSocial Project.'; exit 1; }
       - name: Reconcile Project
         env:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}

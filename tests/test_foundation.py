@@ -12,7 +12,7 @@ from scripts import project_sync
 
 class FoundationTests(unittest.TestCase):
     def test_wrong_project_stops_before_mutation(self):
-        with patch.object(project_sync, "gh", return_value={"id": "different-project"}) as cli:
+        with patch.object(project_sync, "gh", return_value={"data": {"node": {"id": "different-project"}}}) as cli:
             with self.assertRaisesRegex(RuntimeError, "MaexSocial Project"):
                 project_sync.reconcile()
             self.assertEqual(cli.call_count, 1)
@@ -21,7 +21,36 @@ class FoundationTests(unittest.TestCase):
         result = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: missing project scope\n")
         with patch.object(project_sync.subprocess, "run", return_value=result):
             with self.assertRaisesRegex(RuntimeError, "missing project scope"):
-                project_sync.gh("project", "view", "5")
+                project_sync.gh("api", "graphql")
+
+    def test_project_inventory_paginates_fields_items_and_values(self):
+        def page(nodes, cursor=None):
+            return {"nodes": nodes, "pageInfo": {"hasNextPage": cursor is not None, "endCursor": cursor}}
+
+        responses = [
+            {"node": {"id": project_sync.PROJECT_ID, "fields": page([{}], "fields-1")}},
+            {"node": {"id": project_sync.PROJECT_ID, "fields": page([{"id": "status", "name": "Status"}])}},
+            {"node": {"id": project_sync.PROJECT_ID, "items": page([
+                {"id": "item-1", "content": None, "fieldValues": page([{}], "values-1")}
+            ], "items-1")}},
+            {"node": {"id": project_sync.PROJECT_ID, "items": page([
+                {"id": "item-2", "content": {"url": "https://example.com"}, "fieldValues": page([])}
+            ])}},
+            {"node": {"id": "item-1", "fieldValues": page([
+                {"name": "In Progress", "field": {"name": "Status"}}
+            ])}},
+        ]
+        with patch.object(project_sync, "gh", side_effect=[{"data": response} for response in responses]) as cli:
+            fields, items = project_sync.project_inventory()
+        self.assertEqual(fields, [{"id": "status", "name": "Status"}])
+        self.assertEqual([item["id"] for item in items], ["item-1", "item-2"])
+        self.assertEqual(items[0]["status"], "In Progress")
+        calls = [call.args for call in cli.call_args_list]
+        self.assertIn("after=fields-1", calls[1])
+        self.assertIn("after=items-1", calls[3])
+        self.assertIn("after=values-1", calls[4])
+        self.assertTrue(all(call[:2] == ("api", "graphql") for call in calls))
+        self.assertFalse(any("mutation" in argument for call in calls for argument in call))
 
     def test_markdown_targets(self):
         text = '[doc](docs/a.md#section) ![img](<assets/a b.svg>) [web](https://example.com) [anchor](#id)\n```md\n[example](missing.md)\n```\n'
@@ -73,26 +102,36 @@ class FoundationTests(unittest.TestCase):
         mutations = []
 
         def fake_gh(*args):
-            if args[:2] == ("project", "view"):
-                self.assertEqual(args[args.index("--owner") + 1], "@me")
-                return {"id": "PVT_kwHOBYWY284BqPE8"}
-            if args[:2] == ("project", "field-list"):
-                return {"fields": [{"id": "status-field", "name": "Status", "options": options}]}
-            if args[:2] == ("project", "item-list"):
-                return {"items": deepcopy(project_items), "totalCount": len(project_items)}
             if args[0] == "api":
                 return [deepcopy(issues if "/issues?" in args[-1] else prs)]
             if args[:2] == ("pr", "list"):
                 return [{"number": 11, "closingIssuesReferences": []}]
-            if args[:2] == ("project", "item-edit"):
-                mutations.append(args)
-                item_id = args[args.index("--id") + 1]
-                option = args[args.index("--single-select-option-id") + 1]
-                next(item for item in project_items if item["id"] == item_id)["status"] = option
-                return None
             self.fail(f"Unexpected GitHub mutation or request: {args}")
 
-        with patch.object(project_sync, "gh", side_effect=fake_gh):
+        def fake_graphql(query, **variables):
+            if query == project_sync.FIELDS_QUERY:
+                nodes = [{"id": "status-field", "name": "Status", "options": options}]
+                return {"node": {"id": project_sync.PROJECT_ID, "fields": {
+                    "nodes": nodes, "pageInfo": {"hasNextPage": False, "endCursor": None}
+                }}}
+            if query == project_sync.ITEMS_QUERY:
+                nodes = []
+                for item in project_items:
+                    values = [{"name": item["status"], "field": {"name": "Status"}}] if "status" in item else []
+                    nodes.append({"id": item["id"], "content": item["content"], "fieldValues": {
+                        "nodes": values, "pageInfo": {"hasNextPage": False, "endCursor": None}
+                    }})
+                return {"node": {"id": project_sync.PROJECT_ID, "items": {
+                    "nodes": nodes, "pageInfo": {"hasNextPage": False, "endCursor": None}
+                }}}
+            if query == project_sync.UPDATE_VALUE:
+                mutations.append(variables)
+                self.assertEqual(variables["project"], project_sync.PROJECT_ID)
+                next(item for item in project_items if item["id"] == variables["item"])["status"] = variables["option"]
+                return {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": variables["item"]}}}
+            self.fail(f"Unexpected GraphQL mutation or request: {query}")
+
+        with patch.object(project_sync, "gh", side_effect=fake_gh), patch.object(project_sync, "graphql", side_effect=fake_graphql):
             project_sync.reconcile()
             self.assertEqual([item.get("status") for item in project_items],
                              ["In Progress", "Blocked", "Todo", "Todo", "In review", None])
