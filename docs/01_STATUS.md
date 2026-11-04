@@ -20,7 +20,7 @@
 
 ## What's next
 
-1. Configure PROJECT_TOKEN using the terminal instructions in docs/16_GITHUB_PROJECT.md, enable and verify hosted Project reconciliation, then record G0 acceptance.
+1. Verify hosted Project reconciliation after the targeted API fix in PR #24, then record G0 acceptance. The owner has provided PROJECT_TOKEN.
 2. Run the independent Claude Code REA assignment and compare it with the delivered Codex static report.
 3. Complete official API feasibility and identify credible candidates for the remembered Claude video demo.
 4. Use a new synthesis chat to compare evidence, resolve disagreements and prepare the G2 design decision.
@@ -31,11 +31,12 @@ The initial web tool could not open `https://app.socialedge.ai/de/dashboard`, bu
 
 ## Decisions
 
-MaexSocial name and public repository visibility confirmed by Maxi. Reference-repo conventions are adapted to the current project. Both optional code-autopilot/caveman skills stay disabled. Product technology and provider choices wait for G2. GitHub Project automation requires a dedicated credential that is not yet configured. Local synchronization remains available.
+MaexSocial name and public repository visibility confirmed by Maxi. Reference-repo conventions are adapted to the current project. Both optional code-autopilot/caveman skills stay disabled. Product technology and provider choices wait for G2. The owner configured the dedicated GitHub Project credential. Direct API authentication succeeded; the generic CLI required unrelated scopes, so hosted reconciliation is moving to targeted API queries. Local synchronization remains available.
 
 ## Done and handovers
 
 - 2026-11-04 — Maex-Voice-Agent documentation and GitHub conventions inspected read-only. Repository foundation, gates and handover briefs authored. Public repository and Project #5 verified, 12 tasks and 6 parent gate issues created, 6 milestones and 3 real iterations provisioned. PR #19 carries the foundation and bounded Codex report. Local link/JSON validation and six regression tests pass. The initial GitHub foundation and metadata checks pass. Fresh Astra high review found one partial-PR status bug, now covered by a regression test.
 
 Update this file alongside changes to [work packages](07_WORKPACKAGES.md). Keep claims tied to commands, report paths, issue/PR links or recorded decisions.
+
 
