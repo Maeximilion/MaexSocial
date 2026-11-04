@@ -1,32 +1,70 @@
-# Handover 2026-11-04 — MS-004, Claude Code REA
+# Handover 2026-11-05 — MS-004, independent Claude Code REA
 
-Status — Independent Claude Code analysis is pending. Public baseline research and the Codex lane are separate inputs.
+Status — G0 is complete. G1 is ongoing. The bounded Codex static report is delivered. Claude's independent investigation is pending.
 
-Artifacts — Repository `Maeximilion/MaexSocial`, local folder `C:/Users/Maxi/Documents/ChatGPT/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Create branch `research/MS-004-claude-rea` from current main after checking open work.
+Artifacts — [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Use branch `research/MS-004-claude-rea` in a separate worktree.
 
-Decisions — Analyze SocialEdge to establish the feature baseline for MaexSocial. Preserve evidence provenance and uncertainty. Code-autopilot and caveman remain disabled. Code-autopilot was built for Claude Code and its GPT/Codex compatibility remains unverified.
+Decisions — Establish SocialEdge's observed capabilities as evidence for MaexSocial. Keep evidence, interpretations and MaexSocial design proposals distinct. Code-autopilot and caveman remain disabled. Code-autopilot originated in Claude Code and its GPT/Codex compatibility is unverified.
 
-Gate — G1 requires both REA lanes and synthesis. Product design is approved at G2.
+Gate — G1 requires independent evidence, comparison and accepted coverage limits. Product architecture and implementation planning receive Maxi's approval at G2.
 
-Open — Read root instructions and status, then the REA skill and relevant browser/runtime guide. Verify actual tools in this session. A historical registration check does not prove a live connection.
+Open — Read repository rules and this brief, plan declared scenarios, then establish independent observations before consulting Codex's findings.
 
-Lessons — The initial Codex web tool failed, but later unauthenticated HTTP capture succeeded. REA CLI analyzed three selected client chunks, with partial coverage and evidence IDs recorded in `docs/research/codex-rea.md`. Authorized runtime workflows remain open. Public SocialEdge claims describe services and may include human operations.
+Lessons — An earlier web-tool failure did not prove dashboard unavailability. Later unauthenticated HTTP capture succeeded. Access and target state must be verified in the current session.
 
-## Assignment
+## Start and working directory
 
-Keep `C:/Users/Maxi/Documents/ChatGPT/MaexSocial` on clean `main`. Follow the exact synchronization/worktree workflow in [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). Work in `C:/Users/Maxi/Documents/ChatGPT/MaexSocial-worktrees/claude-rea`. After merge, return to the clean canonical checkout, fetch with pruning and pull with `--ff-only`. Never pull with dirty files.
+Read `AGENTS.md`, `CLAUDE.md`, [charter](../00_PCF.md), [status](../01_STATUS.md), [work packages](../07_WORKPACKAGES.md), [research handling](../09_OPERATIONS_LEGAL.md) and issue #4. Keep the canonical checkout on clean `main`. Follow [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md) to synchronize and create or reuse the correct task worktree. Paths in the rest of this brief are relative to that task worktree.
 
-Read [charter](../00_PCF.md), [work packages](../07_WORKPACKAGES.md) and [research handling](../09_OPERATIONS_LEGAL.md). Inspect public homepage, product/pricing pages and authorized application workflows. Enumerate business/profile setup, content generation/editing, scheduling/publication, reviews, rankings/analytics, directory synchronization, CRM/follow-up and media functionality. For each record entry point, required inputs, outputs, states, integrations, operator involvement and observed failure handling.
+Check open PRs and existing worktrees before creating a branch. Fetch with pruning at session start and after PR updates. After a merge, pull the clean canonical `main` with `--ff-only`. Never pull a dirty checkout or reset another session's work.
 
-Use the connected REA tool inventory and exact schemas. Where browser/runtime access is available, declare scenarios and record observations. Where static frontend artifacts are legitimately available, analyze them without executing unknown code. Avoid duplicate analysis when retained evidence exists. Respect authentication barriers and the scope of permitted account actions.
+## Phase A — Independent research
 
-## Deliverable
+Read the installed REA skill and relevant browser/runtime guide. Verify actual advertised tools and provider availability. Record the connection mode and versions. Historical registration is insufficient evidence of a live connection.
 
-Write `docs/research/claude-rea.md` with target/date/access, tool versions, scenario list, capability table, evidence IDs, sources, reproducible steps, inferences and unresolved gaps. Identify public claims, UI observations, static observations and runtime observations separately. Raw authenticated captures remain outside Git. Commit only sanitized conclusions and necessary original illustrative artifacts.
+Use Superpowers to record the investigation plan before running REA: target, authorized actions, scenarios, evidence outputs and verification. This research plan does not approve product architecture or paid/account actions.
 
-Independently establish observations before comparing the Codex report. Then add disagreements without rewriting the other lane. Update MS-004 and status with actual completion or access blockers. Open a PR with Closes #4 when the report satisfies its bounded research acceptance criteria, otherwise use Refs #4 and describe the missing work.
+Before reading `docs/research/codex-rea.md` or its manifest, write your own scenario plan from the target and questions below. Inspect current primary sources and available authorized application behavior. Record observations in an independent section of your report and freeze that checkpoint with a commit or dated report revision before Phase B. If Codex findings were already loaded into your context, disclose that exposure and still collect new evidence for every corroborated claim.
 
-## Start prompt
+Inspect `https://www.socialedge.ai/`, current product/pricing pages and the supplied dashboard. Cover the following questions to the extent that access permits.
 
-Work on MaexSocial task MS-004 using this handover and the installed REA skill. Inspect the authorized SocialEdge target and write a reproducible sanitized report. Begin with a short scenario plan and actual connection check. Keep unsupported claims and access gaps explicit. Use the current repository rules, keep code-autopilot/caveman disabled, and stop at the research deliverable.
+| Area | Questions |
+|---|---|
+| Product offer | Which services, modules, packages and human-operated activities are described? |
+| Business setup | What brand, business, location and connected-account inputs are required? |
+| Content | How are briefs, generated drafts, revisions and approvals represented? |
+| Publication | What scheduling, destination, success, failure and retry states can be observed? |
+| Reviews | How are reviews retrieved and responses prepared, approved and published? |
+| Visibility | What rankings, analytics, directory synchronization and report outputs exist? |
+| Follow-up and CRM | Which workflows are visible, and which are service promises only? |
+| Media | What upload/library/editing/rendering capabilities are observed? Is image-to-video generation supported? |
 
+For each scenario record entry point, access/account tier, inputs, steps, visible outputs, operator involvement, integration evidence and gaps. Classify evidence as vendor claim, UI observation, static artifact observation or runtime observation. Label inferences and unknowns explicitly.
+
+Use only the declared target and authorized actions. If required logged-in access or permission for a runtime scenario is missing, stop that scenario and ask Maxi for the specific account/session and permitted actions needed. Continue public/static work already authorized. Publishing, customer communications, billing changes and paid generation require scope covering those effects. Preserve authentication barriers as coverage limits.
+
+## Phase B — Compare with Codex
+
+After recording the independent checkpoint, read [Codex's report](../research/codex-rea.md) and its [evidence manifest](../research/evidence-codex.json). Preserve both files and their existing evidence identifiers. Codex analyzed selected static client chunks. Authenticated runtime and backend behavior remain unverified.
+
+Create one atomic claim per row. Assign stable IDs `SE-001`, `SE-002` and so on. Codex has no equivalent claim IDs yet, so cite its section and evidence ID without editing that lane. Include independent additions as new claim rows.
+
+| Claim ID and exact claim | Codex evidence | Independent Claude evidence | Result | Source dates and scope | Unknowns and next check |
+|---|---|---|---|---|---|
+| SE-NNN with one testable claim | Report section, evidence ID and manifest artifact/hash, or absent | Own source URL/artifact, evidence ID and scenario/revision | confirm, contradict, extend or unverifiable | Date for each source, target/version, account tier, static/runtime scope | Specific gap and smallest authorized check |
+
+Use `confirm` only when your own evidence supports the same claim within comparable scope. Use `contradict` when comparable observations disagree, recording possible version/access differences. Use `extend` for additional supported detail or a new capability. Use `unverifiable` when access or evidence cannot settle the claim. Agreement with Codex's wording is not independent verification.
+
+Keep the matrix factual. Place MaexSocial requirements, improvements and architecture proposals in a separate section with rationale. A SocialEdge observation does not decide MaexSocial's provider or implementation.
+
+## Deliverables and completion
+
+Create `docs/research/claude-rea.md` with the independent checkpoint, method, scope, findings, comparison matrix, limitations and next checks. Create `docs/research/evidence-claude.json` with capture dates, target/source URLs, tool versions, own evidence IDs, artifact hashes, scenario references and coverage boundaries. The manifest must resolve each evidence reference used in the report.
+
+Keep raw captures in ignored `work/rea-claude/` within the task worktree. Commit sanitized findings and original explanatory diagrams only. Build original MaexSocial behavior from documented requirements. Do not copy SocialEdge source bundles, complete UI designs or proprietary assets into the product or repository.
+
+Run `python scripts/check_repo.py` and `python -m unittest discover -s tests`, recording actual outcomes. Update issue #4, status and work packages from observed results. Open a focused PR under repository review/merge rules. Use `Closes #4` only when bounded research acceptance criteria are satisfied, otherwise `Refs #4` with outstanding work. G1 stays open for synthesis and unaccepted material access gaps. Any code review uses an actually configured `gpt-6-astra` reviewer at reasoning `high`.
+
+## Reusable start prompt
+
+Work on MaexSocial issue #4, MS-004. Read repository instructions and docs/handovers/claude-rea.md from the latest main, then work in a separate task worktree. Plan and conduct your own SocialEdge research with REA before reading Codex's findings. Save a dated independent checkpoint, then compare it with docs/research/codex-rea.md and docs/research/evidence-codex.json using the prescribed claim matrix. Preserve the Codex lane. Produce a sanitized Claude report and evidence manifest, separating observed facts from MaexSocial design proposals. Ask for any missing runtime access/action scope before that scenario. Follow the PR and verification rules, keep code-autopilot/caveman disabled, and deliver research with explicit coverage limits.

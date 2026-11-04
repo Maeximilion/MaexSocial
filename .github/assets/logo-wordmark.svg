@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="580" height="110" viewBox="0 0 580 110" role="img" aria-labelledby="title desc">
+<title id="title">MaexSocial</title>
+<desc id="desc">Blue and red M symbol with MaexSocial wordmark.</desc>
+<rect width="580" height="110" rx="18" fill="#080F20"/><g transform="translate(28 24) scale(.85)"><path d="M0 64V0l32 32" fill="none" stroke="#2563EB" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 32L64 0v64" fill="none" stroke="#EF4444" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g><text x="110" y="75" fill="#F8FAFC" font-family="Segoe UI,Arial,sans-serif" font-size="55" font-weight="700" letter-spacing="-2">MaexSocial</text>
+</svg>

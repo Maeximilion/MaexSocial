@@ -2,7 +2,7 @@
 
 Status — Bounded Codex static report delivered in `docs/research/codex-rea.md`. Consult its evidence and coverage limits before repeating any analysis. Authenticated runtime remains unverified.
 
-Artifacts — Repository `Maeximilion/MaexSocial`, local folder `C:/Users/Maxi/Documents/ChatGPT/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Continue the assigned research branch or create `research/MS-003-codex-rea` after checking existing work.
+Artifacts — Repository `Maeximilion/MaexSocial`, local folder `C:/Users/Maxi/Documents/GitHub/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Continue the assigned research branch or create `research/MS-003-codex-rea` after checking existing work.
 
 Decisions — Gather reproducible application evidence for MaexSocial's feature baseline. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
 

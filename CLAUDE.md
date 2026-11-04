@@ -1,6 +1,6 @@
 # MaexSocial
 
-AI-assisted local visibility, social account operations and creative production. The repository is in discovery and foundation setup. Product capabilities in the roadmap are planned capabilities.
+AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is underway. Product capabilities in the roadmap are planned capabilities.
 
 ## Start
 

@@ -1,47 +1,50 @@
 # Project status
 
-- Status date — 2026-11-04
-- Stage — G1 discovery, foundation implemented
-- Current gate — G1; G0 technical checks complete
-- Product implementation — pending G2 design approval
+- Status date — 2026-11-05
+- Stage — G1 discovery
+- Gates — G0 complete, G1 ongoing, G2–G5 open
+- Product implementation — pending G2 design approval and the MS-009 executable plan
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
+- Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
 
 ## Current work
 
 | Work | State | Evidence |
 |---|---|---|
-| GitHub foundation, MS-001 | Done; PR #19 foundation and PR #24 scoped API correction | [Foundation PR](https://github.com/Maeximilion/MaexSocial/pull/19), required checks and local verification |
-| Public product baseline, MS-002 | In progress | Public SocialEdge sources identified in the initial research |
-| Codex REA, MS-003 | Bounded static report delivered | [Codex report](research/codex-rea.md), authenticated runtime remains unverified |
-| Claude Code REA, MS-004 | Pending independent session | [Claude handover](handovers/claude-rea.md) |
-| Synthesis, MS-007 | Waiting for research reports | [Synthesis handover](handovers/synthesis.md) |
-| Product design and build, MS-008–012 | Planned | [Work packages](07_WORKPACKAGES.md) |
+| Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
+| Public product baseline, MS-002 | In progress, issue #2 open | Initial public SocialEdge sources identified |
+| Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
+| Claude Code REA, MS-004 | Pending independent session, issue #4 open | [Claude handover](handovers/claude-rea.md) |
+| API feasibility and video demo, MS-005–006 | Planned, issues #5–6 open | Candidate demos exist in the Codex report, full feasibility/search deliverables remain open |
+| Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
+| Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
+| First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
+| Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
+
+GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is closed. Gate issues #14–18 remain open.
 
 ## What's next
 
-1. Continue G1 research tasks. Hosted Project synchronization is verified using the owner-provided PROJECT_TOKEN.
-2. Run the independent Claude Code REA assignment and compare it with the delivered Codex static report.
-3. Complete official API feasibility and identify credible candidates for the remembered Claude video demo.
-4. Use a new synthesis chat to compare evidence, resolve disagreements and prepare the G2 design decision.
+1. Run Claude's independent SocialEdge investigation under issue #4. Freeze its own findings before comparing Codex's report and manifest.
+2. Finish public inventory, official API/MCP feasibility and the video-demo investigation. Record any missing authenticated runtime access and ask for the exact scenario scope.
+3. Reconcile both research lanes in a new synthesis chat using claim IDs, independent evidence, source dates, scope and explicit comparison outcomes.
+4. Prepare and approve the G2 product design, then decompose the first slice into executable tasks and acceptance tests.
 
-## Known evidence limits
+## Evidence limits
 
-The initial web tool could not open `https://app.socialedge.ai/de/dashboard`, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The [Codex report](research/codex-rea.md) records evidence IDs and partial coverage. Authenticated runtime, private backend behavior and autonomous publication remain unverified. Prior local diagnostics found direct Codex MCP registration missing. Claude registration was present, but a live Claude investigation had not been run.
+The first web-tool dashboard request failed, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The Codex report records evidence IDs and partial coverage. Authenticated runtime, private backend behavior and autonomous publication remain unverified. Historical diagnostics found direct Codex MCP registration missing and Claude registration present. They do not establish current live tool connectivity or a completed Claude investigation.
 
-## Decisions
+## Decisions and operating state
 
-MaexSocial name and public repository visibility confirmed by Maxi. Reference-repo conventions are adapted to the current project. Both optional code-autopilot/caveman skills stay disabled. Product technology and provider choices wait for G2. The owner configured the dedicated GitHub Project credential. Targeted API queries preserve the project/public_repo scope choice. Hosted reconciliation is active and verified. Local synchronization remains available.
+MaexSocial's name and public repository visibility are confirmed by Maxi. Public research reports are sanitized. Reference-repository conventions are adapted to this project. Code-autopilot and caveman remain disabled. Product stack and provider choices wait for G2.
 
-## Done and handovers
+The owner configured the dedicated GitHub Project credential. Targeted API queries preserve its project/public_repo scope choice. Hosted reconciliation is active and verified. The canonical checkout stays on clean main, changes use separate task worktrees, and synchronization follows [playbooks](12_CLAUDE_CODE_PLAYBOOKS.md).
 
-- 2026-11-04 — Maex-Voice-Agent documentation and GitHub conventions inspected read-only. Repository foundation, gates and handover briefs authored. Public repository and Project #5 verified, 12 tasks and 6 parent gate issues created, 6 milestones and 3 real iterations provisioned. PR #19 carries the foundation and bounded Codex report. Local link/JSON validation and nine regression tests pass. The initial GitHub foundation and metadata checks pass. Fresh Astra high review found one partial-PR status bug, now covered by a regression test.
+## Delivered evidence and handovers
 
-Update this file alongside changes to [work packages](07_WORKPACKAGES.md). Keep claims tied to commands, report paths, issue/PR links or recorded decisions.
+- 2026-11-04 — Reference conventions inspected, foundation authored, public repository and Project #5 verified. Twelve task issues, six parent gate issues, six milestones and three genuine iterations provisioned. PR #19 delivered the foundation and bounded Codex report. Local validation and nine regression tests passed. Astra high review found a partial-PR status defect that received a regression test and fix.
+- 2026-11-04 — PR #24 replaced generic CLI Project access with scoped GraphQL queries. [Hosted reconciliation](https://github.com/Maeximilion/MaexSocial/actions/runs/41929472537) passed. G0 technical acceptance was recorded in the charter after CI, review and maintenance verification. The foundation tag marks the initial snapshot, with the API correction subsequently on main.
+- 2026-11-05 — Issue #27 refines branding and research handover. Claude's brief now requires independent evidence first, a comparison matrix second, and a separate product proposal. Detailed product planning remains future G2 work.
 
-
-
-- 2026-11-04 — PR #24 fixed generic CLI scope requirements using direct Project GraphQL. [Hosted reconciliation](https://github.com/Maeximilion/MaexSocial/actions/runs/41929472537) passed. Canonical main is synchronized after each merge. Independent Claude REA remains pending.
-
-
-G0 technical acceptance was recorded by the coordinator under docs/00_PCF.md after repository checks, the Astra high reviews, live CI, issue/PR maintenance and two successful hosted Project runs. Product design approval remains at G2 with Maxi. The foundation tag marks the initial setup snapshot, while main includes the later API correction.
+Update this file alongside work-package changes. Tie completion claims to actual reports, commands, issue/PR links and recorded decisions.

@@ -6,9 +6,9 @@ Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPAC
 
 ## Canonical checkout and worktrees
 
-Maxi's canonical folder `C:/Users/Maxi/Documents/ChatGPT/MaexSocial` stays on clean `main`. Changes belong in a separate worktree. The foundation worktree is `C:/Users/Maxi/.codex/worktrees/maexsocial-foundation/MaexSocial`. The bootstrap was committed and transferred into this managed Codex worktree.
+Maxi's canonical folder `C:/Users/Maxi/Documents/GitHub/MaexSocial` stays on clean `main`. Changes belong in a separate task worktree. Managed Codex worktrees may live under `.codex/worktrees/`. A manually created worktree may use a sibling `../MaexSocial-worktrees/` directory relative to the canonical checkout. Inspect `git worktree list` and reuse an existing task worktree only when it belongs to the current assignment. All repository-relative paths in a handover resolve from the selected task worktree.
 
-Before synchronization run `git status --porcelain` in the canonical folder and require empty output. If anything is dirty, preserve it and report it. With a clean `main`, run `git fetch --prune origin` followed by `git pull --ff-only origin main`. Perform this regularly and after a PR merges. A failed fast-forward is a state to inspect, never a reason to reset someone else's work.
+Before synchronization run `git status --porcelain` in the canonical folder and require empty output. If anything is dirty, preserve it and report it. Verify `git branch --show-current` is `main`. With a clean `main`, run `git fetch --prune origin` followed by `git pull --ff-only origin main`. Fetch with pruning at session start and after PR creation or updates. Synchronize clean canonical main regularly and after a PR merges. Inspect a failed fast-forward and preserve existing work.
 
 For a fresh Claude research branch, after clean-main synchronization run `git worktree add -b research/MS-004-claude-rea ../MaexSocial-worktrees/claude-rea origin/main`. For another task choose its own branch/path after checking existing worktrees. Before every commit verify `git branch --show-current` in the task worktree. Never pull into a dirty checkout.
 
@@ -18,7 +18,9 @@ Choose an unblocked MS-NNN task. Use a dedicated branch in a separate worktree f
 
 ## Research with REA
 
-Read the relevant REA guide and the lane handover. Select the exact supplied target. Use available tools or the documented CLI fallback. Report connection, provider and target-access failures separately. Save sanitized observations with evidence IDs and reproducible steps. Do not treat a public marketing page as observed application behavior.
+Read the relevant REA guide and lane handover. Select the supplied target. Use available tools or the documented CLI fallback. Report connection, provider and target-access failures separately. Save sanitized observations with evidence IDs and reproducible steps. Classify vendor claims, UI, static and runtime observations separately.
+
+For MS-004, establish and freeze Claude's own findings before reading the Codex report and manifest. Then use the claim comparison matrix in [Claude's handover](handovers/claude-rea.md). Preserve the Codex lane. Record source dates, access scope and unknowns. Keep MaexSocial design proposals separate from evidence. Missing runtime access or action scope pauses that scenario for a precise request to Maxi, while authorized public research may continue. Deliver original requirements and sanitized observations, without wholesale copying of proprietary code, UI designs or assets.
 
 ## Finish and review
 

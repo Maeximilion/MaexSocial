@@ -18,4 +18,4 @@ The first deployment needs secret storage, rotation/revocation, backups with res
 
 ## GitHub automation credential
 
-`GITHUB_TOKEN` handles authorized repository metadata. Account Project automation requires separately configured Project access. `PROJECT_TOKEN` is currently unavailable. Keep the workflow disabled or explicitly gated until configured and verified. Never print credentials or silently copy a broad personal token into Actions. Document the minimum permissions and verification result in [GitHub project](16_GITHUB_PROJECT.md).
+`GITHUB_TOKEN` handles authorized repository metadata. Account Project automation requires separately configured Project access. `PROJECT_TOKEN` is configured and hosted synchronization has been verified. The workflow uses targeted Project API queries with project/public_repo scopes. Never print credentials or silently copy a broad personal token into Actions. Document the minimum permissions and verification result in [GitHub project](16_GITHUB_PROJECT.md).
