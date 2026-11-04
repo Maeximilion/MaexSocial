@@ -16,8 +16,9 @@ Start with [status](01_STATUS.md), then the [project charter](00_PCF.md) and [wo
 | [09 Operations and legal](09_OPERATIONS_LEGAL.md) | Research handling, credentials and operating decisions |
 | [10 Glossary](10_GLOSSARY.md) | Shared terminology |
 | [12 Playbooks](12_CLAUDE_CODE_PLAYBOOKS.md) | Session, task, review, gate and handover workflows |
-| [15 README strategy](15_README_STRATEGY.md) | Honest status and original assets |
+| [15 Brand and assets](15_README_STRATEGY.md) | Blue/red identity, original assets and honest README presentation |
 | [16 GitHub project](16_GITHUB_PROJECT.md) | Project fields, metadata and maintenance |
+| [17 Access and security](17_ACCESS_SECURITY.md) | Public registration, customer isolation and separate platform administration |
 | [Foundation design](superpowers/specs/2026-11-04-foundation-design.md) | Authorized repository foundation |
 | [Foundation plan](superpowers/plans/2026-11-04-foundation.md) | Verifiable setup steps |
 | [Claude REA handover](handovers/claude-rea.md) | Independent application analysis |

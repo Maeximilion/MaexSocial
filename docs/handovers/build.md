@@ -8,13 +8,15 @@ Decisions — Reuse the established repository process. Choose technology from t
 
 Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan, MS-010 implements and proves G3.
 
+Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–14 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
+
 Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
 
 Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
 
 ## Required plan
 
-Keep `C:/Users/Maxi/Documents/ChatGPT/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
+Keep `C:/Users/Maxi/Documents/GitHub/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
 
 Use Superpowers brainstorming to settle first customer/channel, user journey, account authority, scope, provider access, cost and deployment choices. Record alternatives and rationale in a product design. Obtain G2 approval. Then use writing-plans to specify files, interfaces, schemas, tests, migration/rollback behavior and independently verifiable tasks.
 

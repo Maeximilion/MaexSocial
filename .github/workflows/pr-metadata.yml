@@ -17,9 +17,13 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
+            // Authenticated first-party dependency PRs are tracked work items themselves.
+            const dependencyTask = pr.user?.login === 'dependabot[bot]' && pr.user?.type === 'Bot'
+              && pr.head?.repo?.full_name === `${context.repo.owner}/${context.repo.repo}`
+              && pr.head?.ref?.startsWith('dependabot/');
             if (!/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?!?: .+/.test(pr.title)) {
               core.setFailed('Use a Conventional Commit title.');
             }
-            if (!/\b(?:closes|fixes|resolves|refs|references)\s+#\d+\b/i.test(pr.body || '')) {
+            if (!dependencyTask && !/\b(?:closes|fixes|resolves|refs|references)\s+#\d+\b/i.test(pr.body || '')) {
               core.setFailed('Link the task using Closes #N or Refs #N for partial work.');
             }

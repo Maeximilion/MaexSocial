@@ -1,6 +1,6 @@
 # MaexSocial
 
-AI-assisted local visibility, social account operations and creative production. The repository is in discovery and foundation setup. Product capabilities in the roadmap are planned capabilities.
+AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is underway. Product capabilities in the roadmap are planned capabilities.
 
 ## Start
 
@@ -22,4 +22,4 @@ The product must eventually enforce tenant isolation, account authorization, pub
 
 `/start`, `/task`, `/done`, `/gate`, `/handover`, `/project`, `/eval`, `/ship` live in `.claude/commands/`. These are procedural instructions, not installed security hooks. GitHub branch rules and checks provide technical enforcement where configured.
 
-Run `python scripts/check_repo.py` and `python -m unittest discover -s tests` for the foundation. See `docs/16_GITHUB_PROJECT.md` for Project synchronization and credential setup.
+Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/pr_metadata.test.cjs` for the foundation. See `docs/16_GITHUB_PROJECT.md` for Project synchronization and credential setup. G2 access design must cover `docs/17_ACCESS_SECURITY.md` and MS-013.
