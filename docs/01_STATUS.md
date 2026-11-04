@@ -15,7 +15,7 @@
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
 | Public product baseline, MS-002 | In progress, issue #2 open | Initial public SocialEdge sources identified |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
-| Claude Code REA, MS-004 | Anonymous-scope research delivered in PR, issue #4 open for authenticated walkthrough and review | [Report](research/claude-rea.md) and [manifest](research/evidence-claude.json), checkpoint commit `35c61ac` before Codex comparison |
+| Claude Code REA, MS-004 | Anonymous-scope report submitted; review and authenticated scope outstanding, issue #4 open | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report](research/claude-rea.md), [manifest](research/evidence-claude.json), checkpoint `35c61ac`; findings not yet accepted |
 | API feasibility and video demo, MS-005–006 | Planned, issues #5–6 open | Candidate demos exist in the Codex report, full feasibility/search deliverables remain open |
 | Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
@@ -23,12 +23,13 @@
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
 | Registration, customer and platform-admin access, MS-013 | Confirmed requirements; design and runtime tests pending G2 | [Issue #30](https://github.com/Maeximilion/MaexSocial/issues/30), [access requirements](17_ACCESS_SECURITY.md) |
+| PR metadata and Project views | Maintenance delivery | [Issue #32](https://github.com/Maeximilion/MaexSocial/issues/32), [Project operations](16_GITHUB_PROJECT.md) |
 
 GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is closed. Gate issues #14–18 remain open.
 
 ## What's next
 
-1. Decide the SocialEdge account and read-only action scope for MS-004 scenario C-S6, or accept the anonymous scope as a G1 limit.
+1. Review Claude's submitted anonymous-scope investigation in PR #34 under issue #4. Verify its independent checkpoints and comparison evidence; resolve or explicitly bound the outstanding authenticated scope before discovery acceptance.
 2. Finish public inventory, official API/MCP feasibility and the video-demo investigation. Record any missing authenticated runtime access and ask for the exact scenario scope.
 3. Reconcile both research lanes in a new synthesis chat using claim IDs, independent evidence, source dates, scope and explicit comparison outcomes.
 4. Prepare and approve the G2 product design, then decompose the first slice into executable tasks and acceptance tests.
@@ -39,7 +40,7 @@ The first web-tool dashboard request failed, but a subsequent unauthenticated HT
 
 ## Decisions and operating state
 
-MaexSocial's name and public repository visibility are confirmed by Maxi. Public research reports are sanitized. Reference-repository conventions are adapted to this project. Code-autopilot and caveman remain disabled. Product stack and provider choices wait for G2.
+MaexSocial's name and public repository visibility are confirmed by Maxi. Public research reports are sanitized. Reference-repository conventions are adapted to this project. Code-autopilot and caveman remain disabled. Under Maxi's delegated choice, TypeScript strict is the application-language baseline; [ADR 0001](decisions/0001-application-language.md) records the rationale. Framework, runtime version, provider and deployment choices remain at G2. Software implementation follows independent Claude REA, synthesis and approved design.
 
 Maxi confirmed a public website with customer registration/login and separate platform-administrator access on 2026-11-05. Administrators must see and manage customers; customer workspaces remain isolated. Proposed security controls and fourteen named acceptance cases are recorded for G2, not implemented or runtime-tested.
 

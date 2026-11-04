@@ -3,6 +3,10 @@
 ## Unreleased
 
 - Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane.
+- Add named Overview and Delivery board Project views, with status columns and planning fields.
+- Extend automatic PR metadata and dedicated dependency-task Development links while preserving manual planning choices.
+- Choose TypeScript strict as the application-language baseline under delegated technology selection; retain G2 design and REA sequencing.
+
 - Distinguish authenticated first-party Dependabot maintenance tasks in PR metadata, with nine workflow regression cases.
 - Enable repository security scanning and document staged CI/CD and application test requirements.
 - Record public customer registration/login, separate platform administration and tenant-isolation acceptance cases for G2.

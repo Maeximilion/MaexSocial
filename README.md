@@ -69,7 +69,7 @@ git clone https://github.com/Maeximilion/MaexSocial.git
 cd MaexSocial
 python scripts/check_repo.py
 python -m unittest discover -s tests
-node --test tests/pr_metadata.test.cjs
+node --test tests/*.test.cjs
 ```
 
 For an existing clone, check for local changes before fetching and fast-forwarding `main`. Make changes in a separate task worktree. Follow the [agent playbooks](docs/12_CLAUDE_CODE_PLAYBOOKS.md).
@@ -81,6 +81,7 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
 | Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
+| Understand the application-language choice | [TypeScript decision](docs/decisions/0001-application-language.md) |
 | Understand access and security requirements | [Registration, customer and admin access](docs/17_ACCESS_SECURITY.md) |
 | Use the visual identity | [Brand and asset guide](docs/15_README_STRATEGY.md) |
 
