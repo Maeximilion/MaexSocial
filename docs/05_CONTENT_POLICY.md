@@ -19,3 +19,7 @@ Policy changes are versioned. A worker checks current authority immediately befo
 Record permission and source for uploaded images, music, voice and likeness. Generated media retains its provenance. Platform-specific labeling rules are part of the selected channel contract. Review replies must be based on the actual review and approved business facts. Sensitive complaints follow an escalation rule defined before autonomy is enabled.
 
 MS-012 evaluates real outputs under these rules and records failure rates, cost and interventions before live autonomous use is approved.
+
+## Recurrence and optional advertising
+
+The [media-library proposal](18_MEDIA_LIBRARY.md) requires recurrence to state whether it creates drafts or publishes under an approved policy. Uploading media and enabling ordinary posting do not authorize ads. Paid delivery needs separate customer authority for the ad account, creative, objective, eligible audience settings, dates and budget. Track media-generation costs separately from advertising spend; edits outside the approved scope require renewed authority. Proposed stop controls must distinguish prevented future work from already submitted or unconfirmed provider actions.

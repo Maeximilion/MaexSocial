@@ -12,6 +12,8 @@ A public website with customer registration/login and a separate administrator e
 
 ## Required visible states
 
+Maxi's [media-library and calendar request](18_MEDIA_LIBRARY.md) adds a proposed journey: private image/video upload → AI-assisted creation → exact-variant review → calendar/recurrence → per-channel publication result. Optional Campaigns shows separate audience, dates, ad budget and activation approval. Media library, Create, Calendar and Campaigns are proposed dashboard areas, not implemented screens or accepted G2 layout.
+
 - Account connection shows platform, account identity, granted capabilities and expired/revoked access.
 - Draft review shows source facts, image/media provenance, exact revision and intended destinations.
 - Publication shows scheduled, submitting, confirmed, failed and outcome-unknown states. A timeout must not display a false successful publication.

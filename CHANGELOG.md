@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Record customer-owned media uploads, AI creative production, calendar/recurrence and separately authorized advertising as G2 inputs, with bounded provider evidence and proposed acceptance cases.
+
 - Add named Overview and Delivery board Project views, with status columns and planning fields.
 - Extend automatic PR metadata and dedicated dependency-task Development links while preserving manual planning choices.
 - Choose TypeScript strict as the application-language baseline under delegated technology selection; retain G2 design and REA sequencing.
