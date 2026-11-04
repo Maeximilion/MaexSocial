@@ -4,7 +4,7 @@ Repository — https://github.com/Maeximilion/MaexSocial
 
 Single Project — https://github.com/users/Maeximilion/projects/5
 
-Use views of this Project for backlog, board and roadmap. Task IDs MS-001 through MS-012 link repository plans, issues and PRs. Milestones represent G0 through G5. Labels describe task type, priority, area and blocking state. The provisioned names and field IDs are verified by the setup script or live Project inspection.
+Use views of this Project for backlog, board and roadmap. Task IDs MS-001 through MS-013 link repository plans, issues and PRs. Milestones represent G0 through G5. Labels describe task type, priority, area and blocking state. The provisioned names and field IDs are verified by the setup script or live Project inspection.
 
 ## Status mapping
 
@@ -23,6 +23,20 @@ A PR closed without merge must not be treated as delivered. A closed issue marke
 Keep iteration, start and target dates as explicit planning or observed facts. Preserve manually selected values. Milestones and task IDs must match the work-package table. PRs use Conventional Commit titles and closing keywords only when they complete the referenced issue. Partial work uses a reference and leaves the issue open. Issue and PR templates require acceptance evidence and actual verification results.
 
 The provisioned Iteration field uses 14-day periods, beginning with I1 on 2026-11-04, I2 on 2026-11-18 and I3 on 2026-12-02. Later periods require explicit extension or verified maintenance. Their existence does not assign a task automatically or imply a delivery commitment.
+
+The metadata validator permits authenticated `dependabot[bot]` PRs with Bot identity, this repository as the source and a `dependabot/` branch to be standalone maintenance work items. The actor triggering a run is not enough. Human/fork PRs still require an explicit task reference; all PRs require valid titles, tests and review. Preserve `Refs #25` on the initial dependency queue when editing it, but a bot-generated description must not be the sole tracking mechanism.
+
+Small fixes normally use a regular push to the existing PR. Only a necessary rewrite of an owned task branch uses `--force-with-lease=<branch>:<expected-remote-SHA>`, after fetching and checking that all remote work is accounted for. Main protection remains active; a small diff does not authorize bypassing it. Re-run checks and obtain applicable review for the new head.
+
+## Repository security baseline
+
+On 2026-11-05 secret scanning and secret-scanning push protection were changed from disabled to enabled. Dependabot security updates, vulnerability alerts and private vulnerability reporting were already enabled. CodeQL default setup was enabled for `actions` and `python` with the default query suite and standard GitHub runners. This uses GitHub's managed configuration rather than adding a second workflow. See [setup run](https://github.com/Maeximilion/MaexSocial/actions/runs/41933171109) for actual execution evidence.
+
+The enforced checks remain `foundation` and `metadata`; CodeQL runs and alerts are additional security evidence, not currently a separate required merge rule. Existing SHA pins, minimal permissions and the prohibition on executing PR code with privileged `pull_request_target` credentials remain in effect. No production CD or login implementation exists. [Evaluation strategy](08_EVALS.md) records the next test and release requirements.
+
+For an intentional rollback, read the current settings first and preserve later changes. Secret-scanning flags are individually configurable under `security_and_analysis` with `PATCH /repos/Maeximilion/MaexSocial`; CodeQL can be disabled using `PATCH /repos/Maeximilion/MaexSocial/code-scanning/default-setup` with `state=not-configured`. Disabling protection is a separate owner decision, not an automatic response to a failed scan. Historical alerts/artifacts are not erased by a settings rollback.
+
+References: [GitHub default setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configure-code-scanning), [repository security settings](https://docs.github.com/en/enterprise-cloud@latest/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-security-and-analysis-settings-for-your-repository) and [supported secret patterns](https://docs.github.com/en/code-security/reference/secret-security/supported-secret-scanning-patterns), consulted 2026-11-05. Scanning has coverage limits and does not prove application security.
 
 ## Automation state
 

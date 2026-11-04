@@ -4,6 +4,12 @@ Status — interaction requirements. Visual design follows research synthesis.
 
 The first user should understand what MaexSocial will do, for which account, when, and with which authority. The first slice follows brand setup → connected account → content draft → review → schedule/publication → result.
 
+## Access and dashboard journeys
+
+The user requires secure external login, a platform-administration area for viewing/managing all customers, and a separate customer dashboard. The customer journey shows only authorized workspaces. The platform journey shows an all-customer overview and an explicit target customer before a management action. Privileged access must not expose credentials.
+
+A public website with customer registration/login and a separate administrator entry is confirmed. Signup offers customer access only, with proposed email-verification activation and enumeration-safe verification/recovery messages. Invitations and the administrator provisioning mechanism remain G2 choices. Authentication, MFA/recovery, session expiry and access-denied screens must follow the approved [access design](17_ACCESS_SECURITY.md). Server-side authorization remains required regardless of navigation visibility.
+
 ## Required visible states
 
 - Account connection shows platform, account identity, granted capabilities and expired/revoked access.
@@ -16,5 +22,7 @@ The first user should understand what MaexSocial will do, for which account, whe
 ## Acceptance questions
 
 Can a user distinguish a draft from a live post? Can they identify the account before publication? Can they stop future activity and see what is already in flight? Can keyboard and screen-reader users complete the primary journey? Can a failed provider call be understood and recovered without duplicate publication?
+
+Can customers reach only their own permitted data? Does an administrator always see which customer an action affects? Do login, expiry and recovery provide accessible paths without disclosing account existence? The ACCESS acceptance cases in the [security design](17_ACCESS_SECURITY.md) cover these boundaries through browser and server tests.
 
 MS-008 chooses the first journey and produces an accessible prototype. MS-010 verifies it end to end with synthetic content and an authorized test account.

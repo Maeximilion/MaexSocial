@@ -8,6 +8,8 @@ Decisions — Reuse the established repository process. Choose technology from t
 
 Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan, MS-010 implements and proves G3.
 
+Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–14 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
+
 Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
 
 Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
