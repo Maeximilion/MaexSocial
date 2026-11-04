@@ -14,7 +14,7 @@ Lessons — Foundation checks establish repository health. Live API capability, 
 
 ## Required plan
 
-Keep `C:/Users/Maxi/Documents/ChatGPT/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
+Keep `C:/Users/Maxi/Documents/GitHub/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
 
 Use Superpowers brainstorming to settle first customer/channel, user journey, account authority, scope, provider access, cost and deployment choices. Record alternatives and rationale in a product design. Obtain G2 approval. Then use writing-plans to specify files, interfaces, schemas, tests, migration/rollback behavior and independently verifiable tasks.
 

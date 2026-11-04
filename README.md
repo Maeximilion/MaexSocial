@@ -1,46 +1,68 @@
-<p align="center"><img src=".github/assets/banner.svg" alt="MaexSocial — local visibility, social operations and creative production" width="100%"></p>
+<p align="center">
+  <img src=".github/assets/banner.svg" alt="MaexSocial — the next chapter of your brand. Local visibility, social operations and creative production. In discovery." width="100%">
+</p>
 
-[![Foundation CI](https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml/badge.svg)](https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml)
-[![Project](https://img.shields.io/badge/Project-delivery_board-6ee7b7)](https://github.com/users/Maeximilion/projects/5)
-[![Stage](https://img.shields.io/badge/Stage-discovery-163841)](docs/01_STATUS.md)
+<h1 align="center">MaexSocial</h1>
+<p align="center">AI-powered local visibility, social operations and creative production.</p>
+<p align="center">
+  <a href="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml"><img src="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml/badge.svg" alt="Foundation CI"></a>
+  <a href="https://github.com/users/Maeximilion/projects/5"><img src="https://img.shields.io/badge/Project-delivery_board-2563EB" alt="Project delivery board"></a>
+  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-B91C1C" alt="Stage G1 discovery"></a>
+</p>
+<p align="center">
+  <a href="docs/README.md">Documentation</a> ·
+  <a href="docs/07_WORKPACKAGES.md">Roadmap &amp; tasks</a> ·
+  <a href="docs/handovers/claude-rea.md">Claude handover</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-**MaexSocial brings local visibility, social account operations and creative production into one planned AI workflow.** A business supplies approved facts and images. The intended product prepares content, produces media, publishes through authorized integrations and measures results.
+## One place to grow your presence
 
-[Project board](https://github.com/users/Maeximilion/projects/5) · [Documentation](docs/README.md) · [Work packages](docs/07_WORKPACKAGES.md) · [Current status](docs/01_STATUS.md) · [Claude handover](docs/handovers/claude-rea.md)
+MaexSocial is being designed to turn approved business facts and product images into useful content, channel-specific posts and creative campaigns. Its goal is to connect local discovery, account care and media production through AI and supported APIs.
 
-## Current state
+> [!NOTE]
+> **Current stage — discovery.** The repository foundation and GitHub automation are operational. Application features are planned. Independent research and an approved product design precede implementation.
 
-This repository contains the project foundation, research evidence and delivery workflow. The application is not implemented yet. Independent Codex and Claude Code REA investigations feed a synthesis and an approved product design before implementation.
-
-The initial Codex investigation analyzed three public SocialEdge JavaScript bundles. Authenticated behavior, server implementation and end-to-end publication remain unverified. See the [report](docs/research/codex-rea.md) and [evidence summary](docs/research/evidence-codex.json).
-
-## Planned product
-
-<img src=".github/assets/flow.svg" alt="Planned flow from approved business facts to content and media, publishing and measured results" width="100%">
-
-| Area | Intended outcome |
+| Planned capability | What it should help a business do |
 | --- | --- |
-| Local visibility | Maintain business profiles, products, reviews and local presence |
-| Social operations | Plan, create and publish channel-specific content |
-| Creative studio | Turn approved images and briefs into campaign assets and video |
-| Bounded autonomy | Operate within account permissions, budgets and explicit brand rules |
+| **Local visibility** | Maintain business profiles, offers, products and reputation |
+| **Social operations** | Prepare, schedule and publish content through authorized accounts |
+| **Creative production** | Turn approved photos and briefs into images and advertising videos |
+| **Bounded autonomy** | Operate within account permissions, brand rules and cost limits |
 
-Provider availability and platform requirements are assessed in discovery. The architecture and production stack are decided at G2.
+## From business facts to published content
 
-## Delivery gates
+![Planned workflow from approved business facts through content and media creation, authorized publishing and measurement. Permissions, brand rules and budgets govern every step.](.github/assets/flow.svg)
 
-| Gate | Acceptance outcome |
-| --- | --- |
-| G0 Foundation | Repository, Project, tasks, checks and handovers verified |
-| G1 Discovery | Independent findings reconciled with API evidence |
-| G2 Design | Owner-approved scope, architecture and executable task plan |
-| G3 MVP | One verified end-to-end publishing slice |
-| G4 Creative | Tested image-to-video production with cost and quality evidence |
-| G5 Autonomy | Controlled operation, monitoring and recovery demonstrated |
+1. **Bring the facts.** Establish brand identity, offers and approved source assets.
+2. **Create the content.** Prepare text, images and video for the selected channels.
+3. **Publish with authority.** Apply account permissions, approval policy and schedule.
+4. **Measure and improve.** Use observed results to plan the next action.
 
-## Start contributing
+These steps define the product direction. Provider availability, platform restrictions and implementation contracts are research and design decisions.
 
-Requires Git, Python 3.12 or newer and authenticated GitHub CLI for GitHub maintenance.
+## Where the project stands
+
+| Gate | Goal | State |
+| --- | --- | --- |
+| [G0 · Foundation](https://github.com/Maeximilion/MaexSocial/issues/13) | Repository, Project, checks and delivery workflow | Complete |
+| [G1 · Discovery](https://github.com/Maeximilion/MaexSocial/issues/14) | Independent research and API feasibility, reconciled with evidence | In progress |
+| [G2 · Design](https://github.com/Maeximilion/MaexSocial/issues/15) | Approved scope, architecture and executable task plan | Planned |
+| [G3 · First slice](https://github.com/Maeximilion/MaexSocial/issues/16) | One tested end-to-end publishing workflow | Planned |
+| [G4 · Creative](https://github.com/Maeximilion/MaexSocial/issues/17) | Verified image-to-video production | Planned |
+| [G5 · Autonomy](https://github.com/Maeximilion/MaexSocial/issues/18) | Controlled operation, monitoring and recovery | Planned |
+
+Goals, gate criteria, dependencies and task IDs are defined. Detailed product implementation plans follow the G1 evidence and G2 design decision. Track current work in the [Project](https://github.com/users/Maeximilion/projects/5), [status](docs/01_STATUS.md) and [work packages](docs/07_WORKPACKAGES.md).
+
+## Research with evidence
+
+SocialEdge is the comparison baseline. The [Codex report](docs/research/codex-rea.md) analyzes three public JavaScript bundles and records partial coverage in its [evidence manifest](docs/research/evidence-codex.json). Authenticated workflows and backend behavior remain unverified.
+
+The [Claude assignment](docs/handovers/claude-rea.md) requires independent observations followed by an evidence-by-evidence comparison. Findings may confirm, contradict or extend the baseline, or remain unverifiable. The [synthesis brief](docs/handovers/synthesis.md) brings both reports together before the product design is approved.
+
+## Start here
+
+For repository checks, use Git and Python 3.12 or newer. GitHub maintenance also requires an authenticated GitHub CLI.
 
 ```sh
 git clone https://github.com/Maeximilion/MaexSocial.git
@@ -49,24 +71,37 @@ python scripts/check_repo.py
 python -m unittest discover -s tests
 ```
 
-Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Claude Code supports `/start`, `/task`, `/gate`, `/project` and `/handover`. Codex has matching repository skills for the shared start, project and handover procedures.
+For an existing clone, check for local changes before fetching and fast-forwarding `main`. Make changes in a separate task worktree. Follow the [agent playbooks](docs/12_CLAUDE_CODE_PLAYBOOKS.md).
 
-## Research handovers
+| If you are here to… | Start with… |
+| --- | --- |
+| Understand the product and gates | [Project charter](docs/00_PCF.md) |
+| Perform the independent Claude investigation | [Claude REA handover](docs/handovers/claude-rea.md) |
+| Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
+| Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
+| Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
+| Use the visual identity | [Brand and asset guide](docs/15_README_STRATEGY.md) |
 
-- [Independent Claude Code REA assignment](docs/handovers/claude-rea.md)
-- [Codex REA assignment and continuation](docs/handovers/codex-rea.md)
-- [Evidence synthesis in a new chat](docs/handovers/synthesis.md)
-- [Implementation after G2 approval](docs/handovers/build.md)
+## Repository map
 
-## GitHub operations
+```text
+.github/       Workflows, templates, branch rules and visual assets
+.claude/       Shared task, gate and handover commands
+.agents/       Codex entry points for the shared commands
+docs/          Charter, status, design questions and work packages
+  research/    Sanitized findings and evidence manifests
+  handovers/   Independent research, synthesis and build briefs
+  superpowers/ Design records and implementation plans
+scripts/       Repository validation and Project reconciliation
+tests/         Regression checks for the repository tooling
+```
 
-CI validates foundation files and tests. PR metadata checks require Conventional Commit titles and linked issues. The Project tracks Status, Gate, Priority and Iteration. Local board reconciliation uses `python scripts/project_sync.py`.
+## Working together
 
-Account-level Project automation is enabled with a dedicated `PROJECT_TOKEN` and `PROJECT_SYNC_ENABLED=true`. It reconciles issues and PRs on events and hourly. Hosted execution is verified. See [GitHub Project operations](docs/16_GITHUB_PROJECT.md).
+Issues describe a deliverable and its acceptance evidence. Pull requests link their tasks, pass checks and receive review. GitHub Project synchronization maintains delivery status while preserving planning fields. Release gates require the evidence defined in the charter.
 
-## Assets and license
+Use [task and bug forms](https://github.com/Maeximilion/MaexSocial/issues/new/choose) for scoped work and [SECURITY.md](SECURITY.md) for private vulnerability reporting. The [changelog](CHANGELOG.md) records repository changes.
 
-Original SVG assets live in [.github/assets](.github/assets). Asset source and usage rules are in the [README strategy](docs/15_README_STRATEGY.md). Research assets and customer media follow separate provenance and privacy rules.
+## License
 
-Copyright 2026 Maeximilion. Publicly readable, proprietary. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
-
+Copyright 2026 Maeximilion. Publicly readable, proprietary. Original brand assets follow the repository license. See [LICENSE](LICENSE).
