@@ -1,0 +1,423 @@
+{
+  "schema_version": 1,
+  "captured_date": "2026-11-04",
+  "target": "https://app.socialedge.ai/de/dashboard",
+  "method": "Unauthenticated HTTP GET followed by REA inert static source analysis",
+  "rea_version": "6.8.0",
+  "evidence_id": "ev_ff44c65c3adf03d7f1fc5fb91c22dad13379a8af78c1f6bbb4d2bed957c4849f",
+  "summary_evidence_id": "ev_005dbec9407e50c2e721c34a58861b49675cf0fbd3bd509b429d4fcf2611853e",
+  "artifact_sha256": "d84fbfeddaaefd1753d83dce2678334586bb69834fb477af5561901640889de5",
+  "captures": [
+    {
+      "name": "app",
+      "url": "https://app.socialedge.ai/de/dashboard",
+      "final_url": "https://app.socialedge.ai/de/dashboard",
+      "status": 200,
+      "bytes": 11402,
+      "sha256": "5bafea149f51e298f00520ffa5d403db73d5f2c17741c97d8e3ac5a62e4aafed"
+    },
+    {
+      "name": "bundle-0.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/4bd1b696-0f00c6f76c8af493.js",
+      "bytes": 169076,
+      "sha256": "2777181e4586c9c98a2f61279b584999af903bdfa271b508a7025e7d3b2c8ede"
+    },
+    {
+      "name": "bundle-1.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/1684-1001de77825e5ef7.js",
+      "bytes": 172595,
+      "sha256": "ee12a29133a41b27c4dd06ef5b8688d63bdbf74f37006f9e404e5238f83157d3"
+    },
+    {
+      "name": "bundle-2.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/main-app-95e2b159ebf7d3ba.js",
+      "bytes": 509,
+      "sha256": "521c13b63bd7bcde863d673da9f9b86ed4e6342222b1e7b542f24e2ddb0cf7b4"
+    },
+    {
+      "name": "bundle-3.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/6874-165673415f2c5b1a.js",
+      "bytes": 6694,
+      "sha256": "0da27066571539116f117b38dac1f42747d6219ab92156b5bd37acde6d097e65"
+    },
+    {
+      "name": "bundle-4.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/app/not-found-8343b9f9e28b6edd.js",
+      "bytes": 1691,
+      "sha256": "a2f0405d865bd5bf615f67f2a13e3a8089c00fbbd540b55cad225f77fea8b4a8"
+    },
+    {
+      "name": "bundle-5.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/bc9e92e6-547586cf95abf2d5.js",
+      "bytes": 258572,
+      "sha256": "b646844678e1b791c7a329cfd0f7dd5c3205005e32ccc4023b60dfddf01c1e86"
+    },
+    {
+      "name": "bundle-6.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/2e5b0c64-dcfa72553b6cfc7b.js",
+      "bytes": 92937,
+      "sha256": "d5e296d25ffd88336214eb7554710ee4e6ea7a0c390a5be5b1e197b93dc14fbd"
+    },
+    {
+      "name": "bundle-7.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/1288-81ce8f964b8633b8.js",
+      "bytes": 126220,
+      "sha256": "f7b93647db26756f251a3a594cc8cebf12db81da380790a4b03c47c343650608"
+    },
+    {
+      "name": "home",
+      "url": "https://www.socialedge.ai/",
+      "final_url": "https://www.socialedge.ai/",
+      "status": 200,
+      "bytes": 344210,
+      "sha256": "b477a09b592023b018fac78bdeefb6e59b74a82c005885763625505b452cba77"
+    },
+    {
+      "name": "pricing",
+      "url": "https://www.socialedge.ai/preise",
+      "final_url": "https://www.socialedge.ai/preise",
+      "status": 200,
+      "bytes": 583307,
+      "sha256": "b14a1f97488f216b7035ab9a7255da5ef3c3c2fb4d3401478c3ba0abaa806276"
+    },
+    {
+      "name": "language-layout-37168aad91060634.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/app/%5Blang%5D/layout-37168aad91060634.js",
+      "bytes": 7636,
+      "sha256": "8f7f25b6dd4bebdea1092d32a52d26add7f62139fedc7aae1ae0547d61a82cb4"
+    },
+    {
+      "name": "dashboard-layout-a0df3756c53d0209.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/app/%5Blang%5D/dashboard/layout-a0df3756c53d0209.js",
+      "bytes": 64758,
+      "sha256": "518093defe6ed060cce59d44591ae04471f706e3ab34bbe6ddd6855e2808369b"
+    },
+    {
+      "name": "dashboard-page-8b08a48510064d90.js",
+      "url": "https://app.socialedge.ai/_next/static/chunks/app/%5Blang%5D/dashboard/page-8b08a48510064d90.js",
+      "bytes": 14429,
+      "sha256": "465ab7d8e42d97214604f9364b3f6a2f16c84bc741c0462fa4beae6547d80096"
+    }
+  ],
+  "source_selection": {
+    "requested_paths": [
+      "language-layout-37168aad91060634.js",
+      "dashboard-layout-a0df3756c53d0209.js",
+      "dashboard-page-8b08a48510064d90.js"
+    ],
+    "unselected_files": 8
+  },
+  "statistics": {
+    "findings": 179,
+    "invalid_utf8_files": 0,
+    "modules": 15,
+    "nested_asar_containers": 0,
+    "parse_failures": 0,
+    "parsed_javascript_files": 3,
+    "relevant_files": 11,
+    "skipped_javascript_files": 0,
+    "text_bytes_read": 86823,
+    "visited_ast_nodes": 14320
+  },
+  "route_candidates": [
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:af91d1d9a8e61422e97723bd4983fa57",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 3,
+      "path": "/dashboard",
+      "primary_occurrence_id": "jso:8b0464d6cc11871388f9df0d59005119",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:3a8b4ff73b46c43f7a0dc9a70d3ebf05",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 2,
+      "path": "/dashboard/analytics",
+      "primary_occurrence_id": "jso:3f0d6b58dfafe59ea6cf9c0cfc2bf47f",
+      "source_count": 1
+    },
+    {
+      "classification": "system",
+      "classification_basis": "path-name-heuristic",
+      "confidence": "low",
+      "id": "jsr:0e50b4ebfd596d02d16f96b7842258fc",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 3,
+      "path": "/dashboard/billing",
+      "primary_occurrence_id": "jso:4de2057f93d8e2033cac7d273d1a8d25",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:e2563210cf41543f8cbd6f72a87c5812",
+      "mechanisms": [
+        "route-string-constant"
+      ],
+      "occurrence_count": 1,
+      "path": "/dashboard/fundament",
+      "primary_occurrence_id": "jso:339f09398cc6bdf3e3bc0bc8f778aca5",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:0f88ab117c61e58eb9f580a3db479173",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 4,
+      "path": "/dashboard/history",
+      "primary_occurrence_id": "jso:19150de041db52600ec2bdc79653fdad",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:3af37f4b942c6d64ac9f6478e63cd515",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 2,
+      "path": "/dashboard/library",
+      "primary_occurrence_id": "jso:35bc8c65b35b5b3b5f24a0acda0cfc4e",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:bfaf19412364a379e2cebb0b455675df",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 2,
+      "path": "/dashboard/posts",
+      "primary_occurrence_id": "jso:84c8b659090b7acb9f6ba0ce17ee9f94",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:33a2b268c7331c0228720b5be8fa5bbd",
+      "mechanisms": [
+        "route-string-constant"
+      ],
+      "occurrence_count": 1,
+      "path": "/dashboard/rechner",
+      "primary_occurrence_id": "jso:3dda327dca5464c013474c1b9da1c9a6",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:f1a37249313a96a6a7dcf717557aa1b7",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 2,
+      "path": "/dashboard/reviews",
+      "primary_occurrence_id": "jso:0db29328a29fd5ca9bc9b47b0e5d6d15",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:0d7e0b0fdb80e3b293dc6b0e0efb6224",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 3,
+      "path": "/dashboard/settings",
+      "primary_occurrence_id": "jso:a47dbd760700a59f041c32932f7f0993",
+      "source_count": 1
+    },
+    {
+      "classification": "unknown",
+      "classification_basis": "unknown",
+      "confidence": "low",
+      "id": "jsr:3acdc520e7e5425cc84a87e87a6654b0",
+      "mechanisms": [
+        "navigation-target",
+        "route-string-constant"
+      ],
+      "occurrence_count": 2,
+      "path": "/dashboard/support",
+      "primary_occurrence_id": "jso:27ab5e9ac5e3fb1ac19157be264c13af",
+      "source_count": 1
+    }
+  ],
+  "limitations": [
+    "Caller-selected source analysis leaves 8 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.",
+    "CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.",
+    "Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.",
+    "JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.",
+    "Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.",
+    "Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.",
+    "Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code."
+  ],
+  "coverage": {
+    "static_sources": {
+      "sources": 11,
+      "unmeasured_sources": 0,
+      "syntax": {
+        "complete": 3,
+        "recovered": 0,
+        "failed": 0,
+        "not-examined": 8
+      },
+      "semantics": {
+        "unknown_sources": 3,
+        "unexamined_sources": 8
+      },
+      "examination": {
+        "complete": 3,
+        "limited": 0,
+        "not-examined": 8
+      },
+      "electron_applicability": {
+        "observed": 0,
+        "unknown": 11
+      }
+    },
+    "application": {
+      "status": "partial",
+      "truncated": false,
+      "omitted_count": null,
+      "limits": []
+    },
+    "semantic": {
+      "status": "partial",
+      "truncated": false,
+      "omitted_nodes": null,
+      "omitted_relations": null,
+      "limits": [],
+      "families": [
+        {
+          "family": "boundary",
+          "status": "partial",
+          "retained_relations": 0,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "call-flow",
+          "status": "partial",
+          "retained_relations": 104,
+          "omitted_relations": null,
+          "unknown_count": 1059
+        },
+        {
+          "family": "child-process",
+          "status": "partial",
+          "retained_relations": 0,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "closure",
+          "status": "partial",
+          "retained_relations": 1004,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "configuration",
+          "status": "partial",
+          "retained_relations": 0,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "data-flow",
+          "status": "partial",
+          "retained_relations": 11285,
+          "omitted_relations": null,
+          "unknown_count": 759
+        },
+        {
+          "family": "event",
+          "status": "partial",
+          "retained_relations": 0,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "object-flow",
+          "status": "partial",
+          "retained_relations": 978,
+          "omitted_relations": null,
+          "unknown_count": 1294
+        },
+        {
+          "family": "promise-ownership",
+          "status": "partial",
+          "retained_relations": 76,
+          "omitted_relations": null,
+          "unknown_count": 40
+        },
+        {
+          "family": "request",
+          "status": "partial",
+          "retained_relations": 12,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "resource-lifecycle",
+          "status": "partial",
+          "retained_relations": 0,
+          "omitted_relations": null,
+          "unknown_count": 8
+        },
+        {
+          "family": "timer",
+          "status": "partial",
+          "retained_relations": 6,
+          "omitted_relations": null,
+          "unknown_count": 13
+        }
+      ]
+    },
+    "application_unknowns": 8,
+    "semantic_unknowns": 3221
+  },
+  "raw_evidence_location": "work/rea-codex/rea-evidence.json (local, ignored, not committed)",
+  "observed": [
+    "Public dashboard HTML and linked JavaScript were served without authentication",
+    "Selected source files parsed successfully",
+    "REA recovered static route candidates"
+  ],
+  "unknown": [
+    "Authenticated route reachability and behavior",
+    "Backend implementation and provider configuration",
+    "Actual autonomous publishing, billing and Google account permissions",
+    "Other lazy-loaded source files and full feature parity"
+  ]
+}

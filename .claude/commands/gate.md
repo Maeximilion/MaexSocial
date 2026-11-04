@@ -1,0 +1,1 @@
+Read docs/00_PCF.md and the relevant milestone. Check every acceptance criterion against linked evidence and dependencies. Record unresolved criteria and owner decision in docs/01_STATUS.md. Only after explicit gate acceptance create annotated gate-gN tags on the accepted main commit. Never infer product approval from merged foundation changes.

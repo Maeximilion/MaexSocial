@@ -1,0 +1,1 @@
+Run the task checks and record actual results. Update status and acceptance evidence. Commit and push. Open or update a PR with a Conventional Commit title and Closes #N. Obtain GPT-6 Astra high review. Close work only after verified completion; CI success alone does not approve a gate.
