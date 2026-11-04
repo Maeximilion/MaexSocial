@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane.
 - Distinguish authenticated first-party Dependabot maintenance tasks in PR metadata, with nine workflow regression cases.
 - Enable repository security scanning and document staged CI/CD and application test requirements.
 - Record public customer registration/login, separate platform administration and tenant-isolation acceptance cases for G2.

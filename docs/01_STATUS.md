@@ -15,7 +15,7 @@
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
 | Public product baseline, MS-002 | In progress, issue #2 open | Initial public SocialEdge sources identified |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
-| Claude Code REA, MS-004 | Pending independent session, issue #4 open | [Claude handover](handovers/claude-rea.md) |
+| Claude Code REA, MS-004 | Anonymous-scope research delivered in PR, issue #4 open for authenticated walkthrough and review | [Report](research/claude-rea.md) and [manifest](research/evidence-claude.json), checkpoint commit `35c61ac` before Codex comparison |
 | API feasibility and video demo, MS-005–006 | Planned, issues #5–6 open | Candidate demos exist in the Codex report, full feasibility/search deliverables remain open |
 | Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
@@ -28,14 +28,14 @@ GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is 
 
 ## What's next
 
-1. Run Claude's independent SocialEdge investigation under issue #4. Freeze its own findings before comparing Codex's report and manifest.
+1. Decide the SocialEdge account and read-only action scope for MS-004 scenario C-S6, or accept the anonymous scope as a G1 limit.
 2. Finish public inventory, official API/MCP feasibility and the video-demo investigation. Record any missing authenticated runtime access and ask for the exact scenario scope.
 3. Reconcile both research lanes in a new synthesis chat using claim IDs, independent evidence, source dates, scope and explicit comparison outcomes.
 4. Prepare and approve the G2 product design, then decompose the first slice into executable tasks and acceptance tests.
 
 ## Evidence limits
 
-The first web-tool dashboard request failed, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The Codex report records evidence IDs and partial coverage. Authenticated runtime, private backend behavior and autonomous publication remain unverified. Historical diagnostics found direct Codex MCP registration missing and Claude registration present. They do not establish current live tool connectivity or a completed Claude investigation.
+The first web-tool dashboard request failed, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The Codex report records evidence IDs and partial coverage. The Claude lane covered legal/pricing pages, an anonymous runtime capture and 36 public client chunks; 32 SE claims show no contradiction with Codex, and authenticated behavior remains unobserved. Authenticated runtime, private backend behavior and autonomous publication remain unverified. Historical diagnostics found direct Codex MCP registration missing and Claude registration present. They do not establish current live tool connectivity or a completed Claude investigation.
 
 ## Decisions and operating state
 
