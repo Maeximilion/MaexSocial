@@ -1,0 +1,19 @@
+name: Task
+description: A scoped deliverable with acceptance evidence
+title: "[MS-XXX] "
+labels: ["type: task"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: Describe the user-visible outcome and gate.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Include observable checks, dependencies and evidence destinations.
+    validations:
+      required: true

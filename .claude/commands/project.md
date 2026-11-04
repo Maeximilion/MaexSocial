@@ -1,0 +1,1 @@
+Read docs/16_GITHUB_PROJECT.md. Use python scripts/project_sync.py for repository issues and PRs. Review changes and preserve user-selected Iteration values. Never print tokens. If PROJECT_TOKEN is missing in Actions, report that remote sync is disabled and use the authenticated local CLI when available.

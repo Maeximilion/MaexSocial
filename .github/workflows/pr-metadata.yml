@@ -1,0 +1,25 @@
+name: PR metadata
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      # Read event data directly. No checkout, secrets, or shell interpolation.
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?!?: .+/.test(pr.title)) {
+              core.setFailed('Use a Conventional Commit title.');
+            }
+            if (!/\b(?:closes|fixes|resolves|refs|references)\s+#\d+\b/i.test(pr.body || '')) {
+              core.setFailed('Link the task using Closes #N or Refs #N for partial work.');
+            }

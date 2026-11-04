@@ -1,0 +1,1 @@
+Run python scripts/check_repo.py and python -m unittest discover -s tests. During product implementation also run the task's explicit checks from docs/08_EVALS.md. Record actual outcomes and limitations. Never mark a future product evaluation as passed by a foundation check.

@@ -1,0 +1,53 @@
+name: Issue and PR maintenance
+
+on:
+  issues:
+    types: [opened, reopened, unassigned]
+  pull_request_target:
+    types: [opened, edited, reopened, unassigned, labeled, unlabeled]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: metadata-maintenance-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      # Only GitHub API calls. Never check out or execute pull request content.
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const number = context.payload.issue?.number || context.payload.pull_request.number;
+            const args = { ...context.repo, issue_number: number };
+            const { data: current } = await github.rest.issues.get(args);
+            if (current.assignees.length === 0) {
+              await github.rest.issues.addAssignees({ ...args, assignees: ['Maeximilion'] });
+            }
+            if (!context.payload.pull_request) return;
+            // The first explicit same-repository task reference defines metadata.
+            const link = (current.body || '').match(/\b(?:closes|fixes|resolves|refs|references)\s+#(\d+)\b/i);
+            if (!link) return;
+            const sourceNumber = Number(link[1]);
+            if (sourceNumber === number) throw new Error('A PR cannot close itself.');
+            const { data: source } = await github.rest.issues.get({ ...context.repo, issue_number: sourceNumber });
+            if (source.pull_request) throw new Error('The closing reference must identify an issue.');
+            if (!current.milestone && source.milestone) {
+              await github.rest.issues.update({ ...args, milestone: source.milestone.number });
+            }
+            const names = current.labels.map(label => typeof label === 'string' ? label : label.name);
+            const sourceNames = source.labels.map(label => typeof label === 'string' ? label : label.name);
+            const additions = [];
+            for (const prefix of ['type:', 'gate:', 'priority:']) {
+              if (!names.some(name => name.startsWith(prefix))) {
+                additions.push(...sourceNames.filter(name => name.startsWith(prefix)));
+              }
+            }
+            if (additions.length) {
+              await github.rest.issues.addLabels({ ...args, labels: additions });
+            }

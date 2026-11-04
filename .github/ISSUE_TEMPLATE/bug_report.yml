@@ -1,0 +1,19 @@
+name: Bug
+description: A reproducible incorrect result
+title: "bug: "
+labels: ["type: bug"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Reproduction and expected behavior
+      description: Provide a concrete sequence with sanitized inputs.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Actual result and evidence
+      description: Include the version and logs without credentials or personal information.
+    validations:
+      required: true
