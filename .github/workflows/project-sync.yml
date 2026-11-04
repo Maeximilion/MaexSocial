@@ -35,6 +35,8 @@ jobs:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
         run: |
           test -n "$GH_TOKEN" || { echo 'PROJECT_TOKEN is required for personal Project access.'; exit 1; }
+          gh api user --jq .login
+          gh api graphql -f query='{ user(login: "Maeximilion") { projectV2(number: 5) { id } } }' --jq .data.user.projectV2.id
           gh project view 5 --owner Maeximilion --format json --jq .id
       - name: Reconcile Project
         env:
