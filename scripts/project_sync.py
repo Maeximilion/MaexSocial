@@ -16,7 +16,9 @@ PROJECT_NUMBER = "5"
 
 
 def gh(*args):
-    result = subprocess.run(["gh", *args], check=True, capture_output=True, text=True, encoding="utf-8")
+    result = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8")
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"GitHub CLI exited with {result.returncode}")
     return json.loads(result.stdout) if result.stdout.strip() else None
 
 

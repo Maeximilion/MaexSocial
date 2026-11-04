@@ -1,6 +1,7 @@
 """Regression checks for documentation parsing and Project status transitions."""
 
 import unittest
+import subprocess
 from copy import deepcopy
 from unittest.mock import patch
 
@@ -10,6 +11,12 @@ from scripts import project_sync
 
 
 class FoundationTests(unittest.TestCase):
+    def test_cli_failure_preserves_diagnostic(self):
+        result = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: missing project scope\n")
+        with patch.object(project_sync.subprocess, "run", return_value=result):
+            with self.assertRaisesRegex(RuntimeError, "missing project scope"):
+                project_sync.gh("project", "view", "5")
+
     def test_markdown_targets(self):
         text = '[doc](docs/a.md#section) ![img](<assets/a b.svg>) [web](https://example.com) [anchor](#id)\n```md\n[example](missing.md)\n```\n'
         self.assertEqual(list(local_targets(text)), ["docs/a.md", "assets/a b.svg"])

@@ -33,7 +33,9 @@ jobs:
       - name: Validate Project credentials
         env:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-        run: test -n "$GH_TOKEN" || { echo 'PROJECT_TOKEN is required for personal Project access.'; exit 1; }
+        run: |
+          test -n "$GH_TOKEN" || { echo 'PROJECT_TOKEN is required for personal Project access.'; exit 1; }
+          gh project view 5 --owner Maeximilion --format json --jq .id
       - name: Reconcile Project
         env:
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
