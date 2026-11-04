@@ -5,6 +5,11 @@ Status — conceptual model for G2. Tables and storage technology are not yet se
 | Concept | Required meaning |
 |---|---|
 | Workspace | Ownership and isolation boundary |
+| User identity | Authentication subject and account lifecycle, with credential material protected by the selected identity system |
+| Workspace membership | Identity, workspace, tenant role and revocation state |
+| Platform authorization | Separately granted platform role and allowed administrative operations |
+| Session | Identity, authentication assurance, lifetime and revocation reference |
+| Verification/recovery challenge | Intended identity and purpose, protected token representation, expiry and single-use state |
 | Brand profile | Approved business facts, voice, locale and revisions |
 | Connected account | Platform identity, workspace, scopes and credential reference |
 | Source asset | Original owner, usage permission, content hash and retention policy |
@@ -14,6 +19,8 @@ Status — conceptual model for G2. Tables and storage technology are not yet se
 | Provider attempt | Request identity, external job/post ID, timing, error and reconciliation |
 | Media job | Input revision, render parameters, cost reservation and output assets |
 | Audit event | Actor, workspace, action, policy version, time and result |
+
+Platform administration records the actual actor separately from the target customer. Membership, platform authority and session state cannot be widened by user-editable profile fields. A tenant role does not imply platform privileges. Public registration produces a customer identity with verified-email activation proposed before workspace access. Tenant identity must remain attached to jobs, derived media and exports. The selected design must define recovery/revocation and prevent credentials from appearing in customer/admin views or audit data. These are proposed contracts in [access and security](17_ACCESS_SECURITY.md).
 
 ## Invariants to test in MS-010 through MS-012
 

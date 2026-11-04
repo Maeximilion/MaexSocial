@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="MaexSocial logo"><rect width="128" height="128" rx="28" fill="#111827"/><path d="M28 94V34l36 40 36-40v60" fill="none" stroke="#6ee7b7" stroke-width="12" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+<title id="title">MaexSocial symbol</title>
+<desc id="desc">An M with a blue left stroke and a red right stroke.</desc>
+<rect width="128" height="128" rx="28" fill="#080F20"/><g transform="translate(32 32)"><path d="M0 64V0l32 32" fill="none" stroke="#2563EB" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 32L64 0v64" fill="none" stroke="#EF4444" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>
