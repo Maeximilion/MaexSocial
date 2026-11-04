@@ -4,7 +4,7 @@ Status — G0 complete, G1 ongoing. Codex's bounded static report exists. Claude
 
 Artifacts — [Issue #7](https://github.com/Maeximilion/MaexSocial/issues/7), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, `docs/research/`, [work packages](../07_WORKPACKAGES.md), [charter](../00_PCF.md) and [status](../01_STATUS.md).
 
-Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. Technology and paid providers remain G2 decisions.
+Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. [ADR 0001](../decisions/0001-application-language.md) chooses TypeScript strict under Maxi's delegated technology choice. Frameworks, hosting and paid providers remain G2 decisions.
 
 Gate — G1 closes with reconciled evidence and explicitly accepted coverage limits. G2 requires Maxi's product design approval.
 

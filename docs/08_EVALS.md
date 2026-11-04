@@ -6,14 +6,16 @@ Foundation CI validates repository artifacts and automation. It does not measure
 
 | Check | Covers | Limit |
 |---|---|---|
-| `foundation` (required) | Markdown links/JSON, nine Python regression cases, nine executable PR-metadata cases | No deployed application or provider behavior |
+| `foundation` (required) | Markdown links/JSON, Python regression cases and executable Node metadata/maintenance tests | No deployed application or provider behavior |
 | `metadata` (required) | Conventional Commit title and task reference; authenticated same-repository Dependabot PRs may be their own maintenance task | No code correctness claim |
 | CodeQL default setup | Static analysis of Python tooling and GitHub Actions | Findings require triage; not login, isolation or penetration testing |
 | Secret scanning + push protection | Supported secret patterns and supported pushes | Does not detect every credential or replace credential handling |
 | Dependabot | Pinned Actions updates and vulnerability alerts | Updates still require compatibility review and green checks |
 | Maintenance / Project reconciliation | Assignment, task metadata and board status | Green automation does not approve a product gate |
 
-Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/pr_metadata.test.cjs`. The metadata tests execute the workflow's actual inline script. They cover trusted bots, humans, fork/deleted repositories, spoofed identity/actor, task links and invalid titles. No extra test framework or package installation is required.
+Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`. The metadata tests execute the workflow's actual inline script. They cover trusted bots, humans, fork/deleted repositories, spoofed identity/actor, task links and invalid titles. No extra test framework or package installation is required.
+
+Maintenance tests exercise the actual API-only workflow against controlled GitHub responses, covering inherited metadata, preserved manual choices, dedicated dependency-task reuse and native Development linkage. Hosted verification must additionally establish the workflow token's real API permissions and Project reconciliation after generated changes.
 
 The 2026-11-05 failure on dependency PRs was a missing body task reference, not a failed application test. Keep broad maintenance links when useful, but do not make a genuine first-party bot PR depend on a manually preserved body edit. The exception grants no token permissions or merge authorization.
 

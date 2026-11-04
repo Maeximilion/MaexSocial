@@ -1,6 +1,8 @@
 # Architecture decisions to establish at G2
 
-Status — provisional product boundaries. No application stack has been selected.
+Status — TypeScript with strict checking is the chosen application-language baseline under Maxi's delegated technology decision. Product boundaries remain provisional. Framework, authentication provider, persistence and deployment choices remain open for G2.
+
+[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. The direction is TypeScript for browser code and Node.js-based API/job orchestration. Existing Python repository tooling stays in use. Product implementation follows Claude's independent REA report, synthesis and G2 acceptance.
 
 ## Candidate responsibilities
 
@@ -24,11 +26,12 @@ The first slice should cover one complete workflow through these responsibilitie
 - Publication authority is an explicit versioned policy. Draft approval and autonomous policy approval are distinguishable.
 - External writes use durable intent, idempotency where supported and reconciliation where the provider result is ambiguous.
 - Authentication secrets stay outside prompts, logs and repository files.
+- Validate external inputs and provider/model outputs at runtime. Compile-time types do not establish data validity or tenant authorization.
 - Cost limits apply before external generation and publication-related purchases. Concurrent jobs share the same budget authority.
 - A stop control prevents new work and documents treatment of already accepted provider jobs.
 
 ## G2 decision record
 
-MS-008 compares a small application with direct APIs, a workflow-led implementation, and a hybrid where external orchestration is limited to appropriate background work. Record fit to the first slice, failure recovery, operating cost and maintainability. The approved choice determines code directories, technology and deployment. API and MCP are transport options whose capabilities and operational support must be proven separately.
+MS-008 compares a small application with direct APIs, a workflow-led implementation, and a hybrid where external orchestration is limited to appropriate background work. Record fit to the first slice, failure recovery, operating cost and maintainability. The approved choice determines code directories, frameworks and deployment within the language baseline, revisiting that baseline only if evidence warrants it. API and MCP are transport options whose capabilities and operational support must be proven separately.
 
 Secure external login, platform-wide customer management, separate customer dashboards, a public website with customer self-registration/login and separate administrator access are confirmed requirements. Authentication design, verified-email activation, administrator MFA and the precise permission model are proposed G2 decisions detailed in [access and security](17_ACCESS_SECURITY.md). Public signup grants customer authority only. No login stack is selected by this document.

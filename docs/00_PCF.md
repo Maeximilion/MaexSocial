@@ -17,6 +17,8 @@ MaexSocial will manage local visibility and social media through AI and supporte
 
 ## Gates
 
+Language update, 2026-11-05 — Maxi delegated technology selection. [ADR 0001](decisions/0001-application-language.md) chooses TypeScript with strict checking as the application baseline, with Node.js API/orchestration as the direction. Framework, authentication, database, deployment and provider decisions remain part of G2. This updates the initial language deferral above without approving the full product design.
+
 On 2026-11-05 Maxi confirmed a public website with customer registration/login, a tenant-isolated customer dashboard, and separate platform-administrator access to view and manage customers. [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) defines the access design and tests as part of G2. The requirements are confirmed; authentication provider, detailed controls and architecture still need design acceptance.
 
 | Gate | Outcome | Required evidence | Authority |
