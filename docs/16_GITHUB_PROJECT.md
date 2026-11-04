@@ -33,3 +33,22 @@ Before enabling automation, configure the Project number and a dedicated token w
 ## Maintenance contract
 
 Discover existing items by repository URL before adding them. Preserve assignments, labels and planning fields unless a documented fact warrants an update. Report ambiguous states. Scheduled jobs must have minimal permissions, bounded execution and visible failures. Fork PR code must never execute with a Project secret. Repository protection requires only CI jobs that actually exist and run on the relevant event.
+
+## Set up the Project credential from PowerShell
+
+Create a dedicated classic token in GitHub Settings > Developer settings > Personal access tokens. Use `project` and `public_repo`, an explicit expiration and a descriptive name. This token can access personal projects and public repositories, so keep it dedicated and rotate it before expiration.
+
+```powershell
+gh secret set PROJECT_TOKEN --repo Maeximilion/MaexSocial
+gh secret list --repo Maeximilion/MaexSocial
+```
+
+Paste the token only into the hidden prompt, never into the command line, a file, chat or issue. Once the workflow is merged and the secret exists, enable and test it.
+
+```powershell
+gh variable set PROJECT_SYNC_ENABLED --repo Maeximilion/MaexSocial --body true
+gh workflow run project-sync.yml --repo Maeximilion/MaexSocial --ref main
+gh run list --repo Maeximilion/MaexSocial --workflow project-sync.yml --limit 5
+```
+
+Inspect the triggered run before claiming automation works. The initial hosted setup remains pending until that verification succeeds. The main ruleset requires the `foundation` and `metadata` checks, blocks deletion and force-push, and requires PRs. GitHub approval count is zero for this single-owner repository, so the required Astra review is a documented agent process rather than a second-account approval requirement.

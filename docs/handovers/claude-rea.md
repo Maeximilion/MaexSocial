@@ -24,8 +24,9 @@ Use the connected REA tool inventory and exact schemas. Where browser/runtime ac
 
 Write `docs/research/claude-rea.md` with target/date/access, tool versions, scenario list, capability table, evidence IDs, sources, reproducible steps, inferences and unresolved gaps. Identify public claims, UI observations, static observations and runtime observations separately. Raw authenticated captures remain outside Git. Commit only sanitized conclusions and necessary original illustrative artifacts.
 
-Independently establish observations before comparing the Codex report. Then add disagreements without rewriting the other lane. Update MS-004 and status with actual completion or access blockers. Open a PR referencing the MS-004 issue once its number is known.
+Independently establish observations before comparing the Codex report. Then add disagreements without rewriting the other lane. Update MS-004 and status with actual completion or access blockers. Open a PR with Closes #4 when the report satisfies its bounded research acceptance criteria, otherwise use Refs #4 and describe the missing work.
 
 ## Start prompt
 
 Work on MaexSocial task MS-004 using this handover and the installed REA skill. Inspect the authorized SocialEdge target and write a reproducible sanitized report. Begin with a short scenario plan and actual connection check. Keep unsupported claims and access gaps explicit. Use the current repository rules, keep code-autopilot/caveman disabled, and stop at the research deliverable.
+

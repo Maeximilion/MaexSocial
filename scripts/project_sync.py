@@ -6,6 +6,7 @@ Existing Iteration assignments are deliberately preserved.
 """
 
 import json
+import re
 import subprocess
 
 
@@ -77,6 +78,12 @@ def reconcile():
         for issue in pr["closingIssuesReferences"]
         if issue.get("url") == f'https://github.com/{REPOSITORY}/issues/{issue["number"]}'
     }
+    active_issue_numbers.update(
+        int(match.group(1))
+        for pr in prs
+        if pr["state"] == "open"
+        for match in re.finditer(r"\b(?:refs|references)\s+#(\d+)\b", pr.get("body") or "", re.IGNORECASE)
+    )
     for record, is_pr in [(item, False) for item in issues] + [(item, True) for item in prs]:
         url = record["html_url"]
         item = by_url.get(url)

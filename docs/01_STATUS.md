@@ -11,7 +11,7 @@
 
 | Work | State | Evidence |
 |---|---|---|
-| GitHub foundation, MS-001 | In progress | Repository files and setup verification pending coordinator closeout |
+| GitHub foundation, MS-001 | Foundation delivered through PR #19; hosted Project sync pending | [Foundation PR](https://github.com/Maeximilion/MaexSocial/pull/19), required checks and local verification |
 | Public product baseline, MS-002 | In progress | Public SocialEdge sources identified in the initial research |
 | Codex REA, MS-003 | Bounded static report delivered | [Codex report](research/codex-rea.md), authenticated runtime remains unverified |
 | Claude Code REA, MS-004 | Pending independent session | [Claude handover](handovers/claude-rea.md) |
@@ -20,7 +20,7 @@
 
 ## What's next
 
-1. Finish and verify MS-001 against the foundation plan. Record CI and live GitHub settings before marking G0 passed.
+1. Configure PROJECT_TOKEN using the terminal instructions in docs/16_GITHUB_PROJECT.md, enable and verify hosted Project reconciliation, then record G0 acceptance.
 2. Run the independent Claude Code REA assignment and compare it with the delivered Codex static report.
 3. Complete official API feasibility and identify credible candidates for the remembered Claude video demo.
 4. Use a new synthesis chat to compare evidence, resolve disagreements and prepare the G2 design decision.
@@ -35,6 +35,7 @@ MaexSocial name and public repository visibility confirmed by Maxi. Reference-re
 
 ## Done and handovers
 
-- 2026-11-04 — Maex-Voice-Agent documentation and GitHub conventions inspected read-only. Repository foundation, gates and handover briefs authored. Completion of remote setup remains subject to coordinator verification.
+- 2026-11-04 — Maex-Voice-Agent documentation and GitHub conventions inspected read-only. Repository foundation, gates and handover briefs authored. Public repository and Project #5 verified, 12 tasks and 6 parent gate issues created, 6 milestones and 3 real iterations provisioned. PR #19 carries the foundation and bounded Codex report. Local link/JSON validation and six regression tests pass. The initial GitHub foundation and metadata checks pass. Fresh Astra high review found one partial-PR status bug, now covered by a regression test.
 
 Update this file alongside changes to [work packages](07_WORKPACKAGES.md). Keep claims tied to commands, report paths, issue/PR links or recorded decisions.
+

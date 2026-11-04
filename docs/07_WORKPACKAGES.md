@@ -27,3 +27,4 @@ MS-005 records official permission and app-review requirements for each proposed
 
 MS-008 and MS-009 define only the next implementable release in detail. Later tasks are stage objectives and must be decomposed after design. MS-010–012 require behavioral tests, provider failure tests, exact-head CI/review and dated acceptance evidence. No task closes solely because its placeholder documentation exists.
 
+
