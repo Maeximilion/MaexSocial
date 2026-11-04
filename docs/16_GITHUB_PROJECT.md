@@ -4,7 +4,16 @@ Repository — https://github.com/Maeximilion/MaexSocial
 
 Single Project — https://github.com/users/Maeximilion/projects/5
 
-Use views of this Project for backlog, board and roadmap. Task IDs MS-001 through MS-013 link repository plans, issues and PRs. Milestones represent G0 through G5. Labels describe task type, priority, area and blocking state. The provisioned names and field IDs are verified by the setup script or live Project inspection.
+Task IDs MS-001 through MS-013 link repository plans, issues and PRs. Product milestones represent G0 through G5; the separate Maintenance milestone covers dependency and repository work without implying a product gate. Labels describe task type, priority, area and blocking state.
+
+## Saved Project views
+
+| View | Purpose | Visible information |
+|---|---|---|
+| [Overview](https://github.com/users/Maeximilion/projects/5/views/1) | Table for planning and inspection, renamed from View 1 | Title, status, priority, gate, iteration, milestone, labels, assignee and linked PRs |
+| [Delivery board](https://github.com/users/Maeximilion/projects/5/views/2) | Work grouped into status columns | Todo, Blocked, In Progress, In Review and Done; cards show priority, gate, milestone, labels and assignee |
+
+Both views use the same Project items. Creating them does not duplicate work or change iteration assignments. View names, layouts, fields and the board's vertical Status grouping were verified through GitHub's API on 2026-11-05. Browser visual verification was unavailable because Computer Use could not confidently determine its current browser URL.
 
 ## Status mapping
 
@@ -24,7 +33,17 @@ Keep iteration, start and target dates as explicit planning or observed facts. P
 
 The provisioned Iteration field uses 14-day periods, beginning with I1 on 2026-11-04, I2 on 2026-11-18 and I3 on 2026-12-02. Later periods require explicit extension or verified maintenance. Their existence does not assign a task automatically or imply a delivery commitment.
 
-The metadata validator permits authenticated `dependabot[bot]` PRs with Bot identity, this repository as the source and a `dependabot/` branch to be standalone maintenance work items. The actor triggering a run is not enough. Human/fork PRs still require an explicit task reference; all PRs require valid titles, tests and review. Preserve `Refs #25` on the initial dependency queue when editing it, but a bot-generated description must not be the sole tracking mechanism.
+The metadata validator permits authenticated `dependabot[bot]` PRs with Bot identity, this repository as the source and a `dependabot/` branch to arrive without a body task reference. The actor triggering a run is not enough. Maintenance then reuses an existing closing task or creates one dedicated dependency-review issue and adds a native Development closing link. A trusted issue marker makes interrupted/repeated runs reusable; the native link survives bot description rewrites. The aggregate `Refs #25` is preserved and is not turned into a closing link.
+
+Human/fork PRs still require an explicit task reference. Use `Closes #N` in a PR targeting main when it completes that task: GitHub establishes the native Development link and closes the issue on merge. Use `Refs #N` for partial work; it intentionally does not close the issue or pretend the whole task is delivered. Native manually linked issues also close on merge, so do not attach a multi-PR aggregate as a closing task. [GitHub linking behavior](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue), consulted 2026-11-05.
+
+The API-only maintenance workflow fills missing milestone, type/gate/priority/area labels and the dependencies label from the source task. Existing manual choices remain intact. New dependency tasks default to Maintenance, dependencies, type: chore and priority:p2. Issue metadata changes and PR updates replay the relevant work; manual dispatch and periodic reconciliation repair missed events. The workflow never checks out or executes PR code. Successful maintenance triggers Project reconciliation from trusted main because changes made by the built-in workflow token do not reliably produce another issue-event workflow.
+
+For manual backfill, run `gh workflow run issue-maintenance.yml --repo Maeximilion/MaexSocial --ref main`, inspect its result, then verify labels, milestones, native closing links and Project status. Re-running must not create duplicate dependency tasks. No bot-created task or green CI authorizes merging an unreviewed dependency upgrade.
+
+## Coding agents
+
+No additional GitHub-hosted coding agent is required for the current workflow. Codex and Claude Code use the shared repository rules; GitHub Actions performs deterministic checks and maintenance. Keep the configured Astra high review requirement. A hosted coding agent may be evaluated later for a concrete scoped task, with explicit repository permissions and plan/cost checks; it is not installed or assigned automatically. [GitHub Copilot surfaces](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github), consulted 2026-11-05. Code-autopilot and caveman remain disabled.
 
 Small fixes normally use a regular push to the existing PR. Only a necessary rewrite of an owned task branch uses `--force-with-lease=<branch>:<expected-remote-SHA>`, after fetching and checking that all remote work is accounted for. Main protection remains active; a small diff does not authorize bypassing it. Re-run checks and obtain applicable review for the new head.
 

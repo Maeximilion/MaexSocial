@@ -2,52 +2,138 @@ name: Issue and PR maintenance
 
 on:
   issues:
-    types: [opened, reopened, unassigned]
+    types: [opened, edited, reopened, unassigned, labeled, unlabeled, milestoned, demilestoned]
   pull_request_target:
-    types: [opened, edited, reopened, unassigned, labeled, unlabeled]
+    types: [opened, edited, synchronize, reopened, unassigned, labeled, unlabeled]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
 
 permissions:
   issues: write
   pull-requests: write
 
 concurrency:
-  group: metadata-maintenance-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: metadata-maintenance
   cancel-in-progress: false
 
 jobs:
   maintain:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       # Only GitHub API calls. Never check out or execute pull request content.
       - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
-            const number = context.payload.issue?.number || context.payload.pull_request.number;
-            const args = { ...context.repo, issue_number: number };
-            const { data: current } = await github.rest.issues.get(args);
-            if (current.assignees.length === 0) {
-              await github.rest.issues.addAssignees({ ...args, assignees: ['Maeximilion'] });
+            const repository = `${context.repo.owner}/${context.repo.repo}`;
+            const labelNames = record => record.labels.map(label => typeof label === 'string' ? label : label.name);
+            let maintenance;
+            let generatedTasks;
+
+            async function maintenanceMilestone() {
+              if (!maintenance) {
+                const milestones = await github.paginate(github.rest.issues.listMilestones, { ...context.repo, state: 'open', per_page: 100 });
+                maintenance = milestones.find(item => item.title === 'Maintenance');
+                if (!maintenance) throw new Error('Create the Maintenance milestone before dependency reconciliation.');
+              }
+              return maintenance;
             }
-            if (!context.payload.pull_request) return;
-            // The first explicit same-repository task reference defines metadata.
-            const link = (current.body || '').match(/\b(?:closes|fixes|resolves|refs|references)\s+#(\d+)\b/i);
-            if (!link) return;
-            const sourceNumber = Number(link[1]);
-            if (sourceNumber === number) throw new Error('A PR cannot close itself.');
-            const { data: source } = await github.rest.issues.get({ ...context.repo, issue_number: sourceNumber });
-            if (source.pull_request) throw new Error('The closing reference must identify an issue.');
-            if (!current.milestone && source.milestone) {
-              await github.rest.issues.update({ ...args, milestone: source.milestone.number });
-            }
-            const names = current.labels.map(label => typeof label === 'string' ? label : label.name);
-            const sourceNames = source.labels.map(label => typeof label === 'string' ? label : label.name);
-            const additions = [];
-            for (const prefix of ['type:', 'gate:', 'priority:']) {
-              if (!names.some(name => name.startsWith(prefix))) {
-                additions.push(...sourceNames.filter(name => name.startsWith(prefix)));
+
+            async function assignOwner(record) {
+              if (record.state === 'open' && record.assignees.length === 0) {
+                await github.rest.issues.addAssignees({ ...context.repo, issue_number: record.number, assignees: ['Maeximilion'] });
               }
             }
-            if (additions.length) {
-              await github.rest.issues.addLabels({ ...args, labels: additions });
+
+            async function issue(number) {
+              const { data } = await github.rest.issues.get({ ...context.repo, issue_number: number });
+              if (data.pull_request) throw new Error('A task reference must identify an issue.');
+              return data;
+            }
+
+            async function maintain(number, changedIssue) {
+              const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number });
+              if (pr.state !== 'open') return;
+              const args = { ...context.repo, issue_number: number };
+              const isDependency = pr.user.login === 'dependabot[bot]' && pr.user.type === 'Bot'
+                && pr.head.ref.startsWith('dependabot/') && pr.head.repo?.full_name === repository;
+              const marker = `<!-- maexsocial-dependency-pr:${number} -->`;
+              const reference = (pr.body || '').match(/\b(?:closes|fixes|resolves|refs|references)\s+#(\d+)\b/i);
+              const closingReference = (pr.body || '').match(/\b(?:closes|fixes|resolves)\s+#(\d+)\b/i);
+              let source;
+              let native = [];
+              if (isDependency) {
+                const result = await github.graphql(`query($id: ID!) {
+                  node(id: $id) { ... on PullRequest {
+                    closingIssuesReferences(first: 100) {
+                      nodes { id number repository { nameWithOwner } }
+                      pageInfo { hasNextPage }
+                    }
+                  } }
+                }`, { id: pr.node_id });
+                const connection = result.node.closingIssuesReferences;
+                if (connection.pageInfo.hasNextPage) throw new Error('Closing issue inventory exceeds 100; reconcile explicitly.');
+                native = connection.nodes.filter(item => item.repository.nameWithOwner === repository);
+                if (changedIssue && !native.some(item => item.number === changedIssue.number)
+                    && Number(closingReference?.[1]) !== changedIssue.number
+                    && !(changedIssue.body || '').includes(marker)) return;
+                if (native.length) source = await issue(native[0].number);
+                else if (closingReference) source = await issue(Number(closingReference[1]));
+                if (!source) {
+                  if (!generatedTasks) generatedTasks = await github.paginate(github.rest.issues.listForRepo, {
+                    ...context.repo, state: 'all', labels: 'dependencies', per_page: 100,
+                  });
+                  source = generatedTasks.find(item => !item.pull_request && (item.body || '').includes(marker)
+                    && (item.user.login === 'Maeximilion' || (item.user.login === 'github-actions[bot]' && item.user.type === 'Bot')));
+                  if (!source) {
+                    const milestone = await maintenanceMilestone();
+                    const created = await github.rest.issues.create({ ...context.repo,
+                      title: `Review dependency update in PR #${number}`,
+                      body: `${marker}\n\nReview https://github.com/${repository}/pull/${number}.\n\nAcceptance\n- [ ] Check release compatibility and migration requirements.\n- [ ] Verify the action SHA pin and its release provenance.\n- [ ] Run required tests and CI at the current head.\n- [ ] Record GPT-6 Astra high review and resolve actionable findings.`,
+                      labels: ['dependencies', 'type: chore', 'priority:p2'],
+                      milestone: milestone.number, assignees: ['Maeximilion'],
+                    });
+                    source = created.data;
+                    generatedTasks.push(source);
+                  }
+                }
+                if (!native.some(item => item.id === source.node_id)) {
+                  await github.graphql(`mutation($issueId: ID!, $pullRequestIds: [ID!]!) {
+                    addCloseIssueReferences(input: {issueId: $issueId, pullRequestIds: $pullRequestIds}) { clientMutationId }
+                  }`, { issueId: source.node_id, pullRequestIds: [pr.node_id] });
+                }
+              } else {
+                if (changedIssue && Number(reference?.[1]) !== changedIssue.number) return;
+                if (reference) source = await issue(Number(reference[1]));
+              }
+              await assignOwner(pr);
+              const names = labelNames(pr);
+              const sourceNames = source ? labelNames(source) : [];
+              const additions = [];
+              if ((isDependency || sourceNames.includes('dependencies')) && !names.includes('dependencies')) additions.push('dependencies');
+              for (const prefix of ['type:', 'gate:', 'priority:', 'area:']) {
+                if (names.some(name => name.startsWith(prefix))) continue;
+                const inherited = sourceNames.filter(name => name.startsWith(prefix));
+                if (inherited.length) additions.push(...inherited);
+                else if (isDependency && prefix === 'type:') additions.push('type: chore');
+                else if (isDependency && prefix === 'priority:') additions.push('priority:p2');
+              }
+              if (additions.length) await github.rest.issues.addLabels({ ...args, labels: additions });
+              if (!pr.milestone) {
+                const milestone = source?.milestone || (isDependency ? await maintenanceMilestone() : null);
+                if (milestone) await github.rest.issues.update({ ...args, milestone: milestone.number });
+              }
+            }
+
+            if (context.payload.pull_request) {
+              await maintain(context.payload.pull_request.number);
+            } else {
+              let changedIssue;
+              if (context.payload.issue) {
+                changedIssue = await issue(context.payload.issue.number);
+                await assignOwner(changedIssue);
+              }
+              const prs = await github.paginate(github.rest.pulls.list, { ...context.repo, state: 'open', per_page: 100 });
+              for (const pr of prs) await maintain(pr.number, changedIssue);
             }

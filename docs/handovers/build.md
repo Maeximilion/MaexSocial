@@ -4,7 +4,7 @@ Status — Future session. Product implementation awaits completed synthesis and
 
 Artifacts — Repository `Maeximilion/MaexSocial`, [synthesis handover](synthesis.md), [charter](../00_PCF.md), [architecture questions](../02_ARCHITECTURE.md), [work packages](../07_WORKPACKAGES.md). Create a task branch after checking current main and open work.
 
-Decisions — Reuse the established repository process. Choose technology from the first approved slice. All code reviews use `gpt-6-astra` with reasoning `high`, verified in the actual review session.
+Decisions — Reuse the established repository process and [TypeScript strict language baseline](../decisions/0001-application-language.md). Choose frameworks, runtime validation, storage and deployment from the first approved slice. Existing Python maintenance tooling stays. All code reviews use `gpt-6-astra` with reasoning `high`, verified in the actual review session.
 
 Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan, MS-010 implements and proves G3.
 
