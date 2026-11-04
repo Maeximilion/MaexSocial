@@ -4,7 +4,7 @@ Task IDs are stable across documents, issues, branches and pull requests. GitHub
 
 | ID | Gate | Task and deliverable | Depends on | State |
 |---|---|---|---|---|
-| [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | Repository, Project, templates, workflows, docs and handovers verified on GitHub | — | In progress |
+| [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | Repository, Project, templates, workflows, docs and handovers verified on GitHub | — | Done |
 | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | Public SocialEdge product inventory with sources, dates and evidence class | — | In progress |
 | [MS-003](https://github.com/Maeximilion/MaexSocial/issues/3) | G1 | Codex REA report with target identity, reproducible steps, evidence IDs and coverage limits | MS-001 research brief | Bounded static report delivered, runtime gap documented |
 | [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | Planned |
@@ -26,5 +26,6 @@ MS-002 records each product/service, audience, inputs, outputs, operator involve
 MS-005 records official permission and app-review requirements for each proposed integration. MS-006 can conclude that the exact video remains unidentified, provided candidate evidence and search limits are clear. MS-007 reconciles contradictions and links every capability to evidence and feasibility.
 
 MS-008 and MS-009 define only the next implementable release in detail. Later tasks are stage objectives and must be decomposed after design. MS-010–012 require behavioral tests, provider failure tests, exact-head CI/review and dated acceptance evidence. No task closes solely because its placeholder documentation exists.
+
 
 

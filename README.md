@@ -62,10 +62,11 @@ Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md) and [CONTRIBUTING.md](CONTRI
 
 CI validates foundation files and tests. PR metadata checks require Conventional Commit titles and linked issues. The Project tracks Status, Gate, Priority and Iteration. Local board reconciliation uses `python scripts/project_sync.py`.
 
-Account-level Project automation requires a dedicated `PROJECT_TOKEN` secret and `PROJECT_SYNC_ENABLED=true`. Until configured, local reconciliation is the available path. See [GitHub Project operations](docs/16_GITHUB_PROJECT.md).
+Account-level Project automation is enabled with a dedicated `PROJECT_TOKEN` and `PROJECT_SYNC_ENABLED=true`. It reconciles issues and PRs on events and hourly. Hosted execution is verified. See [GitHub Project operations](docs/16_GITHUB_PROJECT.md).
 
 ## Assets and license
 
 Original SVG assets live in [.github/assets](.github/assets). Asset source and usage rules are in the [README strategy](docs/15_README_STRATEGY.md). Research assets and customer media follow separate provenance and privacy rules.
 
 Copyright 2026 Maeximilion. Publicly readable, proprietary. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
+
