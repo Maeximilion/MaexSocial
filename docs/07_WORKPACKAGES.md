@@ -20,10 +20,11 @@ The first release should name one customer journey, supported channel and operat
 | [MS-006](https://github.com/Maeximilion/MaexSocial/issues/6) | G1 | Search report for the remembered Claude image-to-ad demo, candidate links and confidence | — | Planned |
 | [MS-007](https://github.com/Maeximilion/MaexSocial/issues/7) | G1 | Combined feature matrix, disagreement ledger, gaps and proposed first slice | MS-002–006 | Blocked |
 | [MS-008](https://github.com/Maeximilion/MaexSocial/issues/8) | G2 | Product design, architecture choice, operating authority and cost envelope approved by Maxi | [MS-007](https://github.com/Maeximilion/MaexSocial/issues/7) | Blocked |
-| [MS-009](https://github.com/Maeximilion/MaexSocial/issues/9) | G2 | Concrete first-slice plan with files, contracts, tests, dependencies and rollout | [MS-008](https://github.com/Maeximilion/MaexSocial/issues/8) | Blocked |
+| [MS-009](https://github.com/Maeximilion/MaexSocial/issues/9) | G2 | Concrete first-slice plan with files, contracts, tests, dependencies and rollout | MS-008 and MS-013 | Blocked |
 | [MS-010](https://github.com/Maeximilion/MaexSocial/issues/10) | G3 | First end-to-end content and publication slice verified on selected channel | [MS-009](https://github.com/Maeximilion/MaexSocial/issues/9) | Blocked |
 | [MS-011](https://github.com/Maeximilion/MaexSocial/issues/11) | G4 | Image-to-video workflow with provenance, quality checks, cost cap and recovery | MS-010 and approved media design | Blocked |
 | [MS-012](https://github.com/Maeximilion/MaexSocial/issues/12) | G5 | Bounded autonomous account operation with stop, audit and supervised pilot evidence | MS-010, MS-011 where media is enabled | Blocked |
+| [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) | G2 | Approved public registration/login, customer isolation and separate platform-admin access design | MS-007, coordinated with MS-008 | Blocked |
 
 ## Definitions of done
 
@@ -34,3 +35,5 @@ MS-002 records each product/service, audience, inputs, outputs, operator involve
 MS-005 records official permission and app-review requirements for each proposed integration. MS-006 can conclude that the exact video remains unidentified, provided candidate evidence and search limits are clear. MS-007 reconciles contradictions and links every capability to evidence and feasibility.
 
 MS-008 and MS-009 define only the next implementable release in detail. Later tasks are stage objectives and must be decomposed after design. MS-010–012 require behavioral tests, provider failure tests, exact-head CI/review and dated acceptance evidence. No task closes solely because its placeholder documentation exists.
+
+MS-013 resolves the role/action matrix, administrator provisioning, registration/verification, MFA, sessions/recovery and tenant enforcement. Map accepted [ACCESS-01–14 cases](17_ACCESS_SECURITY.md) into MS-009, then verify the relevant release cases before externally accessible customer operation. The initial requirements document does not complete MS-013.

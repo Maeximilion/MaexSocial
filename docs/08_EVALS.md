@@ -2,6 +2,40 @@
 
 Foundation CI validates repository artifacts and automation. It does not measure the future product's content quality or publishing reliability.
 
+## Current repository checks
+
+| Check | Covers | Limit |
+|---|---|---|
+| `foundation` (required) | Markdown links/JSON, nine Python regression cases, nine executable PR-metadata cases | No deployed application or provider behavior |
+| `metadata` (required) | Conventional Commit title and task reference; authenticated same-repository Dependabot PRs may be their own maintenance task | No code correctness claim |
+| CodeQL default setup | Static analysis of Python tooling and GitHub Actions | Findings require triage; not login, isolation or penetration testing |
+| Secret scanning + push protection | Supported secret patterns and supported pushes | Does not detect every credential or replace credential handling |
+| Dependabot | Pinned Actions updates and vulnerability alerts | Updates still require compatibility review and green checks |
+| Maintenance / Project reconciliation | Assignment, task metadata and board status | Green automation does not approve a product gate |
+
+Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/pr_metadata.test.cjs`. The metadata tests execute the workflow's actual inline script. They cover trusted bots, humans, fork/deleted repositories, spoofed identity/actor, task links and invalid titles. No extra test framework or package installation is required.
+
+The 2026-11-05 failure on dependency PRs was a missing body task reference, not a failed application test. Keep broad maintenance links when useful, but do not make a genuine first-party bot PR depend on a manually preserved body edit. The exception grants no token permissions or merge authorization.
+
+## Application checks to implement with the approved first slice
+
+| Area | Tests and required evidence |
+|---|---|
+| Registration, login, administration | [ACCESS-01–14](17_ACCESS_SECURITY.md): server-side negative authorization, two-tenant isolation, admin privilege/MFA, verification/recovery and session replay tests, plus browser journeys |
+| Core rules | Fast unit tests for authorization policy, publication states, idempotency and budget calculations |
+| API, data and jobs | Integration tests against an isolated test database; tenant tampering, concurrent writes, migrations and worker revocation |
+| Provider boundaries | Contract tests and deterministic failure simulation; timeout, 429/retry, expired credentials and ambiguous publish reconciliation |
+| UI | Few end-to-end registration/login/customer/admin/publication flows, keyboard/accessibility checks; visual checks for relevant UI changes |
+| Release | Production build, type/lint checks where the chosen stack supports them, dependency/security analysis, deployment smoke checks and tested rollback |
+
+Choose tools after G2 selects the stack. Avoid a nominal coverage percentage: require positive and negative cases for each permission boundary and business-critical state transition. Live provider tests use explicitly authorized test accounts and budgets and run separately from ordinary fork PRs.
+
+## CD plan
+
+There is no deployment pipeline or production application yet. MS-009 must define an isolated preview/staging environment with synthetic data, reproducible build artifacts, least-privilege deployment identity (prefer short-lived OIDC credentials where supported), migration checks and health probes. Promote the tested artifact to production only after the release authorization and protected-environment checks. Record the deployment SHA, rollback artifact/procedure and database restore/migration strategy. Verify rollback in staging before external customer access. Do not install placeholder deployments while hosting and the product design remain undecided.
+
+## Gate mapping
+
 | Gate | Required checks |
 |---|---|
 | G0 | Documentation links, required files, task/gate references, workflow validation and live GitHub verification |

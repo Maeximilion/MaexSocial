@@ -17,12 +17,14 @@ MaexSocial will manage local visibility and social media through AI and supporte
 
 ## Gates
 
+On 2026-11-05 Maxi confirmed a public website with customer registration/login, a tenant-isolated customer dashboard, and separate platform-administrator access to view and manage customers. [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) defines the access design and tests as part of G2. The requirements are confirmed; authentication provider, detailed controls and architecture still need design acceptance.
+
 | Gate | Outcome | Required evidence | Authority |
 |---|---|---|---|
 | G0 Foundation | Repository ready for coordinated work | Reachable repo/project, linked task issues, valid docs and workflows, successful CI, verified settings and handovers | Coordinator records checks |
 | G1 Discovery | Supported feature baseline | Public inventory, Codex and Claude REA reports, API feasibility, video-demo search, synthesis with unresolved gaps | Evidence owner records findings, Maxi resolves material access gaps |
-| G2 Design approval | One buildable first release | Approved scope, architecture decision, selected providers and costs, autonomy policy, data model, acceptance tests and implementation plan | Maxi approves product design |
-| G3 First vertical slice | One end-to-end content workflow | One brand and supported channel, draft/approval/publication/result path, revoked-auth and duplicate-send tests, exact-head CI and review | Release owner verifies acceptance |
+| G2 Design approval | One buildable first release | Approved scope, architecture decision, access/security design, selected providers and costs, autonomy policy, data model, acceptance tests and implementation plan | Maxi approves product design |
+| G3 First vertical slice | One end-to-end content workflow | One brand and supported channel, draft/approval/publication/result path, accepted registration/admin/tenant tests, revoked-auth and duplicate-send tests, exact-head CI and review | Release owner verifies acceptance |
 | G4 Media | Image-to-video workflow | Rights/provenance, approved input, render job lifecycle, quality review, cost cap and failed-job recovery | Release owner verifies acceptance |
 | G5 Bounded autonomy | Account operation under explicit policy | Scoped account authority, schedule and budget enforcement, stop control, retries/reconciliation, audit history, supervised pilot measurements | Maxi approves live operating envelope |
 
