@@ -62,13 +62,14 @@ The [Claude assignment](docs/handovers/claude-rea.md) requires independent obser
 
 ## Start here
 
-For repository checks, use Git and Python 3.12 or newer. GitHub maintenance also requires an authenticated GitHub CLI.
+For repository checks, use Git, Python 3.12 or newer and Node.js 22 or newer. GitHub maintenance also requires an authenticated GitHub CLI.
 
 ```sh
 git clone https://github.com/Maeximilion/MaexSocial.git
 cd MaexSocial
 python scripts/check_repo.py
 python -m unittest discover -s tests
+node --test tests/pr_metadata.test.cjs
 ```
 
 For an existing clone, check for local changes before fetching and fast-forwarding `main`. Make changes in a separate task worktree. Follow the [agent playbooks](docs/12_CLAUDE_CODE_PLAYBOOKS.md).
@@ -80,6 +81,7 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
 | Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
+| Understand access and security requirements | [Registration, customer and admin access](docs/17_ACCESS_SECURITY.md) |
 | Use the visual identity | [Brand and asset guide](docs/15_README_STRATEGY.md) |
 
 ## Repository map

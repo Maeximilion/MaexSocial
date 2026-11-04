@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Distinguish authenticated first-party Dependabot maintenance tasks in PR metadata, with nine workflow regression cases.
+- Enable repository security scanning and document staged CI/CD and application test requirements.
+- Record public customer registration/login, separate platform administration and tenant-isolation acceptance cases for G2.
+
 - Establish MaexSocial branding, project documentation, gated delivery and agent instructions.
 - Add GitHub issue and pull request templates, CI and Project synchronization tooling.
 - Record initial public-source Codex REA findings and prepare the independent Claude Code handover.
