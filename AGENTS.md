@@ -15,5 +15,6 @@ Read `CLAUDE.md`, `docs/00_PCF.md`, `docs/01_STATUS.md` and the current issue be
 - A gate needs linked acceptance evidence. Green CI alone does not approve a product gate. Record owner acceptance before a gate tag.
 - Keep work packages, status, issues and Project synchronized. Never claim an unrun test, unobserved runtime behavior or completed Claude analysis.
 - Before important Windows settings changes, use Maxi's backup and rollback register. Repository work does not authorize unrelated system configuration changes.
+- When Maxi needs to enter a command or credential interactively, open a visible terminal yourself in the correct project/worktree directory. Prepare the exact command and use masked credential prompts. Do not ask him to locate the folder manually or put a secret in command history.
 
 Follow `docs/09_OPERATIONS_LEGAL.md` for public-source research and publication boundaries. Use `.claude/commands/handover.md` for session transitions.

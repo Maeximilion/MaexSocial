@@ -13,6 +13,7 @@ import subprocess
 OWNER = "Maeximilion"
 REPOSITORY = f"{OWNER}/MaexSocial"
 PROJECT_NUMBER = "5"
+PROJECT_OWNER = "@me"
 
 
 def gh(*args):
@@ -62,10 +63,12 @@ def api_pages(endpoint):
 
 
 def reconcile():
-    project = gh("project", "view", PROJECT_NUMBER, "--owner", OWNER, "--format", "json")
-    fields = gh("project", "field-list", PROJECT_NUMBER, "--owner", OWNER, "--format", "json", "--limit", "100")["fields"]
+    project = gh("project", "view", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json")
+    if project["id"] != "PVT_kwHOBYWY284BqPE8":
+        raise RuntimeError("The credential does not resolve to the MaexSocial Project.")
+    fields = gh("project", "field-list", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json", "--limit", "100")["fields"]
     by_name = {field["name"]: field for field in fields}
-    items = gh("project", "item-list", PROJECT_NUMBER, "--owner", OWNER, "--format", "json", "--limit", "10000")
+    items = gh("project", "item-list", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--format", "json", "--limit", "10000")
     if items["totalCount"] > len(items["items"]):
         raise RuntimeError("Project inventory truncated; increase item limit before reconciliation.")
     by_url = {item.get("content", {}).get("url"): item for item in items["items"]}
@@ -90,7 +93,7 @@ def reconcile():
         url = record["html_url"]
         item = by_url.get(url)
         if item is None:
-            item = gh("project", "item-add", PROJECT_NUMBER, "--owner", OWNER, "--url", url, "--format", "json")
+            item = gh("project", "item-add", PROJECT_NUMBER, "--owner", PROJECT_OWNER, "--url", url, "--format", "json")
         status = desired_status(record, is_pr, active_issue_numbers)
         for name, desired in (("Status", status), ("Gate", desired_gate(record)), ("Priority", desired_priority(record))):
             field = by_name.get(name)
@@ -114,3 +117,4 @@ def reconcile():
 
 if __name__ == "__main__":
     reconcile()
+

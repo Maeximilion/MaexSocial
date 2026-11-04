@@ -11,6 +11,12 @@ from scripts import project_sync
 
 
 class FoundationTests(unittest.TestCase):
+    def test_wrong_project_stops_before_mutation(self):
+        with patch.object(project_sync, "gh", return_value={"id": "different-project"}) as cli:
+            with self.assertRaisesRegex(RuntimeError, "MaexSocial Project"):
+                project_sync.reconcile()
+            self.assertEqual(cli.call_count, 1)
+
     def test_cli_failure_preserves_diagnostic(self):
         result = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: missing project scope\n")
         with patch.object(project_sync.subprocess, "run", return_value=result):
@@ -68,7 +74,8 @@ class FoundationTests(unittest.TestCase):
 
         def fake_gh(*args):
             if args[:2] == ("project", "view"):
-                return {"id": "project"}
+                self.assertEqual(args[args.index("--owner") + 1], "@me")
+                return {"id": "PVT_kwHOBYWY284BqPE8"}
             if args[:2] == ("project", "field-list"):
                 return {"fields": [{"id": "status-field", "name": "Status", "options": options}]}
             if args[:2] == ("project", "item-list"):
