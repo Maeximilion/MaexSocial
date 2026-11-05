@@ -2,7 +2,7 @@
 
 # MaexSocial
 
-AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is underway. Product capabilities in the roadmap are planned capabilities.
+AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is accepted within its recorded limits. G2 design planning is authorized. Product capabilities in the roadmap are planned capabilities.
 
 ## Start
 
