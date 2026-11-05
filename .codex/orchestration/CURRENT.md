@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## Resumed · 2026-11-05 22:18 UTC (23:18 Europe/Berlin)
+
+The owner explicitly resumed work after the evening handover. The earlier 17:40 cutoff has expired. Standard speed remains in force. The three occupied gate-wave slots are [#43 / PR #92](https://github.com/Maeximilion/MaexSocial/pull/92), [#93 / PR #94](https://github.com/Maeximilion/MaexSocial/pull/94) and [#97 · G2 pilot ADR](https://github.com/Maeximilion/MaexSocial/issues/97). Both PR owners resumed from their pushed checkpoints. #97 was admitted using the verified merge and archive of #96/#95; [reservation](https://github.com/Maeximilion/MaexSocial/issues/97#issuecomment-6670995698), [confirmed dispatch](https://github.com/Maeximilion/MaexSocial/issues/97#issuecomment-6671004685). No admission is pending.
+
+At resume main was clean at `f6f1c751cfdc29e398510f6374213e50d9526923`. Merge the independent #92 first when its current candidate and reviews pass, then update and verify #94 against the resulting main. Hold publication of the larger #97 PR until both smaller predecessors merge. The [new owner decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6670980326) permits the authenticated Windows administrator to stop one scheduled occurrence before dispatch with fresh MFA and an audited reason. Approval and publication remain customer actions. Other G2 decisions stay open. G5 still depends on [#88](https://github.com/Maeximilion/MaexSocial/issues/88).
+
 ## Evening pause · 2026-11-05 16:45 UTC (17:45 Europe/Berlin)
 
 **Paused.** The owner resumed after the usage limit before the 17:40 cutoff. The team resumed #95, merged its fix, and then applied the previously announced 17:40 handover ahead of the expected 18:00 shutdown. All three assigned work chats acknowledged the pause. Two open-PR work chats remain in the roster. The third, #95, completed its merge, handover and verified archive. No worker subprocess or reviewer remains active. The latest known clean canonical main is `f6f1c751cfdc29e398510f6374213e50d9526923`.
