@@ -187,11 +187,14 @@ jobs:
         env:
           CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_bots: 'dependabot[bot]'
           # An explicit prompt selects agent mode for both events: no tracking comment and no PR checkout.
           prompt: ${{ steps.data.outputs.prompt }}
           claude_args: |
+            --model claude-opus-5-5
+            --effort high
+            --max-budget-usd 1.00
             --setting-sources user
             --permission-mode default
             --allowedTools "StructuredOutput"
