@@ -4,7 +4,7 @@
 
 Stopped at (UTC) — 2026-11-05T11:26:14Z (evidence checkpoint).
 
-The previous wave delivered 16 merged PRs. The local register identifies 12 implementation or stewardship chats and five read-only probes. Initial inspection found the associated worktrees clean. A second inspection found 11 previously recorded directories missing. Ten had also disappeared from Git registration; a detached preview was still registered at its missing path. All 11 recorded commit objects remained accessible. The cause and the recovery status of ignored files are unknown. The coordinator received an urgent request to suspend further archival.
+The previous wave delivered 16 merged PRs. The local register identifies 12 implementation or stewardship chats and five read-only probes. Initial inspection found the associated worktrees clean. A second inspection found 11 previously recorded directories missing. Ten had also disappeared from Git registration; a detached preview was still registered at its missing path. All 11 recorded commit objects remained accessible. The cause and the final contents of ignored files were unknown at inspection. The coordinator received an urgent request to suspend further archival.
 
 Codex compiled this record. The [independent GPT-6 Astra High review](https://github.com/Maeximilion/MaexSocial/pull/80#issuecomment-6656861912) and [GitHub Codex review](https://github.com/Maeximilion/MaexSocial/pull/80#issuecomment-6656891626) covered revision `2e69785`. Consult the PR for review results on subsequent revisions.
 
@@ -34,7 +34,7 @@ Codex compiled this record. The [independent GPT-6 Astra High review](https://gi
 | [#69](https://github.com/Maeximilion/MaexSocial/pull/69) | [191df84b](https://github.com/Maeximilion/MaexSocial/commit/191df84b4f78c1673b52a99b1a5ce852ae341676) | [58d7cc5f](https://github.com/Maeximilion/MaexSocial/commit/58d7cc5ff4be6ecd73398d106d4b68ca57a0a670) | Codex delivered the 17-row public inventory. #2 closed, and #71 and #73 used its results. |
 | [#70](https://github.com/Maeximilion/MaexSocial/pull/70) | [8dd54114](https://github.com/Maeximilion/MaexSocial/commit/8dd54114c4a36b44cf4cfa84908d3633384b04fc) | [073dc4b2](https://github.com/Maeximilion/MaexSocial/commit/073dc4b24de67295cf1609f1afbefd4230718951) | Codex delivered the bounded demo search. #6 closed. The original video remains unidentified and a paid trial requires separate authorization. |
 | [#71](https://github.com/Maeximilion/MaexSocial/pull/71) | [ed43b355](https://github.com/Maeximilion/MaexSocial/commit/ed43b35532d81425205d28f015207f783b931c19) | [ba464cfe](https://github.com/Maeximilion/MaexSocial/commit/ba464cfe85c9ac2a050b9fdc320f68aa56c46d4e) | Codex delivered the documented provider feasibility matrix. #5 closed. Account grants and successful external publication remain unverified. |
-| [#73](https://github.com/Maeximilion/MaexSocial/pull/73) | [2edb3b76](https://github.com/Maeximilion/MaexSocial/commit/2edb3b76fd721f705dc5f0068e64bc197b2dd580) | [378cfa80](https://github.com/Maeximilion/MaexSocial/commit/378cfa80523ef4f5d34e20e69f43c00285c74e06) | Codex delivered the bounded synthesis. The coordinator tracks the remaining #7 criteria. Maxi owns the separate G1 decision in #14. |
+| [#73](https://github.com/Maeximilion/MaexSocial/pull/73) | [2edb3b76](https://github.com/Maeximilion/MaexSocial/commit/2edb3b76fd721f705dc5f0068e64bc197b2dd580) | [378cfa80](https://github.com/Maeximilion/MaexSocial/commit/378cfa80523ef4f5d34e20e69f43c00285c74e06) | Codex delivered the bounded synthesis. PR #85 closed #7 after the bounded research synthesis was accepted. Maxi owns the separate G1 decision in #14. |
 
 ## Decisions
 
@@ -42,13 +42,13 @@ The coordinator received the eligible chats in two groups. The coordinator and t
 
 ## Gate
 
-The coordinator [closed #4 under delegated authority](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747), accepting five scope limits: embedded analytics, Google-side publication, write workflows, other tiers and authenticated REA capture. All five remain unknowns. The [#7 completion check](https://github.com/Maeximilion/MaexSocial/issues/7#issuecomment-6658980072) can proceed. [G1 #14](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6658985105) remains open for a separate owner decision.
+The coordinator [closed #4 under delegated authority](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747), accepting five scope limits: embedded analytics, Google-side publication, write workflows, other tiers and authenticated REA capture. All five remain unknowns. [PR #85](https://github.com/Maeximilion/MaexSocial/pull/85) synchronized the canonical status and work packages and closed [#7](https://github.com/Maeximilion/MaexSocial/issues/7). [G1 #14](https://github.com/Maeximilion/MaexSocial/issues/14) remained open at this checkpoint for a separate owner decision.
 
 ## Open
 
-1. Coordinator: hold further archival. The [#83 recovery owner](https://github.com/Maeximilion/MaexSocial/issues/83) reconciles the 11 missing paths and ignored evidence separately. Before resuming, establish a method that preserves worktrees, branches and ignored files. Verify each path and the desktop state before and after each archive action.
+1. Coordinator: hold further archival. The [#83 recovery report](https://github.com/Maeximilion/MaexSocial/issues/83#issuecomment-6661308070) verified the tracked contents of all 11 revisions in isolation. Snapshots supplied ignored files for seven directories. The final ignored contents of all 11 remain unverified. Before resuming, establish a method that preserves worktrees, branches and ignored files. Verify each path and the desktop state before and after each archive action.
 2. Handover implementer: report final-head reviews and integration checks on #80. The coordinator owns integration.
-3. Coordinator: verify the remaining synthesis criteria in #7. Maxi retains the separate gate decision in #14.
+3. Maxi: record the separate G1 decision in #14 when ready.
 
 To resume after the owner's continuation, use PowerShell in any MaexSocial checkout. The command selects the exact registered task worktree without embedding a personal path:
 
@@ -60,7 +60,7 @@ Set-Location -LiteralPath ($record.Context.PreContext[0] -replace '^worktree ', 
 codex
 ```
 
-First message: “Resume maintenance #76 using this completed-wave handover. Verify the PR and reviews for the task branch, then check the #83 archival hold and the remaining decisions in #7 and #14.”
+First message: “Resume maintenance #76 using this completed-wave handover. Verify the PR and reviews for the task branch, then check the #83 archival hold and the separate gate decision in #14.”
 
 ## Lessons
 
