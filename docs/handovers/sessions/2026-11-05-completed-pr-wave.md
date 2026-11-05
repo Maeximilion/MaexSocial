@@ -4,7 +4,7 @@
 
 Stopped at (UTC) — 2026-11-05T11:26:14Z (evidence checkpoint).
 
-The previous wave delivered 16 merged PRs. The local register identifies 12 implementation or stewardship chats and five read-only probes. Each has a disposition, a supporting chat record and a checked worktree. Git reported clean worktrees for the completed work, including detached previews and earlier integration branches. Preserve them. The coordinator owns archive execution and confirmation.
+The previous wave delivered 16 merged PRs. The local register identifies 12 implementation or stewardship chats and five read-only probes. Initial inspection found the associated worktrees clean. A second inspection found 11 previously recorded directories missing. Ten had also disappeared from Git registration; a detached preview was still registered at its missing path. All 11 recorded commit objects remained accessible. The cause and the recovery status of ignored files are unknown. The coordinator received an urgent request to suspend further archival.
 
 Implementation/review — Codex compiled this record. Independent GPT-6 Astra with reasoning high and a GitHub Codex review are pending on the delivery commit. Claude review is paused.
 
@@ -46,7 +46,7 @@ G1 remains open. In [#4](https://github.com/Maeximilion/MaexSocial/issues/4), Ma
 
 ## Open
 
-1. Coordinator: archive eligible chats from the private register and verify their desktop state. Preserve every worktree and any ignored local evidence. Recheck any chat that has resumed since inspection.
+1. Coordinator: hold further archival. Reconcile the 11 missing paths and any ignored evidence with the private register. Before resuming, establish a method that preserves worktrees, branches and ignored files. Verify each path and the desktop state before and after each archive action.
 2. Handover implementer: open the PR for #76, attach it to its creating chat and report checks and both reviews on its final SHA. The coordinator owns integration.
 3. Maxi: record the five scope decisions above before deciding whether #7 and G1 can close.
 
@@ -56,7 +56,7 @@ To resume after the owner's continuation, use PowerShell in any MaexSocial check
 $branch = 'dev-codex/76-archive-handover'
 $record = git worktree list --porcelain | Select-String "^branch refs/heads/$branch$" -Context 2,0
 if (-not $record) { throw "Task worktree is missing" }
-Set-Location -LiteralPath ($record.Context.PreContext[0] -replace '^worktree ', '')
+Set-Location -LiteralPath ($record.Context.PreContext[0] -replace '^worktree ', '') -ErrorAction Stop
 codex
 ```
 
