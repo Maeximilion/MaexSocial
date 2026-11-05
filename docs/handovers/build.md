@@ -1,6 +1,6 @@
 # Handover 2026-11-04 — MS-008 to MS-010, product design and first build
 
-Status — Future session. The [research synthesis](../research/synthesis.md) is complete. G1 awaits owner acceptance. Product implementation requires approved G2 design and the MS-009 plan.
+Status — Future session. The [research synthesis](../research/synthesis.md) is complete. [Maxi’s G1 decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning with Superpowers. The five open items in [#88](https://github.com/Maeximilion/MaexSocial/issues/88) block G5 and must be verified earlier where a decision relies on them. Product implementation requires approved G2 design and the MS-009 plan.
 
 Artifacts — Repository `Maeximilion/MaexSocial`, [synthesis handover](synthesis.md), [charter](../00_PCF.md), [architecture questions](../02_ARCHITECTURE.md), [work packages](../07_WORKPACKAGES.md). Create a task branch after checking current main and open work.
 
@@ -14,7 +14,7 @@ Access prerequisite — Include MS-013 and [registration/customer/admin security
 
 Upload prerequisite — Include [MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) and [UPLOAD-01–10](../security/uploads.md). The initial proposal rejects customer SVG/SVGZ, requires private quarantine and isolates decoding/transcoding. Review the [proposed code anatomy](../architecture/README.md) and [agent tooling](../tooling/agent-workflow.md); neither a folder layout nor a repository SVG check proves these runtime boundaries.
 
-Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
+Open — Obtain G2 design approval and complete MS-009 before application scaffolding.
 
 Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code Autopilot and Caveman are explicitly enabled; preserve the [development skill roles and activation limits](../tooling/development-skills.md).
 

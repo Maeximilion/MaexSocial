@@ -1,14 +1,14 @@
 # Handover 2026-11-05 — MS-007, research synthesis
 
-Status — G0 complete, G1 ongoing. The MS-002–006 reports are on main. The [bounded synthesis](../research/synthesis.md) reconciles their evidence. The [delegated MS-004 decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) accepted the five documented limits.
+Status — G0 complete, G1 accepted for bounded discovery. The MS-002–006 reports are on main. The [bounded synthesis](../research/synthesis.md) reconciles their evidence. The [delegated MS-004 decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) accepted the five documented limits.
 
 Artifacts — [Issue #7](https://github.com/Maeximilion/MaexSocial/issues/7), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, `docs/research/`, [work packages](../07_WORKPACKAGES.md), [charter](../00_PCF.md) and [status](../01_STATUS.md).
 
 Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. [ADR 0001](../decisions/0001-application-language.md) chooses TypeScript strict under Maxi's delegated technology choice. Frameworks, hosting and paid providers remain G2 decisions.
 
-Gate — [G1](https://github.com/Maeximilion/MaexSocial/issues/14) awaits separate owner acceptance. G2 requires Maxi's product design approval.
+Gate — [Maxi’s G1 decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning. [Tracker #88](https://github.com/Maeximilion/MaexSocial/issues/88) carries all five unresolved gaps to G5. G2 requires Maxi's product design approval.
 
-Delivery — [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) contains the reviewed synthesis. Issues #2–6 are closed within their recorded scopes.
+Delivery — [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) contains the reviewed synthesis. Issues #2–7 are closed within their recorded scopes.
 
 Lessons — Source claims, static observations and runtime behavior establish different facts. Claude contributes its own observations before comparing Codex's report. Code Autopilot and Caveman are explicitly enabled; follow [development skill roles and activation limits](../tooling/development-skills.md).
 
