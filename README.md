@@ -86,21 +86,39 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
 | Understand the application-language choice | [TypeScript decision](docs/decisions/0001-application-language.md) |
 | Understand access and security requirements | [Registration, customer and admin access](docs/17_ACCESS_SECURITY.md) |
+| Work with agents, skills, hooks and plugins | [Agent workflow](docs/tooling/agent-workflow.md) |
+| Review the proposed application layout | [Application anatomy](docs/architecture/README.md) |
+| Design safe media uploads | [Upload security contract](docs/security/uploads.md) |
 | Use the visual identity | [Brand and asset guide](docs/15_README_STRATEGY.md) |
 
 ## Repository map
 
 ```text
-.github/       Workflows, templates, branch rules and visual assets
-.claude/       Shared task, gate and handover commands
-.agents/       Codex entry points for the shared commands
-docs/          Charter, status, design questions and work packages
-  research/    Sanitized findings and evidence manifests
-  handovers/   Independent research, synthesis and build briefs
-  superpowers/ Design records and implementation plans
-scripts/       Repository validation and Project reconciliation
-tests/         Regression checks for the repository tooling
+.github/          Workflows, templates, branch rules and original artwork
+.claude/
+  agents/         Bounded evidence researcher
+  commands/       Eight shared task, gate and handover procedures
+  skills/         Repository-check entry point
+  hooks/          Tested Stop quality check
+  rules/          Scoped research and application guidance
+  settings.json   Actual Claude hook registration
+.codex/
+  agents/         GPT-6 Astra high reviewer definition
+  hooks.json      Codex registration; local hook trust still required
+.agents/skills/   Codex skills for all shared procedures and checks
+docs/
+  architecture/   Proposed application anatomy and trust boundaries
+  security/       Upload threat model and acceptance contracts
+  tooling/        Platform loading, activation and workflow guide
+  decisions/      Architecture decision records
+  research/       Sanitized findings and evidence manifests
+  handovers/      Independent research, synthesis and build briefs
+  superpowers/    Design records and implementation plans
+scripts/          Validation, narrow SVG policy and Project reconciliation
+tests/            Foundation, hook and hostile-artwork regressions
 ```
+
+These directories contain working foundation tooling or current documentation. Application folders are a [G2 proposal](docs/architecture/README.md); they will be created with accepted implementation tasks. A plugin directory alone would not install or enable anything.
 
 ## Working together
 
