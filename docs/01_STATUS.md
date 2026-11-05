@@ -1,8 +1,8 @@
 # Project status
 
 - Status date — 2026-11-05
-- Stage — G1 discovery
-- Gates — G0 complete, G1 ongoing, G2–G5 open
+- Stage — G2 design planning
+- Gates — G0 complete, G1 accepted for bounded discovery, G2–G4 open, G5 blocked by [#88](https://github.com/Maeximilion/MaexSocial/issues/88)
 - Product implementation — pending G2 design approval and the MS-009 executable plan
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
@@ -19,8 +19,8 @@
 | Claude Code REA, MS-004 | Complete within the five limits accepted in the [delegated scope decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747), issue #4 closed | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report §9.6](research/claude-rea.md#96-remaining-gaps-after-r3) and [manifest](research/evidence-claude.json) |
 | API feasibility, MS-005 | Documented feasibility merged, issue #5 closed. Customer grants and outcomes untested. | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md), [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) |
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
-| Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. G1 awaits separate owner acceptance. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
-| Design and detailed plan, MS-008–009 | Pending G1 acceptance and owner design decision | Goals and gates defined, executable product plan still to be written |
+| Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. Maxi accepted G1 on 2026-11-05. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
+| Design and detailed plan, MS-008–009 | MS-008 planning authorized using Superpowers. MS-009 awaits design acceptance | Goals and gates defined, executable product plan still to be written |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
@@ -32,14 +32,16 @@
 | Agent anatomy and repository artwork security | Foundation work tracked in issue #42; runtime hook trust remains local | [Implementation plan](superpowers/plans/2026-11-05-agent-anatomy-and-asset-security.md), [tooling guide](tooling/agent-workflow.md) |
 | Customer upload/processing security, MS-014 | Proposed requirements, pending G2 design and acceptance | [Issue #43](https://github.com/Maeximilion/MaexSocial/issues/43), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
 
-GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is closed. Gate issues #14–18 remain open.
+On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximilion/MaexSocial/issues/14) as a bounded research baseline. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning. Product design, implementation, external tests, spending and customer operation require separate approval.
 
 ## What's next
 
-1. Present the [completed research synthesis](research/synthesis.md) and its five accepted limits for Maxi’s separate [G1 decision](https://github.com/Maeximilion/MaexSocial/issues/14).
+1. Use Superpowers in [MS-008](https://github.com/Maeximilion/MaexSocial/issues/8) to plan the first customer workflow from the [accepted research baseline](research/synthesis.md).
 2. At G2, choose the first customer, destination, authority and cost limits. MS-009 requires an approved design before implementation.
 
 ## Evidence limits
+
+[Tracker #88](https://github.com/Maeximilion/MaexSocial/issues/88), assigned to Maxi, carries five open items to [G5](https://github.com/Maeximilion/MaexSocial/issues/18): embedded analytics, Google-side publication, write workflows, other tiers and authenticated REA capture. The tracker lists the evidence required to close each item. G5 is blocked until all five are resolved. A nearer gate that needs one of these results must also wait for its evidence.
 
 The first web-tool dashboard request failed, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The Codex report records evidence IDs and partial coverage. The Claude lane covered legal/pricing pages, an anonymous runtime capture and 36 public client chunks; the R2 comparison of 32 SE claims shows no contradiction with Codex. R1/R2 had no authenticated UI coverage; R3 adds 14 UI evidence records from a read-only walkthrough of one package-2 account. Authenticated REA runtime capture, external provider results, private backend behavior and autonomous publication remain unverified. Historical diagnostics found direct Codex MCP registration missing and Claude registration present. They do not establish current live tool connectivity or a completed Claude investigation.
 

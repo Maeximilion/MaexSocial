@@ -4,7 +4,7 @@ As of 2026-11-05, SocialEdge documents a staffed local-visibility service. Two i
 
 ## Inputs and authority
 
-This bounded delivery for [#7](https://github.com/Maeximilion/MaexSocial/issues/7) uses the following artifacts on main at `ba464cf`. All five inputs are complete within their recorded scopes. On 2026-11-05 the coordinator accepted the five MS-004 limits under Maxi's delegation. Together with the matrix merged in [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73), this [delegated scope decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) completes the research synthesis. [G1](https://github.com/Maeximilion/MaexSocial/issues/14) awaits separate owner acceptance. The design option at the end is for [G2](https://github.com/Maeximilion/MaexSocial/issues/15).
+This bounded delivery for [#7](https://github.com/Maeximilion/MaexSocial/issues/7) uses the following artifacts on main at `ba464cf`. All five inputs are complete within their recorded scopes. On 2026-11-05 the coordinator accepted the five MS-004 limits under Maxi's delegation. Together with the matrix merged in [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73), this [delegated scope decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) completes the research synthesis. Maxi subsequently [accepted G1](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) within that scope. The design option at the end is for [G2](https://github.com/Maeximilion/MaexSocial/issues/15).
 
 | Input | Provenance, date and delivery scope |
 |---|---|
@@ -136,4 +136,4 @@ Proposed follow-ons: rights-cleared customer assets and reusable calendar drafts
 | What per-tenant cost and retry caps apply to posting and later renders? Which provider, if any, may receive which assets? | Separate storage/API costs, paid generation, retry authority and manual alternative. No provider or advertising approval implied. |
 | What result and failure evidence must the supervised pilot produce? When may recurrence, paid campaigns or unattended actions be considered? | One confirmed resource on the intended account, no duplicates after timeout, visible revocation/hold and an audit trail. Future spend and autonomy need independent acceptance. |
 
-If a later decision relies on one of the five limits, obtain the evidence listed above before claiming support. Gate #14 remains open for Maxi’s separate G1 decision.
+If a later decision relies on one of the five limits, obtain the evidence listed above before claiming support. All five remain open in [gap tracker #88](https://github.com/Maeximilion/MaexSocial/issues/88) and block G5.
