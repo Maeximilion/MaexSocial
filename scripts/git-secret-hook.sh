@@ -17,10 +17,8 @@ if [ -e .gitleaksignore ] || [ -L .gitleaksignore ]; then
 fi
 export GIT_NO_REPLACE_OBJECTS=1
 # Gitleaks parses machine-readable patches; ANSI escapes hide additions.
-config_index=${GIT_CONFIG_COUNT:-0}
-[[ $config_index =~ ^[0-9]+$ ]] || exit 1
-export "GIT_CONFIG_KEY_$config_index=color.diff" "GIT_CONFIG_VALUE_$config_index=never"
-export GIT_CONFIG_COUNT=$((10#$config_index + 1))
+# Append after any parent git -c options, whose precedence exceeds GIT_CONFIG_COUNT.
+export GIT_CONFIG_PARAMETERS="${GIT_CONFIG_PARAMETERS:+$GIT_CONFIG_PARAMETERS }'color.diff=never'"
 # Use a neutral attribute source so repository-controlled diff drivers cannot hide text.
 GIT_ATTR_SOURCE=$(git hash-object -t tree --stdin </dev/null)
 export GIT_ATTR_SOURCE
@@ -46,7 +44,7 @@ case "$(basename -- "$0")" in
             --diff-filter=AMT -- | while IFS= read -r -d '' entry; do
             if [[ $entry == $'-\t-\t'* ]]; then
                 path=${entry#$'-\t-\t'}
-                blob=$(git rev-parse --verify ":$path")
+                blob=$(git rev-parse --verify ":0:$path")
                 git cat-file blob "$blob" | scan stdin || {
                     echo "Staged blob scan failed: $blob" >&2; exit 1;
                 }
@@ -76,6 +74,9 @@ case "$(basename -- "$0")" in
         git rev-list "${objects[@]}" -- | git cat-file --batch | scan stdin || {
             echo "Commit metadata scan failed (see triage in docs/19_LOCAL_SECURITY.md)." >&2; exit 1;
         }
+        # Imported commit messages may declare a non-UTF-8 encoding in the header.
+        git log --format=%B --encoding=UTF-8 --no-color --no-patch --no-show-signature \
+            "${objects[@]}" -- | scan stdin
         revisions="--full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv"
         for commit in "${objects[@]}"; do revisions="$revisions $commit"; done
         scan git "--log-opts=$revisions" ;;

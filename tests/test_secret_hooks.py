@@ -55,7 +55,7 @@ class SecretHooksTest(unittest.TestCase):
         self.git("config", "color.diff", "always")
         self.stage_secret()
         (self.repo / "settings.txt").write_text("Clean working copy.\n")
-        result = self.git("commit", "-qm", "Must be blocked", check=False)
+        result = self.git("-c", "color.diff=always", "commit", "-qm", "Must be blocked", check=False)
         self.assertNotEqual(result.returncode, 0, "Staged secret was committed")
         self.assertNotIn(self.token, result.stdout + result.stderr)
         self.assertIn("leaks found", result.stdout + result.stderr)
@@ -152,6 +152,17 @@ class SecretHooksTest(unittest.TestCase):
         r = self.git("commit", "-qm", "Must be blocked", check=False)
         self.assertNotEqual(r.returncode, 0)
         self.assertNotIn(self.token, r.stdout + r.stderr)
+
+    def test_push_scans_decoded_imported_commit_message(self):
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        identity = "Hook Test <hooks@example.invalid> 1700000000 +0000"
+        header = f"tree {tree}\nauthor {identity}\ncommitter {identity}\nencoding ISO-2022-JP\n\n"
+        # An ISO-2022-JP ASCII reset splits the on-disk token but decodes away.
+        raw = header.encode() + b"token=" + self.token[:2].encode() + b"\x1b(B" + self.token[2:].encode() + b"\n"
+        oid = subprocess.check_output(["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+                                      cwd=self.repo, input=raw).decode().strip()
+        self.assertIn(self.token, self.git("log", "-1", "--format=%B", "--encoding=UTF-8", oid).stdout)
+        self.assert_push_rejected(oid)
 
     def test_push_scans_tag_and_commit_messages(self):
         remote = Path(self.temp.name) / "remote.git"

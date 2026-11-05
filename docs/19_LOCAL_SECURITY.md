@@ -83,7 +83,7 @@ $priorErrorAction = $ErrorActionPreference
 $priorGitParams = $env:GIT_CONFIG_PARAMETERS
 try {
     $ErrorActionPreference = 'Continue'
-    $env:GIT_CONFIG_PARAMETERS = "$priorGitParams 'color.diff=never'"
+    $env:GIT_CONFIG_PARAMETERS = ("$priorGitParams 'color.diff=never'").Trim()
     $nullDevice = if ($env:OS -eq 'Windows_NT') { 'NUL' } else { '/dev/null' }
     $env:GIT_ATTR_SOURCE = git hash-object -t tree -- $nullDevice
     if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve empty tree' }
@@ -100,14 +100,17 @@ try {
 }
 ```
 
-For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. For a binary-index rejection the hook reports the blob ID. For a metadata rejection, enumerate candidate IDs with `git rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
+For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. For a binary-index rejection the hook reports the blob ID. Disable replacements when enumerating or reading candidate IDs (`GIT_NO_REPLACE_OBJECTS=1`). For a metadata rejection, enumerate candidate IDs with `git --no-replace-objects rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
 
 ```bash
 set -o pipefail
+export GIT_NO_REPLACE_OBJECTS=1
 scanner=$(git config --path --get maexsocial.gitleaksPath)
 hooks=$(git rev-parse --path-format=absolute --git-common-dir)/hooks
 # Set oid to the candidate ID first. Keep raw bytes in the pipe.
 git cat-file -p "$oid" | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
+# For a commit, also check its decoded message.
+git log -1 --format=%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" -- | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 ```
 
 Update installed copies after reviewed hook changes; changing source files alone does not update other clones. Before rollback, back up the current state again. Remove only installed files whose hashes still match the installation manifest; preserve later modifications. Unset `maexsocial.gitleaksPath` only if it still equals the installed value (or restore its recorded previous value). Do not overwrite the entire Git config with an old backup.
