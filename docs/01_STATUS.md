@@ -16,11 +16,11 @@
 | Repository anatomy | [Issue #63](https://github.com/Maeximilion/MaexSocial/issues/63), maintenance implementation | [Approved design](superpowers/specs/2026-11-05-reusable-repository-anatomy-design.md) and [manual procedure](../.claude/commands/anatomy.md) |
 | Public product baseline, MS-002 | Bounded inventory merged, issue #2 closed | [Dated feature and service matrix](research/socialedge-feature-matrix.md), [PR #69](https://github.com/Maeximilion/MaexSocial/pull/69) |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
-| Claude Code REA, MS-004 | Report merged, issue #4 open for Maxi’s decision on five scope limits | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report §9.6](research/claude-rea.md#96-remaining-gaps-after-r3) and [manifest](research/evidence-claude.json) |
+| Claude Code REA, MS-004 | Complete within the five limits accepted in the [delegated scope decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747), issue #4 closed | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report §9.6](research/claude-rea.md#96-remaining-gaps-after-r3) and [manifest](research/evidence-claude.json) |
 | API feasibility, MS-005 | Documented feasibility merged, issue #5 closed. Customer grants and outcomes untested. | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md), [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) |
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
-| Synthesis, MS-007 | Bounded reconciliation available. Full completion awaits the MS-004 scope decision. Issue #7 and G1 remain open. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
-| Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
+| Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. G1 awaits separate owner acceptance. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
+| Design and detailed plan, MS-008–009 | Pending G1 acceptance and owner design decision | Goals and gates defined, executable product plan still to be written |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
@@ -30,15 +30,14 @@
 | PR metadata and Project views | Maintenance delivery | [Issue #32](https://github.com/Maeximilion/MaexSocial/issues/32), [Project operations](16_GITHUB_PROJECT.md) |
 | Customer media library, calendar and optional advertising | Requested direction and G2 proposal; no integration or operating authority implemented | [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40), [workflow, API evidence and proposed acceptance cases](18_MEDIA_LIBRARY.md) |
 | Agent anatomy and repository artwork security | Foundation work tracked in issue #42; runtime hook trust remains local | [Implementation plan](superpowers/plans/2026-11-05-agent-anatomy-and-asset-security.md), [tooling guide](tooling/agent-workflow.md) |
-| Customer upload/processing security, MS-014 | Proposed requirements; blocked on synthesis and G2 acceptance | [Issue #43](https://github.com/Maeximilion/MaexSocial/issues/43), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
+| Customer upload/processing security, MS-014 | Proposed requirements, pending G2 design and acceptance | [Issue #43](https://github.com/Maeximilion/MaexSocial/issues/43), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
 
 GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is closed. Gate issues #14–18 remain open.
 
 ## What's next
 
-1. Record Maxi’s disposition of the five [MS-004 limits](research/claude-rea.md#96-remaining-gaps-after-r3) in [issue #4](https://github.com/Maeximilion/MaexSocial/issues/4).
-2. Reassess [issue #7](https://github.com/Maeximilion/MaexSocial/issues/7) against the bounded synthesis and that decision. [G1](https://github.com/Maeximilion/MaexSocial/issues/14) requires separate recorded acceptance.
-3. At G2, choose the first customer, destination, authority and cost limits. MS-009 requires an approved design before implementation.
+1. Present the [completed research synthesis](research/synthesis.md) and its five accepted limits for Maxi’s separate [G1 decision](https://github.com/Maeximilion/MaexSocial/issues/14).
+2. At G2, choose the first customer, destination, authority and cost limits. MS-009 requires an approved design before implementation.
 
 ## Evidence limits
 

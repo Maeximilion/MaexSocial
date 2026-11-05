@@ -61,7 +61,7 @@ Goals, gate criteria, dependencies and task IDs are defined. Detailed product im
 
 SocialEdge is the comparison baseline. The [Codex report](docs/research/codex-rea.md) analyzes three public JavaScript bundles and records partial coverage in its [evidence manifest](docs/research/evidence-codex.json). This lane did not exercise authenticated workflows or observe backend behavior.
 
-The [Claude report](docs/research/claude-rea.md) and [evidence manifest](docs/research/evidence-claude.json) landed in [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34). [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4) tracks the remaining runtime evidence and owner acceptance of scope limits. The [bounded synthesis](docs/research/synthesis.md) compares the two lanes, maps all 17 inventory rows to documented provider feasibility and separates the proposed first slice from G2 decisions.
+The [Claude report](docs/research/claude-rea.md) and [evidence manifest](docs/research/evidence-claude.json) landed in [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34). The [delegated decision in #4](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) accepted five limits on what the investigation could establish. The [bounded synthesis](docs/research/synthesis.md) compares the two lanes, maps all 17 inventory rows to documented provider feasibility and separates the proposed first slice from G2 decisions.
 
 ## Start here
 
