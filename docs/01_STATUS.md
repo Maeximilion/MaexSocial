@@ -17,7 +17,8 @@
 | Public product baseline, MS-002 | Public offer inventoried on 2026-11-05 | [Dated feature and service matrix](research/socialedge-feature-matrix.md) with scoped P2 evidence and inputs for MS-005 |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
 | Claude Code REA, MS-004 | Anonymous scope and a read-only authenticated walkthrough of one package-2 account (R3, UI evidence) submitted; three Astra review findings corrected, REA runtime capture and owner acceptance of listed gaps outstanding, issue #4 open | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report](research/claude-rea.md), [manifest](research/evidence-claude.json), checkpoint `35c61ac`; findings not yet accepted |
-| API feasibility and video demo, MS-005–006 | Planned, issues #5–6 open | Candidate demos exist in the Codex report, full feasibility/search deliverables remain open |
+| API feasibility, MS-005 | G1 research submitted for [issue #5](https://github.com/Maeximilion/MaexSocial/issues/5), acceptance depends on MS-002 | [Official provider matrix](research/platform-api-feasibility.md), public documentation only |
+| Video demo, MS-006 | Issue #6 open | Candidate demos exist in the Codex report; see issue #6 for the separate search deliverable |
 | Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
