@@ -4,7 +4,7 @@ Task: [issue #44](https://github.com/Maeximilion/MaexSocial/issues/44). Foundati
 
 ## Design and scope
 
-Use Gitleaks with its default rules. Install the same small shell script as `pre-commit` and `pre-push` in the clone's common Git directory so all existing worktrees are covered before merge. Keep the executable path in local Git configuration. Commit checks scan the staged index; push checks scan all local history. Missing scanner or failed scanning blocks the operation. Redact findings and ignore only two verified historical prose fingerprints. Shared installed configuration prevents a worktree's scanner configuration from silently weakening the rules.
+Use Gitleaks with its default rules. Install the same small shell script as `pre-commit` and `pre-push` in the clone's common Git directory so all existing worktrees are covered before merge. Keep the executable path in local Git configuration. Commit checks scan the staged index; push checks scan all local history. Missing scanner or failed scanning blocks the operation. Redact findings and ignore only the verified fingerprints of one historical prose line (two original patches and four merge patches). Shared installed configuration prevents a worktree's scanner configuration from silently weakening the rules.
 
 Extend shared ignore patterns for local credentials and browser captures; stage no raw research. Back up existing local hooks/configuration, preserve other sessions, and document rollback. Check native Codex hooks separately: activation, trust and synthetic model-router behavior. Keep incompatible legacy integrations disabled. Do not alter healthy global settings or introduce automatic model switching.
 
