@@ -156,13 +156,20 @@ class SecretHooksTest(unittest.TestCase):
     def test_push_scans_decoded_imported_commit_message(self):
         tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
         identity = "Hook Test <hooks@example.invalid> 1700000000 +0000"
-        header = f"tree {tree}\nauthor {identity}\ncommitter {identity}\nencoding ISO-2022-JP\n\n"
-        # An ISO-2022-JP ASCII reset splits the on-disk token but decodes away.
-        raw = header.encode() + b"token=" + self.token[:2].encode() + b"\x1b(B" + self.token[2:].encode() + b"\n"
-        oid = subprocess.check_output(["git", "hash-object", "-t", "commit", "-w", "--stdin"],
-                                      cwd=self.repo, input=raw).decode().strip()
-        self.assertIn(self.token, self.git("log", "-1", "--format=%B", "--encoding=UTF-8", oid).stdout)
-        self.assert_push_rejected(oid)
+        # A valid ASCII reset splits the token on disk but decodes away.
+        split = self.token[:2].encode() + b"\x1b(B" + self.token[2:].encode()
+        for field in ("author", "body"):
+            with self.subTest(field=field):
+                author = (b"token=" + split + b" <hooks@example.invalid> 1700000000 +0000"
+                          if field == "author" else identity.encode())
+                body = b"clean" if field == "author" else b"token=" + split
+                raw = (f"tree {tree}\nauthor ".encode() + author
+                       + f"\ncommitter {identity}\nencoding ISO-2022-JP\n\n".encode() + body + b"\n")
+                oid = subprocess.check_output(["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+                                              cwd=self.repo, input=raw).decode().strip()
+                self.assertIn(self.token, self.git("log", "-1", "--format=%an%n%B",
+                                                   "--encoding=UTF-8", oid).stdout)
+                self.assert_push_rejected(oid)
 
     def test_push_scans_tag_and_commit_messages(self):
         remote = Path(self.temp.name) / "remote.git"
@@ -176,6 +183,42 @@ class SecretHooksTest(unittest.TestCase):
         r = self.git("push", str(remote), "HEAD:refs/heads/main", check=False)
         self.assertNotEqual(r.returncode, 0)
         self.assertNotIn(self.token, r.stderr)
+
+    def test_push_scans_a_binary_removed_before_push(self):
+        self.git("config", "log.showRoot", "false")
+        self.git("checkout", "--orphan", "imported-root")
+        (self.repo / "capture.bin").write_bytes(b"\0token=" + self.token.encode())
+        self.git("add", "capture.bin")
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported binary")
+        self.git("rm", "capture.bin")
+        self.git("commit", "-qm", "Remove binary")
+        self.assert_push_rejected("HEAD")
+
+    def test_local_textconv_cannot_strip_staged_secrets(self):
+        (self.repo / ".git/info/attributes").write_text("settings.txt diff=filtered\n")
+        self.git("config", "diff.filtered.textconv", "true")
+        self.stage_secret()
+        result = self.git("commit", "-qm", "Must be blocked", check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn(self.token, result.stderr)
+
+    @unittest.skipIf(os.name == "nt", "Colon is not a Windows filename character")
+    def test_colon_in_binary_filename_cannot_alias_another_index_entry(self):
+        (self.repo / "a.bin").write_text("clean")
+        (self.repo / "0:a.bin").write_bytes(b"\0token=" + self.token.encode())
+        self.git("add", "a.bin", "0:a.bin")
+        self.assertNotEqual(self.git("commit", "-qm", "Must be blocked", check=False).returncode, 0)
+
+    def test_staged_and_historical_names_are_scanned(self):
+        (self.repo / self.token).touch()
+        self.git("add", self.token)
+        r = self.git("commit", "-qm", "Empty file", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn(self.token, r.stderr)
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported filename")
+        self.git("rm", self.token)
+        self.git("commit", "-qm", "Remove filename")
+        self.assert_push_rejected("HEAD")
 
     def test_clean_push_succeeds(self):
         remote = Path(self.temp.name) / "remote.git"

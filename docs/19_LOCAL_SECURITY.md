@@ -8,12 +8,12 @@ The shared `.gitignore` excludes common local credentials, private keys, agent w
 
 The [hook source](../scripts/git-secret-hook.sh) is installed twice, as `pre-commit` and `pre-push`, in the clone's common Git hooks directory. That location covers its linked worktrees independently of their branch contents. It does not activate automatically in a new clone.
 
-- Commit: scan the staged index, including a staged secret whose working copy was subsequently cleaned.
-- Push: scan all local refs plus the commit histories sent by Git, including first-parent merge diffs, commit messages, outgoing annotated tag messages and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
+- Commit: scan staged additions and the complete tree produced from the actual index. The tree includes file names and blob contents, including unchanged indexed files.
+- Push: scan all local refs plus the commit histories sent by Git, including root and first-parent merge diffs, raw reachable objects, decoded commit identities and messages, outgoing annotated tags and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
 - Scanner missing or scan failure: block the Git operation.
 - Findings: redact secret values. Do not paste raw captures into issue or PR bodies.
 
-Use the installed [configuration](../scripts/secret-hooks/gitleaks.toml), which extends Gitleaks defaults, and [ignore file](../scripts/secret-hooks/.gitleaksignore). Six exact fingerprints cover the same verified historical documentation sentence, including four appearances in merge patches. A scan-root .gitleaksignore blocks scanning because Gitleaks loads it alongside the installed file. Inline `gitleaks:allow` comments are ignored. Repository-local or environment-provided scanner configurations cannot replace the explicitly supplied installed configuration.
+Use the installed [configuration](../scripts/secret-hooks/gitleaks.toml), which extends Gitleaks defaults, and [ignore file](../scripts/secret-hooks/.gitleaksignore). Six exact fingerprints cover the same verified historical documentation sentence, including four appearances in merge patches. The supplemental raw-object scan omits exactly two immutable, separately checked documentation blob IDs (`08851459ccc813a5b5993aff0601e99543b04c51`, `f96e246f16dd3107ce7a56465d90e00081c3d486`). Each contains that prose line; the remaining contents were checked with Gitleaks, and both still receive the patch scan. Editing either blob gives it a different ID and restores the full raw scan. A scan-root .gitleaksignore blocks scanning because Gitleaks loads it alongside the installed file. Inline `gitleaks:allow` comments are ignored. Repository-local or environment-provided scanner configurations cannot replace the explicitly supplied installed configuration.
 
 ## Install in another Windows clone
 
@@ -81,8 +81,10 @@ if (Test-Path -LiteralPath .gitleaksignore) { throw 'Remove the scan-root ignore
 $priorAttrs = $env:GIT_ATTR_SOURCE
 $priorErrorAction = $ErrorActionPreference
 $priorGitParams = $env:GIT_CONFIG_PARAMETERS
+$priorReplace = $env:GIT_NO_REPLACE_OBJECTS
 try {
     $ErrorActionPreference = 'Continue'
+    $env:GIT_NO_REPLACE_OBJECTS = '1'
     $env:GIT_CONFIG_PARAMETERS = ("$priorGitParams 'color.diff=never'").Trim()
     $nullDevice = if ($env:OS -eq 'Windows_NT') { 'NUL' } else { '/dev/null' }
     $env:GIT_ATTR_SOURCE = git hash-object -t tree -- $nullDevice
@@ -96,11 +98,12 @@ try {
 } finally {
     $env:GIT_ATTR_SOURCE = $priorAttrs
     $env:GIT_CONFIG_PARAMETERS = $priorGitParams
+    $env:GIT_NO_REPLACE_OBJECTS = $priorReplace
     $ErrorActionPreference = $priorErrorAction
 }
 ```
 
-For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. For a binary-index rejection the hook reports the blob ID. Disable replacements when enumerating or reading candidate IDs (`GIT_NO_REPLACE_OBJECTS=1`). For a metadata rejection, enumerate candidate IDs with `git --no-replace-objects rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
+For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --root --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. To locate a raw-object finding, list staged IDs with `git ls-files --stage` or enumerate reachable IDs with `git --no-replace-objects rev-list --objects --no-object-names --all <outgoing-commit>`. Scanning raw tree objects also covers names. A clean patch report alone does not clear a raw-object rejection. Disable replacements when enumerating or reading candidate IDs (`GIT_NO_REPLACE_OBJECTS=1`). For a metadata rejection, enumerate candidate IDs with `git --no-replace-objects rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
 
 ```bash
 set -o pipefail
@@ -108,9 +111,9 @@ export GIT_NO_REPLACE_OBJECTS=1
 scanner=$(git config --path --get maexsocial.gitleaksPath)
 hooks=$(git rev-parse --path-format=absolute --git-common-dir)/hooks
 # Set oid to the candidate ID first. Keep raw bytes in the pipe.
-git cat-file -p "$oid" | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
+git cat-file "$(git cat-file -t "$oid")" "$oid" | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 # For a commit, also check its decoded message.
-git log -1 --format=%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" -- | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
+git log -1 --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" -- | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 ```
 
 Update installed copies after reviewed hook changes; changing source files alone does not update other clones. Before rollback, back up the current state again. Remove only installed files whose hashes still match the installation manifest; preserve later modifications. Unset `maexsocial.gitleaksPath` only if it still equals the installed value (or restore its recorded previous value). Do not overwrite the entire Git config with an old backup.

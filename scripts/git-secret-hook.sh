@@ -36,20 +36,19 @@ scan() {
         return 1
     fi
 }
+# Raw trees and blobs cover filenames, binary additions and textconv-hidden bytes.
+# Only the two audited immutable prose blobs are omitted from this supplemental
+# stream. Their contents remain subject to the normal patch scan and fingerprints.
+scan_objects() {
+    git rev-list --objects --no-object-names "$@" -- |
+        awk '$0 != "08851459ccc813a5b5993aff0601e99543b04c51" && $0 != "f96e246f16dd3107ce7a56465d90e00081c3d486"' |
+        git cat-file --batch | scan stdin
+}
 case "$(basename -- "$0")" in
     pre-commit)
         scan git --staged
-        # Git omits binary patches from --staged. Scan those exact indexed blobs too.
-        git diff --cached --numstat -z --no-renames --no-ext-diff --no-textconv --no-color \
-            --diff-filter=AMT -- | while IFS= read -r -d '' entry; do
-            if [[ $entry == $'-\t-\t'* ]]; then
-                path=${entry#$'-\t-\t'}
-                blob=$(git rev-parse --verify ":0:$path")
-                git cat-file blob "$blob" | scan stdin || {
-                    echo "Staged blob scan failed: $blob" >&2; exit 1;
-                }
-            fi
-        done ;;
+        tree=$(git write-tree)
+        scan_objects "$tree" ;;
     pre-push)
         shallow=$(git rev-parse --is-shallow-repository)
         [ "$shallow" = false ] || { echo "Secret scan requires full history." >&2; exit 1; }
@@ -71,13 +70,11 @@ case "$(basename -- "$0")" in
             esac
         done
         # Raw objects include mergetag headers and bypass presentation encodings.
-        git rev-list "${objects[@]}" -- | git cat-file --batch | scan stdin || {
-            echo "Commit metadata scan failed (see triage in docs/19_LOCAL_SECURITY.md)." >&2; exit 1;
-        }
+        scan_objects "${objects[@]}"
         # Imported commit messages may declare a non-UTF-8 encoding in the header.
-        git log --format=%B --encoding=UTF-8 --no-color --no-patch --no-show-signature \
+        git log --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature \
             "${objects[@]}" -- | scan stdin
-        revisions="--full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv"
+        revisions="--root --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv"
         for commit in "${objects[@]}"; do revisions="$revisions $commit"; done
         scan git "--log-opts=$revisions" ;;
     *) echo "Secret scan blocked: unexpected hook name." >&2; exit 1 ;;
