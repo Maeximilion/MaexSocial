@@ -13,7 +13,7 @@ The first release should name one customer journey, supported channel and operat
 | ID | Gate | Task and deliverable | Depends on | State |
 |---|---|---|---|---|
 | [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | [Foundation design](superpowers/specs/2026-11-04-foundation-design.md) delivered in [PR #19](https://github.com/Maeximilion/MaexSocial/pull/19) | — | Done |
-| [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | Public SocialEdge product inventory with sources, dates and evidence class | — | In progress |
+| [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | [Public feature and service matrix](research/socialedge-feature-matrix.md) with dated sources, operators and evidence limits | MS-001 | Public inventory recorded for MS-005 |
 | [MS-003](https://github.com/Maeximilion/MaexSocial/issues/3) | G1 | Codex REA report with target identity, reproducible steps, evidence IDs and coverage limits | MS-001 research brief | Done for bounded static scope, runtime gap documented |
 | [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | In review; read-only authenticated walkthrough done, gaps listed |
 | [MS-005](https://github.com/Maeximilion/MaexSocial/issues/5) | G1 | Official API/MCP feasibility matrix, access requirements and cost assumptions | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | Planned |
