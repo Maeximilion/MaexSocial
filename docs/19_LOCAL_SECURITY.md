@@ -33,7 +33,7 @@ $hookDirectory = Join-Path $gitCommon 'hooks'
 # Replace this with the absolute path to your verified executable.
 $gitleaksExecutable = 'C:/Tools/gitleaks/gitleaks.exe'
 if (!(Test-Path -LiteralPath $gitleaksExecutable)) { throw 'Gitleaks is missing' }
-foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore')) {
+foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
     if (Test-Path -LiteralPath (Join-Path $hookDirectory $name)) {
         throw "Preserve and review existing file: $name"
     }
@@ -45,7 +45,7 @@ if (Test-Path (Join-Path $gitCommon 'info/exclude')) {
     Copy-Item -LiteralPath (Join-Path $gitCommon 'info/exclude') -Destination $backup.FullName
 }
 if (Test-Path $hookDirectory) { Copy-Item $hookDirectory $backup.FullName -Recurse }
-$files = foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore')) {
+$files = foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
     $source = if ($name -like 'pre-*') { 'scripts/git-secret-hook.sh' } else { "scripts/secret-hooks/$name" }
     @{ path = (Join-Path $hookDirectory $name); sha256 = (Get-FileHash -LiteralPath $source).Hash }
 }
@@ -56,6 +56,7 @@ Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory 'pre-commit')
 Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory 'pre-push')
 Copy-Item scripts/secret-hooks/gitleaks.toml $hookDirectory
 Copy-Item scripts/secret-hooks/.gitleaksignore $hookDirectory
+Copy-Item scripts/secret-hooks/scan_objects.py $hookDirectory
 git config --local maexsocial.gitleaksPath $gitleaksExecutable
 if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 $env:MAEXSOCIAL_TEST_GITLEAKS = $gitleaksExecutable
@@ -67,7 +68,7 @@ git hook run pre-push
 if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 ```
 
-Use Git with `--attr-source` support and Bash (included in Git for Windows). The hook selects an empty attribute source to prevent repository diff attributes from hiding text. On Unix, mark both installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
+Use Python 3.8+, Git with `--attr-source` support and Bash (included in Git for Windows). The hook selects an empty attribute source to prevent repository diff attributes from hiding text. On Unix, mark both installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
 
 Run triage from the repository root. For a blocked staged scan, the following PowerShell example lists only file, line, rule and commit. Error diagnostics remain in memory and are never printed. An empty report covers only the selected scan. Push checks also cover commit and outgoing tag messages.
 
@@ -103,7 +104,7 @@ try {
 }
 ```
 
-For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --root --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. To locate a raw-object finding, list staged IDs with `git ls-files --stage` or enumerate reachable IDs with `git --no-replace-objects rev-list --objects --no-object-names --all <outgoing-commit>`. Scanning raw tree objects also covers names. A clean patch report alone does not clear a raw-object rejection. Disable replacements when enumerating or reading candidate IDs (`GIT_NO_REPLACE_OBJECTS=1`). For a metadata rejection, enumerate candidate IDs with `git --no-replace-objects rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
+For historical patch triage, use the same block with `--staged` replaced by `'--log-opts=--all --root --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv'`. Append any unreferenced outgoing commit IDs inside that option. To locate a raw-object finding without displaying names, enumerate staged IDs with `git --no-replace-objects rev-list --objects --no-object-names "$(git write-tree)"` or enumerate reachable IDs with `git --no-replace-objects rev-list --objects --no-object-names --all <outgoing-commit>`. The [object checker](../scripts/secret-hooks/scan_objects.py) scans each tree entry name independently, and each non-tree object body independently, so Git framing bytes cannot create or mask findings. Its local disposable SQLite cache stores only verified object IDs and name hashes keyed by the hash of the scanner, checker, installed configuration and ignore file. Remove `object-scan-cache.sqlite3` from the installed hooks directory when idle to force a cold scan. A cold scan takes longer. A byte change has a new ID; a policy change invalidates cached results. Custom scanner configurations bypass this cache so externally referenced rules cannot become stale. A clean patch report alone does not clear a raw-object rejection. Disable replacements when enumerating or reading candidate IDs (`GIT_NO_REPLACE_OBJECTS=1`). When a candidate is a tree, invoke the installed checker with that ID (`python -I -B "$hooks/scan_objects.py" "$scanner" "$oid"`) to preserve filename boundaries. For a metadata rejection, enumerate candidate IDs with `git --no-replace-objects rev-list --all <outgoing-commit>` and include outgoing annotated tag IDs. In Git Bash, test a candidate without displaying its contents, using the installed configuration and ignore list. Exit zero with no error diagnostics means that candidate passed. A nonzero exit or error diagnostics requires investigation.
 
 ```bash
 set -o pipefail
@@ -111,7 +112,7 @@ export GIT_NO_REPLACE_OBJECTS=1
 scanner=$(git config --path --get maexsocial.gitleaksPath)
 hooks=$(git rev-parse --path-format=absolute --git-common-dir)/hooks
 # Set oid to the candidate ID first. Keep raw bytes in the pipe.
-git cat-file "$(git cat-file -t "$oid")" "$oid" | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
+{ printf '!\n'; git cat-file "$(git cat-file -t "$oid")" "$oid"; } | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 # For a commit, also check its decoded message.
 git log -1 --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" -- | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 ```

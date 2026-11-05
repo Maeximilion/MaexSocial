@@ -36,13 +36,12 @@ scan() {
         return 1
     fi
 }
-# Raw trees and blobs cover filenames, binary additions and textconv-hidden bytes.
-# Only the two audited immutable prose blobs are omitted from this supplemental
-# stream. Their contents remain subject to the normal patch scan and fingerprints.
 scan_objects() {
-    git rev-list --objects --no-object-names "$@" -- |
-        awk '$0 != "08851459ccc813a5b5993aff0601e99543b04c51" && $0 != "f96e246f16dd3107ce7a56465d90e00081c3d486"' |
-        git cat-file --batch | scan stdin
+    local python
+    python=$(command -v python3 || command -v python) || {
+        echo "Secret scan requires Python 3." >&2; return 1;
+    }
+    "$python" -I -B "$hook_dir/scan_objects.py" "$scanner" "$@"
 }
 case "$(basename -- "$0")" in
     pre-commit)

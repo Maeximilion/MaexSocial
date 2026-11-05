@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import secrets
 import shutil
+import string
 import subprocess
 import tempfile
 import unittest
@@ -31,7 +32,7 @@ class SecretHooksTest(unittest.TestCase):
             source = ROOT / "scripts/git-secret-hook.sh"
             shutil.copyfile(source, hooks / name)
             (hooks / name).chmod(0o755)
-        for name in ("gitleaks.toml", ".gitleaksignore"):
+        for name in ("gitleaks.toml", ".gitleaksignore", "scan_objects.py"):
             source = ROOT / "scripts/secret-hooks" / name
             shutil.copyfile(source, hooks / name)
         (self.repo / "README.md").write_text("Clean repository.\n")
@@ -210,6 +211,7 @@ class SecretHooksTest(unittest.TestCase):
         self.assertNotEqual(self.git("commit", "-qm", "Must be blocked", check=False).returncode, 0)
 
     def test_staged_and_historical_names_are_scanned(self):
+        self.token = "api_key=" + "".join(secrets.SystemRandom().sample(string.ascii_letters + string.digits, 48))
         (self.repo / self.token).touch()
         self.git("add", self.token)
         r = self.git("commit", "-qm", "Empty file", check=False)
@@ -219,6 +221,29 @@ class SecretHooksTest(unittest.TestCase):
         self.git("rm", self.token)
         self.git("commit", "-qm", "Remove filename")
         self.assert_push_rejected("HEAD")
+
+    def test_clean_object_does_not_match_the_next_git_header(self):
+        (self.repo / "first.txt").write_text("token=")
+        (self.repo / "second.txt").write_text("ordinary prose")
+        self.git("add", "first.txt", "second.txt")
+        self.git("commit", "-qm", "Two clean blobs")
+
+    def test_imported_application_blob_is_scanned_independently(self):
+        (self.repo / "capture.bin").write_bytes(b"SQLite format 3\0token=" + self.token.encode())
+        self.git("add", "capture.bin")
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported application object")
+        self.assert_push_rejected("HEAD")
+
+    def test_changed_scan_policy_invalidates_cached_clean_objects(self):
+        key = "api_key=" + "".join(secrets.SystemRandom().sample(string.ascii_letters + string.digits, 48))
+        (self.repo / key).touch()
+        self.git("add", key)
+        ignore = self.repo / ".git/hooks/.gitleaksignore"
+        original = ignore.read_text()
+        ignore.write_text(original + "\n:generic-api-key:2\n")
+        self.git("commit", "-qm", "Allowed under first policy")
+        ignore.write_text(original)
+        self.assertNotEqual(self.git("hook", "run", "pre-commit", check=False).returncode, 0)
 
     def test_clean_push_succeeds(self):
         remote = Path(self.temp.name) / "remote.git"
