@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## API review verification · 2026-11-05 23:15 UTC
+
+Maxi issued the `API` control and confirmed that the Anthropic workspace monthly spend limit is now **USD 75**, adjustable by the owner. GitHub lists the repository Actions secret `ANTHROPIC_API_KEY`. No credential value was read. Main still uses subscription OAuth and the workflow remains disabled. A historical hosted run used Sonnet 5.5; no explicit effort was configured. This is not evidence of API authentication.
+
+[#102](https://github.com/Maeximilion/MaexSocial/issues/102) owns the isolated API-only migration, pinned Claude Opus 5.5 at high effort with a small per-run budget. Its new work chat was [reserved](https://github.com/Maeximilion/MaexSocial/issues/102#issuecomment-6671995854) and [confirmed](https://github.com/Maeximilion/MaexSocial/issues/102#issuecomment-6672002042) against the previously unused verified merge and archive of [#68](https://github.com/Maeximilion/MaexSocial/pull/68). Two product chats (#30 and #9) remain paused. Only the API maintenance chat is working. Keep the Codex fallback on this bootstrap delivery and independent Astra/high on every code review. After bootstrap, verify a real result on an exact reviewed head before resuming product work. The local dashboard remains available. No separate Anthropic agent, environment or deployment is required for the existing Actions route.
+
 ## API pause · 2026-11-05 23:06 UTC (00:06 Europe/Berlin, November 6)
 
 **Paused by owner until the Claude API review route is verified.** Two work chats received and confirmed the order. No open PR, uncompleted process or active reviewer remained at the final check. Keep both worktrees and their current assignments intact. No new intake, product changes, new PRs, pushes, reviews or merges. The local PR dashboard remains read-only.
