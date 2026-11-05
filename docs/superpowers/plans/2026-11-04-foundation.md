@@ -1,5 +1,7 @@
 # MaexSocial Foundation Implementation Plan
 
+Historical snapshot: the disabled-skill decision below was superseded on 2026-11-05 by the [current development skill policy](../../tooling/development-skills.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
 **Goal** — Deliver the requested repository foundation, verified GitHub planning and self-contained REA handovers.

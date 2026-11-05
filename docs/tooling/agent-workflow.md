@@ -21,15 +21,17 @@ Claude memory/skills/rules behavior: [memory and imports](https://code.claude.co
 
 ## Normal task flow
 
-1. Use `/start` in Claude or `source-command-start` in Codex. Read the issue, check branch/dirty state, fetch, then use a task worktree.
-2. Use the available Superpowers planning skills. Keep G1 evidence independent until the defined comparison checkpoint; use the bounded researcher for parallel primary-source research.
+1. Read the issue, check branch/dirty state, fetch, then use a task worktree. Run `/start` or `/task` and their Codex equivalents only when explicitly invoked; they alone trigger the advisory GitHub check.
+2. Select the [development skill roles](development-skills.md): Ponytail for small/medium work and reviews/audits, Superpowers for larger plans and execution, with Code Autopilot and Caveman enabled. Keep G1 evidence independent until the defined comparison checkpoint; delegation still needs its own authority.
 3. Implement only the authorized task. Use `repository-check` or `/eval` for full foundation commands and task-specific checks.
 4. Request a fresh review with actual `gpt-6-astra` and `high` settings, base/head and issue scope. The reviewer is instructed not to edit; its file does not grant a separate sandbox or change inherited permissions. Claude prepares the review handover for Codex instead of substituting a Claude model.
 5. Commit/push, maintain the linked PR/Project, fetch after PR changes and pull clean canonical main after merge. Record tests and limitations in the handover.
 
 ## Stop hook
 
-The hook performs only the cheap links/JSON/TOML/SVG check. It does not format files, commit, publish, contact providers or replace full tests. A failed check asks the agent to resolve/report it; repeated Stop invocation is skipped to avoid an infinite continuation loop. Invalid/oversized input and unrelated events are skipped without running validation; execution failures/timeouts request a manual check. A skipped callback is not evidence of a passing check.
+The hook performs only the cheap links/JSON/TOML/SVG check. It does not format files, commit, publish, contact providers or replace full tests. Failed checks, startup errors and timeouts emit only a user-visible `systemMessage` warning with a manual follow-up command; they do not block task completion or force another agent turn. Invalid/oversized input, unrelated events and repeated Stop invocations are skipped without running validation. A warning or skipped callback is not evidence of a passing check. The checker itself and required CI still reject invalid repository content.
+
+Owner preference, 2026-11-05: workflow reminders and quality-check hooks are advisory by default. The model-routing hook keeps its explicit decision pause. Secret-prevention Git hooks and product acceptance gates are separate controls. The inspected active Ponytail session/prompt hooks already supply context without task-blocking decisions; disabled legacy hooks remain disabled. This inventory covers the inspected local Codex configuration and MaexSocial registrations, not all hooks in other repositories or future plugin versions.
 
 Claude runs Python directly with its project-directory argument. Codex resolves the Git root from the session directory before running the same script, including nested working directories. Python and Git must be available. Check the script/configuration and tests together after changes. [Claude hooks](https://code.claude.com/docs/en/hooks), [Codex hooks](https://learn.chatgpt.com/docs/hooks)
 
@@ -37,7 +39,7 @@ Committing configuration is not proof of activation. Start a new trusted project
 
 ## Plugins, MCP and local state
 
-Do not create `.claude/plugins/` to suggest automatic installation: Claude does not scan it. Add a plugin only for a demonstrated need, with its source/version, capabilities and actual loading method reviewed. The current Codex session exposes Superpowers; the local `claude plugin list --json` check listed only the user-scoped Ponytail installation. That does not establish Superpowers availability in a future Claude session. Code-autopilot and caveman remain disabled. [Plugin loading](https://code.claude.com/docs/en/plugins/loading#plugins-shared-through-a-repository)
+Do not create `.claude/plugins/` to suggest automatic installation: Claude does not scan it. Add a plugin only for a demonstrated need, with its source/version, capabilities and actual loading method reviewed. The owner now explicitly enables Code Autopilot and Caveman and requests project integration of Superpowers and Ponytail. Their roles, native registrations and activation boundaries are documented in [development skills](development-skills.md); the earlier disabled-skill state is superseded. [Plugin loading](https://code.claude.com/docs/en/plugins/loading#plugins-shared-through-a-repository)
 
 REA and media providers are not interchangeable with plugins. A future Claude project MCP definition belongs at root `.mcp.json`; Codex uses its own `mcp_servers` configuration. Use environment credential references, restricted tools and an explicit target/action scope. Inspect actual startup behavior: interactive Claude project approval is not a universal guarantee for print/SDK modes. No speculative MCP server, provider credential or paid integration is configured by this foundation change. [Claude MCP](https://code.claude.com/docs/en/mcp), [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
 

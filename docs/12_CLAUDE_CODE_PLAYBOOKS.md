@@ -2,7 +2,7 @@
 
 ## Start a session
 
-Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Follow the owner's current skill preferences for this session.
+Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Follow the [current development skill roles](tooling/development-skills.md) for Code Autopilot, Caveman, Ponytail and Superpowers.
 
 ## Canonical checkout and worktrees
 

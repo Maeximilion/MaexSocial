@@ -43,7 +43,7 @@ For manual backfill, run `gh workflow run issue-maintenance.yml --repo Maeximili
 
 ## Coding agents
 
-No additional GitHub-hosted coding agent is required for the current workflow. Codex and Claude Code use the shared repository rules; GitHub Actions performs deterministic checks and maintenance. Keep the configured Astra high review requirement. A hosted coding agent may be evaluated later for a concrete scoped task, with explicit repository permissions and plan/cost checks; it is not installed or assigned automatically. [GitHub Copilot surfaces](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github), consulted 2026-11-05. Code-autopilot and caveman remain disabled.
+No additional GitHub-hosted coding agent is required for the current workflow. Codex and Claude Code use the shared repository rules; GitHub Actions performs deterministic checks and maintenance. Keep the configured Astra high review requirement. A hosted coding agent may be evaluated later for a concrete scoped task, with explicit repository permissions and plan/cost checks; it is not installed or assigned automatically. [GitHub Copilot surfaces](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github), consulted 2026-11-05. Code Autopilot and Caveman follow the [current development skill roles](tooling/development-skills.md).
 
 Small fixes normally use a regular push to the existing PR. Only a necessary rewrite of an owned task branch uses `--force-with-lease=<branch>:<expected-remote-SHA>`, after fetching and checking that all remote work is accounted for. Main protection remains active; a small diff does not authorize bypassing it. Re-run checks and obtain applicable review for the new head.
 

@@ -30,6 +30,8 @@ The first release should name one customer journey, supported channel and operat
 
 ## Definitions of done
 
+[Maintenance issue #44](https://github.com/Maeximilion/MaexSocial/issues/44) adds local secret-prevention hooks and verifies native Codex hooks independently of product delivery and G1 acceptance. Security/quality and Dependabot P0/P1 checks are advisory only under the revised owner decision: report the need to address findings and continue requested tasks, without automatic remediation chats. Installation, test boundaries and rollback are documented in [local security operations](19_LOCAL_SECURITY.md).
+
 [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40) records the owner-requested [media library, calendar and optional advertising proposal](18_MEDIA_LIBRARY.md). Its gate/task mapping extends MS-005 and MS-007–013. Completing that documentation task does not complete those work packages, implement the feature or approve G2. Paid distribution remains distinct from generating advertising creative.
 
 MS-001 requires green foundation checks, live repository/project links, issues with milestones and labels, documented automation credential state, and tested handover links. Pending credentials must remain an explicit gap rather than a successful automation claim.
@@ -43,3 +45,5 @@ MS-008 and MS-009 define only the next implementable release in detail. Later ta
 MS-013 resolves the role/action matrix, administrator provisioning, registration/verification, MFA, sessions/recovery and tenant enforcement. Map accepted [ACCESS-01–14 cases](17_ACCESS_SECURITY.md) into MS-009, then verify the relevant release cases before externally accessible customer operation. The initial requirements document does not complete MS-013.
 
 MS-014 resolves allowed formats, numerical limits, quarantine, media-worker authority/isolation, delivery headers, URL retrieval and signed-link revocation. Map [UPLOAD-01–10](security/uploads.md) into MS-009 and the relevant G3/G4 tasks. Foundation [#42](https://github.com/Maeximilion/MaexSocial/issues/42) adds repository-artwork checks and agent tooling only; its completion does not complete MS-014 or prove upload runtime safety.
+
+[Maintenance issue #56](https://github.com/Maeximilion/MaexSocial/issues/56) limits advisory checks to explicit `/start` and `/task`, pauses the recurring automation, enables Code Autopilot/Caveman, and registers complementary Ponytail/Superpowers workflows. This changes development tooling only, not product gates. See [skill roles and activation boundaries](tooling/development-skills.md).

@@ -7,4 +7,4 @@ Use the [handover index and template](../../docs/handovers/README.md). Briefs as
 5. Run `python scripts/check_repo.py`. Commit the session record and any actual status change on the task branch, push, and verify the remote head and clean working tree. Keep the PR, issue and Project consistent with the observed state; fetch with pruning after PR updates.
 6. Only after the handover is committed and pushed may an authorized new session start. If saving or pushing fails, retain the work and report the precise blocker before switching sessions.
 
-Include the current owner-selected skill settings when the receiving session needs them. Do not start another agent session without the user's authorization.
+When relevant to the receiving session, include the enabled Code Autopilot and Caveman roles from docs/tooling/development-skills.md and the explicit /start or /task advisory-check rule. Do not start another agent session without the user's authorization.

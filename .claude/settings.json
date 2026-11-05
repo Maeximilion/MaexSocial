@@ -6,11 +6,28 @@
           {
             "type": "command",
             "command": "python",
-            "args": ["-B", "${CLAUDE_PROJECT_DIR}/.claude/hooks/check_repository.py"],
+            "args": [
+              "-B",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/check_repository.py"
+            ],
             "timeout": 30
           }
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "superpowers@maexsocial-reviewed": true,
+    "ponytail@maexsocial-reviewed": true,
+    "superpowers@claude-plugins-official": false,
+    "ponytail@ponytail": false
+  },
+  "extraKnownMarketplaces": {
+    "maexsocial-reviewed": {
+      "source": {
+        "source": "directory",
+        "path": "./docs/tooling/plugin-marketplace"
+      }
+    }
   }
 }
