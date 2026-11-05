@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Shutdown handover · 2026-11-06 02:00 Europe/Berlin
+
+The owner announced shutdown at 02:00 local time on Friday, November 6. Start handover at **01:40 Europe/Berlin** (00:40 UTC). The coordinator scheduled one desktop heartbeat for that cutoff; do not operate Windows power controls. If not superseded by a later owner instruction, stop new assignments, PR publication, pushes, reviews and merges at cutoff, notify each still assigned work chat and its active subagents, and preserve checkpoints before the shutdown. Checkpoints distinguish message delivery from actual confirmation. The [API fallback decision](https://github.com/Maeximilion/MaexSocial/issues/102#issuecomment-6672380032) applies during the remaining active period; a later shutdown pause takes priority.
+
 ## Owner disposition for the next test · 2026-11-05 23:36 UTC
 
 Run exactly one direct API fixture test after [#104](https://github.com/Maeximilion/MaexSocial/issues/104) is delivered. Both outcomes now release #30 and #9 to continue their assigned planning work: success uses the verified Claude route without Codex self-mentions; failure keeps Claude disabled, leaves the API issue open with evidence, and uses `@codex review` through the weekend. Reassess on Monday, November 9; do not automatically reenable the failing route or the superseded OAuth workflow. Independent Astra/high remains required. Do not trigger another paid test after this attempt without a new owner decision.
