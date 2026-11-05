@@ -15,7 +15,14 @@ Use one primary workflow for a task. Code Autopilot supplies execution disciplin
 
 ## Native project integration
 
-Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine. For Ponytail, first run `codex plugin marketplace add DietrichGebert/ponytail`, then `codex plugin add ponytail@ponytail`; configuration alone does not download them or establish project trust. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
+Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine. For a fresh Ponytail installation, run these commands from the repository root:
+
+```text
+codex plugin marketplace add ./docs/tooling/ponytail-marketplace
+codex plugin add ponytail@ponytail --json
+```
+
+The [local catalog](ponytail-marketplace/.agents/plugins/marketplace.json) pins the plugin source to the reviewed 5.3.3 commit `96608e078b2d5ea607c5c3b8b5a54d1c1fba6846`. Before trusting hooks, check that the installed hook definitions and scripts match the `hooks/` directory at that commit. Recheck the source and its hooks when updating the pin. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
 
 Claude Code: `.claude/settings.json` declares project enablement and marketplace sources for `superpowers@claude-plugins-official` and `ponytail@ponytail`; `.claude/skills/development-workflow` points here. These use the native plugin loader, not a fake `.claude/plugins` folder. For a new clone, trust the project normally and install the declared plugins:
 
