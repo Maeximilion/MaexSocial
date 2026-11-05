@@ -4,13 +4,13 @@ As of 2026-11-05, SocialEdge documents a staffed local-visibility service. Two i
 
 ## Inputs and authority
 
-This bounded delivery for [#7](https://github.com/Maeximilion/MaexSocial/issues/7) uses the following artifacts on main at `ba464cf`. All five inputs exist. MS-004 scope acceptance remains open. Maxi decides the five limits below before full synthesis and [G1](https://github.com/Maeximilion/MaexSocial/issues/14) can be accepted. The design option at the end is for [G2](https://github.com/Maeximilion/MaexSocial/issues/15).
+This bounded delivery for [#7](https://github.com/Maeximilion/MaexSocial/issues/7) uses the following artifacts on main at `ba464cf`. All five inputs are complete within their recorded scopes. On 2026-11-05 the coordinator accepted the five MS-004 limits under Maxi's delegation. Together with the matrix merged in [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73), this [delegated scope decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) completes the research synthesis. [G1](https://github.com/Maeximilion/MaexSocial/issues/14) awaits separate owner acceptance. The design option at the end is for [G2](https://github.com/Maeximilion/MaexSocial/issues/15).
 
 | Input | Provenance, date and delivery scope |
 |---|---|
 | [MS-002 inventory](socialedge-feature-matrix.md) · [PR #69](https://github.com/Maeximilion/MaexSocial/pull/69) | #2 closed. Five anonymous vendor pages checked 2026-11-05 against earlier captures. M01–M17 distinguish public offers, operators and observed UI. |
 | [MS-003 report](codex-rea.md) · [manifest](evidence-codex.json) | #3 closed for public static scope. 2026-11-04, anonymous GETs and inert REA analysis of three selected chunks from eleven inventoried files. |
-| [MS-004 report](claude-rea.md) · [manifest](evidence-claude.json) · [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34) | [#4](https://github.com/Maeximilion/MaexSocial/issues/4) open. R1/R1a checkpoints precede the committed R2 comparison. Claude disclosed prior exposure to the status summary and reported when it first read Codex's report. Git establishes commit order only. R3 adds read-only UI evidence. |
+| [MS-004 report](claude-rea.md) · [manifest](evidence-claude.json) · [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34) | [#4](https://github.com/Maeximilion/MaexSocial/issues/4) closed. R1/R1a checkpoints precede the committed R2 comparison. Claude disclosed prior exposure to the status summary and reported when it first read Codex's report. Git establishes commit order only. R3 adds read-only UI evidence. |
 | [MS-005 feasibility](platform-api-feasibility.md) · [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) | #5 closed. Official API, policy, MCP and cost sources accessed 2026-11-05. Customer grants, quotas, MCP tools, billing and provider outcomes untested. |
 | [MS-006 demo search](photo-to-ad-demo.md) · [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) | #6 closed for bounded search. Four candidates assessed using publisher pages/media on 2026-11-05. Original TikTok identity open. One costed spike proposed, never executed. |
 
@@ -71,7 +71,7 @@ No same-scope contradiction was established between Codex and Claude. Four compa
 
 The policy describes manager access and a planned API, the client contains sync/retry code, and the customer saw local status labels (SE-024–027, SE-034, SE-037). Those sources answer different questions. The publication mechanism, external outcome and retry safety remain unresolved. Likewise, the P2 course offer and the academy access denial need entitlement/provisioning evidence (SE-040). A portal library containing four vendor videos (CE-109) adds scoped corroboration to Maxi's separate description. It establishes neither tenant upload nor automatic reuse of customer assets.
 
-| MS-004 limit awaiting Maxi | Evidence needed if the limit must be closed |
+| Accepted MS-004 research limit | Evidence needed if the limit must be closed |
 |---|---|
 | Embedded Local Dominator analytics | Authorized view of the iframe contents for the observed location. The outer page alone cannot verify metrics or scan accuracy. |
 | Google-side result | Authorized match of a specific post or reply to its provider resource/state or public listing. The dashboard label is insufficient. |
@@ -136,4 +136,4 @@ Proposed follow-ons: rights-cleared customer assets and reusable calendar drafts
 | What per-tenant cost and retry caps apply to posting and later renders? Which provider, if any, may receive which assets? | Separate storage/API costs, paid generation, retry authority and manual alternative. No provider or advertising approval implied. |
 | What result and failure evidence must the supervised pilot produce? When may recurrence, paid campaigns or unattended actions be considered? | One confirmed resource on the intended account, no duplicates after timeout, visible revocation/hold and an audit trail. Future spend and autonomy need independent acceptance. |
 
-The next decision for G1 is narrower: record Maxi's disposition of each MS-004 limit in issue #4, then reassess the dependencies of #7 and gate #14. This document records evidence and a proposal only.
+If a later decision relies on one of the five limits, obtain the evidence listed above before claiming support. Gate #14 remains open for Maxi’s separate G1 decision.
