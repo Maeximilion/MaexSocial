@@ -80,8 +80,8 @@ case "$(basename -- "$0")" in
             case "$oid" in
                 ''|*[!0-9a-f]*) echo "Invalid pre-push object ID." >&2; exit 1 ;;
                 *[1-9a-f]*)
-                    # Ref components are published too. Do not echo their contents.
-                    printf '%s\n' "${remote_ref//\//$'\n'}" | scan_text
+                    # A credential may include slashes or occupy one ref component.
+                    printf '%s\n' "$remote_ref" "${remote_ref//\//$'\n'}" | scan_text
                     commit=$(git rev-parse --verify "$oid^{commit}") || {
                         echo "Cannot scan a non-commit push target." >&2; exit 1;
                     }

@@ -69,14 +69,34 @@ class SecretHooksTest(unittest.TestCase):
         (self.repo / "settings.txt").write_text("token=" + self.token + "\n")
         self.git("commit", "-qm", "Clean index")
 
-    def test_bom_marked_script_is_blocked_on_commit_and_push(self):
-        (self.repo / "settings.ps1").write_bytes(("token=" + self.token).encode("utf-16"))
+    def assert_script_blocked(self, data):
+        (self.repo / "settings.ps1").write_bytes(data)
         self.git("add", "settings.ps1")
         result = self.git("commit", "-qm", "Unsafe script", check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("leaks found", result.stderr)
         self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported script")
         self.assert_push_rejected("HEAD")
+
+    def test_bom_marked_script_is_blocked_on_commit_and_push(self):
+        self.assert_script_blocked(("token=" + self.token).encode("utf-16"))
+
+    def test_ambiguous_bom_does_not_hide_a_utf16_script(self):
+        self.assert_script_blocked(b"\xff\xfe" + ("\0token=" + self.token).encode("utf-16-le"))
+
+    def test_ambiguous_bom_still_scans_a_utf32_script(self):
+        self.assert_script_blocked(b"\xff\xfe\0\0" + ("token=" + self.token).encode("utf-32-le"))
+
+    def test_verbose_scanner_error_blocks_without_hanging_or_printing_details(self):
+        hooks = self.repo / ".git/hooks"
+        config = "[[rules]]\nid='bad'\ndescription='bad'\nregex='(" + "x" * 150000 + "'\n"
+        (hooks / "gitleaks.toml").write_text(config)
+        result = subprocess.run([sys.executable, "-I", "-B", str(hooks / "scan_objects.py"),
+                                 str(Path(SCANNER).resolve()), shutil.which("git"), "HEAD"],
+                                cwd=self.repo, capture_output=True, text=True, timeout=12)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr.strip(), "Secret scan blocked: leaks found or scan failed.")
 
     def test_unsafe_patch_import_and_automatic_merge_leave_head_unchanged(self):
         base = self.git("rev-parse", "HEAD").stdout.strip()
@@ -306,9 +326,16 @@ class SecretHooksTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
 
     def test_push_rejects_secret_in_new_remote_ref(self):
+        self.assert_destination_blocked(self.token)
+
+    def test_push_rejects_secret_spanning_destination_components(self):
+        token = "gl" + "c_" + secrets.token_hex(10) + "/" + secrets.token_hex(10)
+        self.assert_destination_blocked(token)
+
+    def assert_destination_blocked(self, token):
         remote = Path(self.temp.name) / "remote.git"
         self.git("init", "--bare", "-q", str(remote))
-        ref = "refs/heads/" + self.token
+        ref = "refs/heads/" + token
         result = self.git("push", str(remote), "HEAD:" + ref, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.git("ls-remote", str(remote), ref).stdout, "")
