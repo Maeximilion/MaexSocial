@@ -1,8 +1,24 @@
 # Current coordinator handover
 
+## G2 planning handover · 2026-11-05 15:44 UTC
+
+The owner accepted bounded G1 discovery and authorized G2 planning with Superpowers. [Gate #14](https://github.com/Maeximilion/MaexSocial/issues/14) is completed. [PR #89](https://github.com/Maeximilion/MaexSocial/pull/89) merged in `e6cf4adbdffde01436c42be34b61d269b06b9d4f`; annotated tag `gate-g1` was verified on that commit. The five carried research gaps have individual closure criteria in [#88](https://github.com/Maeximilion/MaexSocial/issues/88), an open native blocker of [G5 / #18](https://github.com/Maeximilion/MaexSocial/issues/18). The [gate procedure](../../.claude/commands/gate.md) applies the same requirement to later deferred gaps and any nearer decision that depends on the evidence.
+
+Maxi chose one local business and one approved text post on **Google Business Profile** as the planning assumption. Record a verified Google-side outcome separately from submission. If access is unavailable before dispatch, export is the terminal outcome for that occurrence. After a dispatch has started, withhold export or retry until the original attempt is reconciled, since Google may already have published it. [Owner decision on #8](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692).
+
+| Issue and chat | Verified transition | Next action |
+| --- | --- | --- |
+| [#14](https://github.com/Maeximilion/MaexSocial/issues/14) · G1 | PR #89 merged, tag verified, issue and Project Done. The work chat is preparing its private archive handover. | Count this chat until archive readback and backup verification. |
+| [#8](https://github.com/Maeximilion/MaexSocial/issues/8) · G2 scope and architecture | Dedicated Superpowers planning chat, admitted after the verified merge/archive of #80. Its [plan](../../docs/superpowers/plans/2026-11-05-g2-work-plan.md) and [design options](../../docs/superpowers/specs/2026-11-05-g2-planning-design.md) cover the confirmed pilot. | Review the planning PR and obtain the separate design decision before implementation. |
+| [#30](https://github.com/Maeximilion/MaexSocial/issues/30) · Customer and desktop admin access | Admitted after the verified merge/archive of [#81](https://github.com/Maeximilion/MaexSocial/pull/81). [PR #90](https://github.com/Maeximilion/MaexSocial/pull/90) is a design proposal. | Review the access contract and pending owner choices. #43 owns separate media-processing design; #82 is future staging work. |
+
+All three gate-wave slots were occupied at this checkpoint. When a merged PR's chat is archived, re-read current issues and the roster before the next admission. Deliverable-only chats for [#83](https://github.com/Maeximilion/MaexSocial/issues/83) and [#87](https://github.com/Maeximilion/MaexSocial/issues/87) were archived and verified separately. #83 remains open for historical recovery evidence. #87 completed its source-only assessment. Continue to use Standard speed unless the owner requests Fast. Use Superpowers for orchestration and planning, selecting the workflow that fits each task without duplicating reviews.
+
+## Prior checkpoint
+
 Checkpoint for 2026-11-05 15:26 UTC (16:26 Europe/Berlin). The owner resumed orchestration after the 12:30 pause and confirmed that Fast is off in all existing chats. Use Standard for new chats as well. Read [the operating agreement](README.md) and verify GitHub and the actual open and archived chat lists before dispatch.
 
-## Gate wave: three occupied slots out of a limit of three
+### Gate wave at the prior checkpoint
 
 | Chat owner | Verified state | Next action |
 | --- | --- | --- |
