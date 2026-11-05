@@ -345,6 +345,160 @@
       "sha256": "cdb71ca4a8fad483d15967621af02bc467d02dc55a149a7b842814e5b3efe16e",
       "hash_basis": "REA evidence bundle file; artifact directory digest 585c665edb354f108f776b5c4e2acb9c6c85001be381f3e7547c9fa2f8b6eba1",
       "notes": "15 static route candidates incl. 11 dashboard sub-routes, sign-in, billing, two PDF downloads. Source parsing partial (unselected vendor chunks). A full-directory run hit the 300000 ms per-source provider deadline on a React vendor chunk."
+    },
+    {
+      "id": "CE-101",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/sign-in, /de/sign-up, /de/reset-password",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-101",
+      "notes": "Form fields, consent checkboxes, links; nothing submitted"
+    },
+    {
+      "id": "CE-102",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard (navigation, header)",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-102",
+      "notes": "Nine navigation items, single location, header controls"
+    },
+    {
+      "id": "CE-103",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-103",
+      "notes": "Performance Hub, activity checklists, heat-map card"
+    },
+    {
+      "id": "CE-104",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/history",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-104",
+      "notes": "Rank and review/post deltas, embedded scan history"
+    },
+    {
+      "id": "CE-105",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/analytics",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-105",
+      "notes": "Embedded Local Dominator client dashboard; content not readable"
+    },
+    {
+      "id": "CE-106",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/posts",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-106",
+      "notes": "Post list and states, auto-accept toggle, two expanded details"
+    },
+    {
+      "id": "CE-107",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/reviews",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-107",
+      "notes": "Rating summary, auto-approve active, 14-item list with replies"
+    },
+    {
+      "id": "CE-108",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/support",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-108",
+      "notes": "Chat controls; nothing sent"
+    },
+    {
+      "id": "CE-109",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/library",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-109",
+      "notes": "Four videos"
+    },
+    {
+      "id": "CE-110",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/billing",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-110",
+      "notes": "Active package 2, plan cards; portal not opened"
+    },
+    {
+      "id": "CE-111",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/settings",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-111",
+      "notes": "Field labels, read-only fields, notification toggles; nothing saved"
+    },
+    {
+      "id": "CE-112",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard/academy, /fundament, /rechner",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-112",
+      "notes": "Academy access denied; foundation and calculator redirect"
+    },
+    {
+      "id": "CE-113",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-113",
+      "notes": "Avatar menu items; no location dropdown"
+    },
+    {
+      "id": "CE-114",
+      "class": "ui_observation",
+      "scenario": "C-S6",
+      "url": "https://app.socialedge.ai/de/dashboard",
+      "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
+      "method": "Claude in Chrome, authenticated read-only",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "hash_basis": "private observation log section CE-114",
+      "notes": "URLs and status codes only: /api/auth/session, /api/create-admin-welcome-message, Firebase Auth, Firestore channels; no /api/posts/gbp"
     }
   ],
   "coverage_boundaries": [
@@ -352,6 +506,39 @@
     "No server-side code, API responses for authenticated calls, background jobs or AI prompts observed.",
     "Static candidates do not establish reachability, permissions or current server behavior.",
     "36 chunks from 15 route shells; unreferenced code-split chunks may be missing.",
-    "REA MCP analyze_javascript_application on all 36 chunks exceeded the host tool deadline; the CLI full run hit the per-source provider deadline on a vendor chunk. CE-028 uses the 15 route chunks only."
-  ]
+    "REA MCP analyze_javascript_application on all 36 chunks exceeded the host tool deadline; the CLI full run hit the per-source provider deadline on a vendor chunk. CE-028 uses the 15 route chunks only.",
+    "C-S6 covers one package-2 account with one location; other tiers unobserved.",
+    "C-S6 evidence is UI class from Claude in Chrome; no REA runtime capture of the authenticated app.",
+    "Embedded Local Dominator analytics content and Google-side publication results remain unobserved."
+  ],
+  "runtime_addendum": {
+    "revision": "R3",
+    "scenario": "C-S6",
+    "window_utc": [
+      "2026-11-04T23:50:00Z",
+      "2026-11-05T00:07:00Z"
+    ],
+    "account": "Maxi's own SocialEdge customer account, one location, package 2 shown as active",
+    "sign_in": "performed by Maxi; no credentials, cookies or tokens read or stored",
+    "tool": {
+      "name": "Claude in Chrome",
+      "class": "ui_observation",
+      "capabilities_used": [
+        "accessibility tree",
+        "page text",
+        "DOM reads",
+        "network URL and status listing"
+      ]
+    },
+    "rea_connection": {
+      "connected": false,
+      "checked": "no chrome.exe with --remote-debugging-port; no CDP on 127.0.0.1:9222/9223/9229/9333",
+      "missing_step": "enable Chrome remote debugging for the signed-in profile, or launch a separate profile with a loopback debugging port"
+    },
+    "private_log": {
+      "path": "work/rea-claude/cs6/notes.md",
+      "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
+      "committed": false
+    }
+  }
 }

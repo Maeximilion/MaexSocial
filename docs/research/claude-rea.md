@@ -9,6 +9,7 @@
 | R1 — independent checkpoint | 2026-11-04T23:34:59Z, commit `35c61ac` | Sections 1–5. Written before the Codex report or manifest was read |
 | R1a — own evidence addendum | 2026-11-04T23:40Z | CE-028 REA route analysis completed after the freeze, still before reading the Codex lane |
 | R2 — comparison | 2026-11-04T23:50Z | Sections 6–8 after reading the Codex report and manifest |
+| R3 — authenticated runtime addendum | 2026-11-05T00:07Z | Section 9, scenario C-S6. Earlier sections unchanged |
 
 ## 1. Method, scope and access
 
@@ -177,3 +178,94 @@ These proposals derive from the observations above and the repository's G2 const
 - Vendor claims (pricing, terms, privacy policy) describe intent and contracts, not verified operation.
 - Shared-source corroboration: SE-005 and SE-007 rest on the same layout chunk in both lanes.
 - Smallest next checks: (a) read-only walkthrough of a free account for SE-022 and plan gating; (b) paid-tier read-only view of posts and reviews for SE-024–SE-026; (c) ask SocialEdge or observe a post sync to settle SE-027 versus SE-024.
+
+## 9. Runtime addendum R3 — authenticated read-only walkthrough (C-S6)
+
+### 9.1 Access, tools and boundaries
+
+| Item | Value |
+|---|---|
+| Window | 2026-11-04T23:50Z – 2026-11-05T00:07Z UTC |
+| Account | Maxi's own SocialEdge customer account with one business location. The billing page shows package 2 "Dein 24/7 Vertriebsmitarbeiter" as active (CE-110) |
+| Sign-in | Maxi signed in himself in the Claude-in-Chrome tab. No password, cookie or token was read, stored or exported |
+| Tool | Claude in Chrome: accessibility tree, page text, DOM reads, network URL/status listing. Evidence class **UI**. Screenshots worked before the dashboard map rendered and then timed out |
+| REA | Not connected. Maxi's Chrome had no process with `--remote-debugging-port` and no CDP endpoint on 9222, 9223, 9229 or 9333. A REA connect session needs Chrome's remote-debugging permission for that profile or a separate profile with a debugging port. Neither was changed |
+| Actions taken | Navigation, expanding activity rows, post rows and review rows, opening and closing the avatar menu |
+| Not taken | Approve/reject, auto-approve toggles, saving settings, chat, upload, adding a location, subscription portal, language switch, sign-out |
+| Side effects | Each full page load triggers the app's own `POST /api/auth/session`, `POST /api/create-admin-welcome-message` and Firestore write channels (CE-114). These are application behavior on load, not user actions |
+
+The private observation log with business, post, review and account-holder content stays in ignored `work/rea-claude/cs6/notes.md` (manifest CE-101–CE-114). Only sanitized findings follow.
+
+### 9.2 Coverage
+
+| Scenario | Route / function | Role / tier | Steps | Observation | Evidence | State | Reason |
+|---|---|---|---|---|---|---|---|
+| C-S6.01 | `/de/sign-in` | Anonymous | Read form | Email, password, remember-me, reset link, register link. No SSO | CE-101 | checked | — |
+| C-S6.02 | `/de/sign-up` | Anonymous | Read form, no submit | Name, email, password (≥6), mandatory B2B and AGB/privacy/DPA consent, optional marketing consent | CE-101 | checked | — |
+| C-S6.03 | `/de/reset-password` | Anonymous | Read form, no submit | Email field, "send link" | CE-101 | checked | — |
+| C-S6.04 | Navigation and header | Customer, P2 | Read tree, open avatar menu | Nine navigation items; single location chip; add-location button; language switch; avatar menu with name, email and sign-out only | CE-102, CE-113 | checked | Add location and language switch not clicked |
+| C-S6.05 | `/de/dashboard` | Customer, P2 | Read, expand activity rows | Average rank with date and trend; empty notifications; 16 activity checklists with operator notes; Local Dominator heat-map card | CE-103 | checked | Heat-map internals partly unreadable (third-party iframe) |
+| C-S6.06 | `/de/dashboard/analytics` | Customer, P2 | Load page | The whole page is an embedded Local Dominator client dashboard | CE-105 | blocked | Cross-origin iframe unreadable; screenshots time out |
+| C-S6.07 | `/de/dashboard/history` | Customer, P2 | Read | Rank change since first scan, review and post deltas, embedded scan history | CE-104 | checked | Scan list inside iframe not read |
+| C-S6.08 | `/de/dashboard/posts` | Customer, P2 | Read list, expand two rows | 23 posts: 18 "Live", 5 "Genehmigt", none pending or rejected; auto-accept toggle; details show text, three images, creation date; no row actions | CE-106 | checked | Toggle state not determinable; approve/reject flow not reachable (no pending items, not authorized) |
+| C-S6.09 | `/de/dashboard/reviews` | Customer, P2 | Read, expand list and one review | Rating and count; no open reviews; auto-approve shown as active; list of 14 reviews with owner replies, all "Live" | CE-107 | checked | No paging or filter observed for the remaining reviews |
+| C-S6.10 | `/de/dashboard/support` | Customer, P2 | Read controls | Chat with a named contact, file attachment, message box | CE-108 | checked | Sending and upload not authorized |
+| C-S6.11 | `/de/dashboard/library` | Customer, P2 | Read | Four SocialEdge videos | CE-109 | checked | — |
+| C-S6.12 | `/de/dashboard/billing` | Customer, P2 | Read | Active package 2, invoices "N/A", monthly/yearly switch, plan cards, P3 waitlist | CE-110 | checked | Subscription portal not opened |
+| C-S6.13 | `/de/dashboard/settings` | Customer, P2 | Read labels and states | User data, billing address, company data (Maps link and name read-only), password, six email notification toggles | CE-111 | checked | Nothing saved |
+| C-S6.14 | `/de/dashboard/academy` | Customer, P2 | Direct URL | "No access to the Academy, contact support" | CE-112 | checked | — |
+| C-S6.15 | `/de/dashboard/fundament`, `/de/dashboard/rechner` | Customer, P2 | Direct URL | Redirect to the dashboard | CE-112 | checked | Foundation onboarding not reachable for this account |
+| C-S6.16 | Google publication result | Customer, P2 | — | Not observable in the app | — | blocked | Needs the public Google profile or provider data, outside the declared target |
+| C-S6.17 | Team, integrations, account linking | Customer, P2 | Searched navigation and settings | No team, invitation or integration screens offered | CE-102, CE-111 | checked | Absence holds for this account only |
+
+### 9.3 Runtime status of earlier claims
+
+"Offered" means visible in this account's UI. "Observed" means a state or result was seen at runtime. "Static only" means still inferred from client code.
+
+| Claim | Runtime result | Evidence |
+|---|---|---|
+| SE-005, SE-006 navigation | Observed for P2: seven main and two account items. Academy, foundation and calculator are absent from navigation; academy is blocked, foundation and calculator redirect | CE-102, CE-112 |
+| SE-008 pending badges | Offered; nothing pending at capture | CE-106, CE-107 |
+| SE-021 anonymous redirect | Observed again | CE-101 |
+| SE-022 self-registration | Offered (form only, not submitted) | CE-101 |
+| SE-023 post states and auto-approve | Observed "Live" and "Genehmigt" states and the auto-accept toggle. Pending and rejected flows static only | CE-106 |
+| SE-024 twelve Google sync states and `/api/posts/gbp` | Static only. No sync label appeared on 23 posts and no call to `/api/posts/gbp` occurred on load | CE-106, CE-114 |
+| SE-025 time-based "published" | Unverified. "Live" posts carry no provider confirmation in the UI; their presence on Google was not checked | CE-106 |
+| SE-026 review approval | Observed: auto-approve active, replies shown as "Live". Manual approve/reject static only | CE-107 |
+| SE-027 manager access | Unverified in the app; no Google connection screen offered to this account | CE-111 |
+| SE-028 Local Dominator | Observed: dashboard heat map, history and analytics are embedded Local Dominator views | CE-103, CE-104, CE-105 |
+| SE-029 foundation onboarding | Not reachable for this account (redirect) | CE-112 |
+| SE-030 prices | Observed P1 at 300 €/month on the billing page; this account holds P2 | CE-110 |
+| SE-032 CRM or follow-up UI | Not offered in this P2 account | CE-102 |
+
+### 9.4 New runtime claims
+
+| Claim ID and exact claim | Codex evidence | Independent Claude evidence | Result | Source dates and scope | Unknowns and next check |
+|---|---|---|---|---|---|
+| SE-033 The dashboard shows 16 operator activity checklists with per-item open/active state and free-text notes | Absent | CE-103 | extend | 2026-11-05, P2 account, UI | Who updates them and how often |
+| SE-034 The posts view shows only app states ("Live", "Genehmigt"), no Google publication state | Absent | CE-106 | extend | 2026-11-05, P2, UI | Compare with the public Google profile |
+| SE-035 Posts are scheduled every four days, matching "8 posts per month" in the activity checklist | Absent | CE-103, CE-106 | extend | 2026-11-05, P2, UI | — |
+| SE-036 Sampled generated posts assert concrete business facts and target nearby towns | Absent | CE-106 | extend | 2026-11-05, P2, two posts sampled | Source of those facts |
+| SE-037 Review reply auto-approval is active for this account and replies appear with status "Live" | Absent | CE-107 | extend | 2026-11-05, P2, UI | Whether replies are on Google |
+| SE-038 The review list shows 14 of 429 reviews with no paging, filter or search | Absent | CE-107 | extend | 2026-11-05, P2, UI | Whether older reviews are reachable elsewhere |
+| SE-039 Analytics and scan history are embedded third-party (Local Dominator) dashboards | Absent | CE-104, CE-105 | extend | 2026-11-05, P2, UI | Content of the embedded analytics |
+| SE-040 Academy access is not included in this P2 account although the P2 offer lists guides and courses | Absent | CE-112, CE-002 | extend | 2026-11-05 runtime vs 2026-11-04 public page | Ask SocialEdge whether access is granted manually |
+| SE-041 Every full page load posts to `/api/create-admin-welcome-message` and `/api/auth/session` | Absent | CE-114 | extend | 2026-11-05, P2, network URLs only | Server effect unknown |
+| SE-042 No team, invitation or integration management is offered to the customer | Absent | CE-102, CE-111 | extend | 2026-11-05, P2, UI | Other tiers unknown |
+
+### 9.5 Additional MaexSocial proposals (not evidence)
+
+1. Show provider publication state next to the approval state. SocialEdge's "Live" carries no visible Google confirmation (SE-034).
+2. Trace every factual sentence in a generated post to an approved fact, because sampled posts assert facts the customer must vouch for (SE-036).
+3. Keep auto-approval opt-in and auditable per channel. Here it was active for review replies (SE-037).
+4. Make all reviews reachable with paging and filters (SE-038).
+5. Keep reads free of server writes, or make page-load writes idempotent and auditable (SE-041).
+6. Plan team roles and integration screens explicitly. SocialEdge offers none to customers (SE-042), while MaexSocial's access requirements need them.
+
+### 9.6 Remaining gaps after R3
+
+- Embedded Local Dominator analytics content (C-S6.06). A manual screenshot from Maxi or a working screenshot path would close it.
+- Whether "Live" posts and replies exist on Google (C-S6.16). This needs a comparison with the public Google Business Profile, outside the declared target.
+- Approve/reject, auto-approve changes, chat, upload, adding a location and the subscription portal were not authorized; no pending items existed.
+- REA runtime evidence for the authenticated app needs a CDP-enabled browser session. All R3 evidence is UI class.
+- Findings cover one P2 account with one location. Free, P1 and P3 tiers were not observed.

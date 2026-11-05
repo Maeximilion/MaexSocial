@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane.
+- Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane, plus a dated read-only authenticated runtime addendum.
 - Add named Overview and Delivery board Project views, with status columns and planning fields.
 - Extend automatic PR metadata and dedicated dependency-task Development links while preserving manual planning choices.
 - Choose TypeScript strict as the application-language baseline under delegated technology selection; retain G2 design and REA sequencing.

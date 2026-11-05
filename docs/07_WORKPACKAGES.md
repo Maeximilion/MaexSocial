@@ -15,7 +15,7 @@ The first release should name one customer journey, supported channel and operat
 | [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | Repository, Project, templates, workflows, docs and handovers verified on GitHub | — | Done |
 | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | Public SocialEdge product inventory with sources, dates and evidence class | — | In progress |
 | [MS-003](https://github.com/Maeximilion/MaexSocial/issues/3) | G1 | Codex REA report with target identity, reproducible steps, evidence IDs and coverage limits | MS-001 research brief | Done for bounded static scope, runtime gap documented |
-| [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | In review, authenticated scope open |
+| [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | In review; read-only authenticated walkthrough done, gaps listed |
 | [MS-005](https://github.com/Maeximilion/MaexSocial/issues/5) | G1 | Official API/MCP feasibility matrix, access requirements and cost assumptions | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | Planned |
 | [MS-006](https://github.com/Maeximilion/MaexSocial/issues/6) | G1 | Search report for the remembered Claude image-to-ad demo, candidate links and confidence | — | Planned |
 | [MS-007](https://github.com/Maeximilion/MaexSocial/issues/7) | G1 | Combined feature matrix, disagreement ledger, gaps and proposed first slice | MS-002–006 | Blocked |
