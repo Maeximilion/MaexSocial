@@ -34,6 +34,8 @@ The first slice should cover one complete workflow through these responsibilitie
 
 ## G2 decision record
 
+[Proposed ADR 0002](decisions/0002-google-text-pilot.md) compares delivery options for one customer-approved Google text post, prices a Frankfurt pilot and defines the recovery tests for MS-009. Maxi's architecture decision remains open on MS-008.
+
 MS-008 compares a small application with direct APIs, a workflow-led implementation, and a hybrid where external orchestration is limited to appropriate background work. Record fit to the first slice, failure recovery, operating cost and maintainability. The approved choice determines code directories, frameworks and deployment within the language baseline, revisiting that baseline only if evidence warrants it. API and MCP are transport options whose capabilities and operational support must be proven separately.
 
 Secure external login, platform-wide customer management, separate customer dashboards, a public website with customer self-registration/login and separate administrator access are confirmed requirements. Authentication design, verified-email activation, administrator MFA and the precise permission model are proposed G2 decisions detailed in [access and security](17_ACCESS_SECURITY.md). Public signup grants customer authority only. No login stack is selected by this document.
