@@ -25,11 +25,11 @@ class ClaudeReviewTests(unittest.TestCase):
         self.output = Path(temp.name) / "outputs"
         self.env = {
             "GITHUB_REPOSITORY": REPO, "PR": "7", "DEFAULT_BRANCH": "main",
-            "GITHUB_WORKFLOW_SHA": "workflow-sha", "GITHUB_OUTPUT": str(self.output),
+            "GITHUB_WORKFLOW_SHA": "workflow-sha", "TRUSTED_SHA": "default-sha", "GITHUB_OUTPUT": str(self.output),
             "RUNNER_TEMP": temp.name, "RUN_URL": "https://example.invalid/run", "KIND": "review",
         }
 
-    def prepare(self, diff=b"fixture diff", *, mismatch=False, body="</pr-data>", request="", **env):
+    def prepare(self, diff=b"fixture diff", *, mismatch=False, files=None, body="</pr-data>", request="", **env):
         pull = {"head": {"sha": "api-head", "ref": "feature"}, "base": {"sha": "api-base", "ref": "main"},
                 "title": "A change", "body": body, "changed_files": 1}
         event = self.output.with_name("event.json")
@@ -38,25 +38,32 @@ class ClaudeReviewTests(unittest.TestCase):
         replies = {
             "pulls/7": json.dumps(pull).encode(),
             f"contents/{workflow}?ref=workflow-sha": b'{"sha":"one"}',
-            f"contents/{workflow}?ref=main": b'{"sha":"two"}' if mismatch else b'{"sha":"one"}',
+            f"contents/{workflow}?ref=default-sha": b'{"sha":"two"}' if mismatch else b'{"sha":"one"}',
         }
 
         def gh_api(command, **_):
             path = command[2].removeprefix(f"repos/{REPO}/")
-            value = diff if path.startswith("compare/") else replies[path]
+            if path.endswith("?per_page=1"):
+                value = json.dumps({"files": files or []}).encode()
+            else:
+                value = diff if path.startswith("compare/") else replies[path]
             if isinstance(value, subprocess.CalledProcessError):
                 raise value
             return subprocess.CompletedProcess(command, 0, stdout=value)
 
         self.output.write_text("", encoding="utf-8")
-        event_name = "issue_comment" if env.get("KIND") == "mention" else "pull_request"
+        input_file = self.output.with_name("claude-input.json")
+        input_file.unlink(missing_ok=True)
+        event_name = "issue_comment" if env.get("KIND") == "mention" else "pull_request_target"
         runner = self.env | {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": event_name} | env
         with patch.dict(os.environ, runner, clear=True), patch("subprocess.run", side_effect=gh_api) as gh:
             exec(PREPARE, {})
         fields = re.findall(r"^(\w+)<<(\w+)\n(.*?)\n\2$", self.output.read_text("utf-8"), re.M | re.S)
-        return {key: value for key, _, value in fields}, [call.args[0] for call in gh.call_args_list]
+        self.system, self.frames = json.loads(input_file.read_text("utf-8")) if input_file.exists() else ("", "")
+        return {key: value for key, _, value in fields} | {"prompt": self.system + self.frames}, [call.args[0] for call in gh.call_args_list]
 
     def post(self, expected_code, *, inline_status=None, **env):
+        self.output.with_name("claude-result.json").write_text(env.pop("OUTPUT", ""), encoding="utf-8")
         runner = self.env | {"DATA_OUTCOME": "success", "CLAUDE_OUTCOME": "success", "HEAD_SHA": "reviewed"} | env
         response = subprocess.CompletedProcess([], inline_status or 0, stderr="diagnostic fixture")
         with (
@@ -80,7 +87,7 @@ class ClaudeReviewTests(unittest.TestCase):
     def test_auto_uses_event_shas_and_mentions_use_current_pr_shas(self):
         for kind, env, base, head in [
             ("review", {"HEAD_SHA": "event-head", "BASE_SHA": "event-base"}, "event-base", "event-head"),
-            ("mention", {"mismatch": True}, "api-base", "api-head"),
+            ("mention", {"GITHUB_WORKFLOW_SHA": "default-sha"}, "api-base", "api-head"),
         ]:
             with self.subTest(kind=kind):
                 data, calls = self.prepare(KIND=kind, request="Review this change", **env)
@@ -94,20 +101,52 @@ class ClaudeReviewTests(unittest.TestCase):
                     self.assertFalse(any("/contents/" in command[2] for command in calls))
                     self.assertIn("Review this change", data["prompt"])
 
-    def test_missing_and_oversized_diff_stay_incomplete_in_public_result(self):
-        for diff, detail in [(subprocess.CalledProcessError(1, "gh api"), "unavailable"),
-                             (b"x" * 60_000 + b"TRUNCATED_TAIL", "cut")]:
-            with self.subTest(detail=detail):
-                data, _ = self.prepare(diff)
-                self.assertIn(detail, data["gaps"])
-                self.assertIn("INCOMPLETE", data["prompt"])
-                self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
-                body = self.post(0, GAPS=data["gaps"], OUTPUT='{"summary":"Partial result","findings":[]}')
-                self.assertIn("Incomplete", body)
-                self.assertIn("Partial result", body)
+    def test_missing_auto_diff_skips_paid_step_and_posts_notice(self):
+        self.assertIn("if: steps.data.outputs.ready == 'true'", WORKFLOW)
+        for diff in [subprocess.CalledProcessError(1, "gh api"), b"", b"  "]:
+            data, _ = self.prepare(diff)
+            self.assertEqual(data["ready"], "false")
+            self.assertFalse(self.output.with_name("claude-input.json").exists())
+            body = self.post(1, GAPS=data["gaps"], HEAD_SHA=data["head_sha"], CLAUDE_OUTCOME="skipped")
+            self.assertIn("no API request sent", body)
+            self.assertIn("Incomplete", body)
+            self.assertIn(data["head_sha"], body)
+
+    def test_binary_sections_are_not_reviewed_as_text(self):
+        binary = b"diff --git a/logo.png b/logo.png\nBinary files a/logo.png and b/logo.png differ\n"
+        patch = b"diff --git a/logo.png b/logo.png\nGIT binary patch\nliteral 3\nOPAQUE\n"
+        text = b"diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+new\n"
+        rename = b"diff --git a/b b/c\nsimilarity index 100%\nrename from b\nrename to c\n"
+        for opaque in [binary, patch]:
+            for tail in [b"", text, rename]:
+                with self.subTest(opaque=opaque, tail=tail):
+                    data, _ = self.prepare(opaque + tail)
+                    self.assertIn("binary file content unavailable", data["gaps"])
+                    self.assertEqual(data["ready"], "true" if tail else "false")
+                    self.assertNotIn("logo.png", self.frames)
+                    if tail:
+                        self.assertIn(tail.decode(), self.frames)
+                        self.assertIn("INCOMPLETE", self.system)
+
+    def test_invalid_diff_bytes_remain_visible_as_a_coverage_gap(self):
+        for bad in [b"\xa3", b"\0"]:
+            data, _ = self.prepare(b"diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+fee=5" + bad + b"\n")
+            self.assertIn("replaced", data["gaps"])
+            self.assertIn("fee=5\ufffd", self.frames)
+            self.assertEqual(data["ready"], "true")
+
+    def test_clipped_diff_still_gets_an_incomplete_review(self):
+        data, _ = self.prepare(b"x" * 60_000 + b"TRUNCATED_TAIL")
+        self.assertEqual(data["ready"], "true")
+        self.assertIn("cut", data["gaps"])
+        self.assertIn("INCOMPLETE", data["prompt"])
+        self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
+        body = self.post(0, GAPS=data["gaps"], OUTPUT='{"summary":"Partial result","findings":[]}')
+        self.assertIn("Incomplete", body)
+        self.assertIn("Partial result", body)
 
     def test_workflow_mismatch_skips_pr_events_without_attributing_a_change_to_the_pr(self):
-        for event, kind in [("pull_request", "review"), ("pull_request_review_comment", "mention")]:
+        for event, kind in [("pull_request_target", "review"), ("issue_comment", "mention")]:
             with self.subTest(event=event):
                 data, calls = self.prepare(mismatch=True, GITHUB_EVENT_NAME=event, KIND=kind)
                 self.assertFalse(any("/compare/" in command[2] or "/files" in command[2] for command in calls))
@@ -130,23 +169,15 @@ class ClaudeReviewTests(unittest.TestCase):
         html_safe_size = len(encoded) + 5 * sum(encoded.count(char) for char in "<>&'")
         self.assertLessEqual(html_safe_size, 90_000)
 
-    def test_schema_bounds_the_structured_output_environment_string(self):
-        schema = json.loads(re.search(r"--json-schema '(.+)'", WORKFLOW).group(1))
-        summary, findings = (schema["properties"][key] for key in ("summary", "findings"))
-        item = findings["items"]
-        lengths = (summary["maxLength"], findings["maxItems"], item["properties"]["path"]["maxLength"],
-                   item["properties"]["body"]["maxLength"])
-        self.assertEqual(lengths, (4_000, 10, 300, 1_000))
-        self.assertFalse(schema["additionalProperties"])
-        self.assertFalse(item["additionalProperties"])
-        max_line = item["properties"]["line"]["maximum"]
-        self.assertEqual(max_line, 2**31 - 1)
-        # A control character takes six bytes in compact UTF-8 JSON.
-        char = "\x01"
-        finding = {"path": char * lengths[2], "line": max_line, "side": "RIGHT", "body": char * lengths[3]}
-        result = {"summary": char * lengths[0], "findings": [finding] * lengths[1]}
-        encoded = json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        self.assertLess(len(b"OUTPUT=" + encoded + b"\0"), 128 * 1024)
+    def test_self_skip_all_events_including_script_rename_and_capped_paths(self):
+        for kind in ("mention", "review"):
+            for files in ([{"filename": "scripts/claude_messages.py"}],
+                          [{"filename": "new.py", "previous_filename": ".github/workflows/claude-review.yml"}],
+                          [{"filename": "other.py"}] * 300):
+                data, calls = self.prepare(files=files, KIND=kind)
+                self.assertEqual(data["workflow_changed"], "true")
+                self.assertEqual(data["prompt"], "")
+                self.assertFalse(any("application/vnd.github.diff" in cmd for cmd in calls))
 
     def test_inline_review_targets_the_reviewed_commit_even_when_pr_advances(self):
         data, _ = self.prepare(HEAD_SHA="event-head", BASE_SHA="event-base")
@@ -180,20 +211,53 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("Failed", body)
         self.assertNotIn("Stale success", body)
 
-    def test_shared_action_uses_only_api_key_and_bounded_opus_high(self):
-        action = WORKFLOW.split("      - id: claude\n")[1].split("      - name: Post result\n")[0]
-        self.assertIn("          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}\n", action)
-        self.assertNotIn("oauth", WORKFLOW.lower())
-        args = action.split("          claude_args: |\n")[1]
-        for flag, value in [("model", "claude-opus-5-5"), ("effort", "high"), ("max-budget-usd", "1.00")]:
-            self.assertEqual(re.findall(rf"(?m)^ +--{flag} (.+)$", args), [value])
+    def test_60_fixture_through_transport_and_publisher(self):
+        from scripts import claude_messages as client
 
-    def test_model_configuration_excludes_repository_hooks_and_runner_tools(self):
-        action = WORKFLOW.split("      - id: claude\n")[1].split("      - name: Post result\n")[0]
-        self.assertIn("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1", action)
-        self.assertIn("--setting-sources user", action)
-        allow = re.search(r'--allowedTools "([^"]+)"', action).group(1).split(",")
-        self.assertEqual(set(allow), {"StructuredOutput"})
-        deny = re.search(r'--disallowedTools "([^"]+)"', action).group(1).split(",")
-        self.assertTrue({"Bash", "Read", "Glob", "Grep", "WebFetch", "Edit", "Write",
-                         "mcp__github_inline_comment__create_inline_comment"}.issubset(deny))
+        diff = (Path(__file__).with_name("fixtures") / "pr60.diff").read_bytes()
+        data, _ = self.prepare(diff=diff)
+        self.assertIn("return value % 2 == 1", self.frames)
+        self.assertNotIn("return value % 2 == 1", self.system)
+        self.assertNotIn("return value", self.output.read_text("utf-8"))
+        result = {"summary": "One parity bug.", "findings": [{"path": "tests/fixtures/claude_publication_probe.py",
+                  "line": 6, "side": "RIGHT", "body": "is_even(2) returns False."}]}
+        variation = {"summary": "One\u202fparity bug.", "findings": [result["findings"][0] | {"side": "Right"}]}
+        response = {"type": "message", "role": "assistant", "model": client.MODEL, "stop_reason": "end_turn",
+                    "content": [{"type": "thinking", "thinking": "PRIVATE"}, {"type": "text", "text": json.dumps(variation)}],
+                    "usage": {"input_tokens": 17, "output_tokens": 42, "speed": "standard"}}
+        with patch.object(client, "HTTPSConnection") as connect:
+            reply = connect.return_value.getresponse.return_value
+            reply.status, reply.length = 200, 0
+            reply.read.return_value = json.dumps(response).encode()
+            with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key"}, clear=True):
+                self.assertEqual(client.main(), 0)
+            output = json.loads(self.output.with_name("claude-result.json").read_text("ascii"))
+            connect.assert_called_once_with("api.anthropic.com", timeout=180)
+            request = connect.return_value.request
+            request.assert_called_once()
+            method, path, body, headers = request.call_args.args
+            self.assertEqual((method, path), ("POST", "/v1/messages"))
+            self.assertEqual(headers, {"x-api-key": "fixture-key", "content-type": "application/json",
+                                       "anthropic-version": "2023-06-01"})
+            payload = json.loads(body)
+            self.assertEqual(set(payload), {"model", "speed", "service_tier", "system", "messages", "max_tokens", "output_config"})
+            self.assertEqual(payload["messages"], [{"role": "user", "content": self.frames}])
+            self.assertEqual(payload["model"], "claude-opus-5-5")
+            self.assertEqual(payload["speed"], "standard")
+            self.assertEqual(payload["service_tier"], "standard_only")
+            self.assertEqual(payload["output_config"]["effort"], "high")
+            self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
+            self.assertLess(client.MAX_REQUEST_BYTES * 4 + payload["max_tokens"] * 20, 1_000_000)
+        body = self.post(0, inline_status=0, HEAD_SHA=data["head_sha"], OUTPUT=json.dumps(output))
+        self.assertEqual(self.posted_review["comments"], result["findings"])
+        self.assertEqual(self.posted_review["commit_id"], data["head_sha"])
+        self.assertIn(variation["summary"], body)
+        self.assertNotIn("PRIVATE", body)
+
+    def test_workflow_runs_default_branch_client(self):
+        self.assertNotIn("pull_request_review_comment:", WORKFLOW)
+        self.assertIn("  pull_request_target:", WORKFLOW)
+        self.assertIn("ref: ${{ github.event.repository.default_branch }}", WORKFLOW)
+        self.assertEqual(WORKFLOW.count("secrets.ANTHROPIC_API_KEY"), 1)
+        self.assertIn("run: python3 -I scripts/claude_messages.py", WORKFLOW)
+        self.assertNotIn("id-token: write", WORKFLOW)
