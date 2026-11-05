@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane, plus a dated read-only authenticated runtime addendum.
 - Fix the silent Claude PR review: drop the subprocess environment scrub, which removed `GH_TOKEN` from `gh pr diff/view`; post the summary from a workflow step, remove Claude's `gh pr comment` and deny reads of `/proc`, `.git`, `~/.claude` and token-printing shell commands to reduce (not eliminate) the risk that review text carries runner secrets.
 - Add an advisory, SHA-pinned Claude Code PR review workflow for same-repository PRs (including drafts and Dependabot) and trusted `@claude` mentions, with edit, commit and push tools denied; it supplements and never replaces the required GPT-6 Astra high review. Dependabot bumps of `actions/checkout` or `claude-code-action` change this workflow file, so the action skips review there (workflow validation) while the job still reports success.
 
