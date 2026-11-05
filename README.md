@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/banner.svg" alt="MaexSocial — the next chapter of your brand. Local visibility, social operations and creative production. In discovery." width="100%">
+  <img src=".github/assets/banner.svg" alt="MaexSocial — the next chapter of your brand. Local visibility, social operations and creative production. In design planning." width="100%">
 </p>
 
 <h1 align="center">MaexSocial</h1>
@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml"><img src="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml/badge.svg" alt="Foundation CI"></a>
   <a href="https://github.com/users/Maeximilion/projects/5/views/2"><img src="https://img.shields.io/badge/Project-delivery_board-161F30?labelColor=0B0F19" alt="Project delivery board"></a>
-  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-161F30?labelColor=0B0F19" alt="Stage G1 discovery"></a>
+  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G2_planning-161F30?labelColor=0B0F19" alt="Stage G2 planning"></a>
 </p>
 <p align="center">
   <a href="docs/README.md">Documentation</a> ·
@@ -21,7 +21,7 @@
 MaexSocial is being designed to turn approved business facts and product images into useful content, channel-specific posts and creative campaigns. Its goal is to connect local discovery, account care and media production through AI and supported APIs.
 
 > [!NOTE]
-> **Current stage — discovery.** The repository foundation and GitHub automation are operational. Application features are planned. Independent research and an approved product design precede implementation.
+> **Current stage — G2 design planning.** Maxi accepted the bounded discovery evidence. Product implementation awaits an approved design and executable plan.
 
 | Planned capability | What it should help a business do |
 | --- | --- |
@@ -49,11 +49,11 @@ The requested [media library and calendar](docs/18_MEDIA_LIBRARY.md) connects cu
 | Gate | Goal | State |
 | --- | --- | --- |
 | [G0 · Foundation](https://github.com/Maeximilion/MaexSocial/issues/13) | Repository, Project, checks and delivery workflow | Complete |
-| [G1 · Discovery](https://github.com/Maeximilion/MaexSocial/issues/14) | Independent research and API feasibility, reconciled with evidence | In progress |
-| [G2 · Design](https://github.com/Maeximilion/MaexSocial/issues/15) | Approved scope, architecture and executable task plan | Planned |
+| [G1 · Discovery](https://github.com/Maeximilion/MaexSocial/issues/14) | Independent research and API feasibility, reconciled with evidence | Accepted within documented limits |
+| [G2 · Design](https://github.com/Maeximilion/MaexSocial/issues/15) | Approved scope, architecture and executable task plan | Planning authorized |
 | [G3 · First slice](https://github.com/Maeximilion/MaexSocial/issues/16) | One tested end-to-end publishing workflow | Planned |
 | [G4 · Creative](https://github.com/Maeximilion/MaexSocial/issues/17) | Verified image-to-video production | Planned |
-| [G5 · Autonomy](https://github.com/Maeximilion/MaexSocial/issues/18) | Controlled operation, monitoring and recovery | Planned |
+| [G5 · Autonomy](https://github.com/Maeximilion/MaexSocial/issues/18) | Controlled operation, monitoring and recovery | Blocked by [five evidence gaps](https://github.com/Maeximilion/MaexSocial/issues/88) |
 
 Goals, gate criteria, dependencies and task IDs are defined. Detailed product implementation plans follow the G1 evidence and G2 design decision. Track current work in the [Project](https://github.com/users/Maeximilion/projects/5), [status](docs/01_STATUS.md) and [work packages](docs/07_WORKPACKAGES.md).
 

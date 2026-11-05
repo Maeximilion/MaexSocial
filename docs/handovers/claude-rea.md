@@ -1,6 +1,6 @@
 # Handover 2026-11-05 — MS-004, independent Claude Code REA
 
-Status — G0 is complete. G1 is ongoing. The bounded Codex static report is delivered. Claude's independent investigation is pending.
+Status — The independent investigation is complete. [Maxi’s G1 decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) accepts bounded discovery. Five open gaps in [#88](https://github.com/Maeximilion/MaexSocial/issues/88) block G5. The original assignment below records the investigation scope.
 
 Artifacts — [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Use branch `research/MS-004-claude-rea` in a separate worktree.
 
@@ -63,7 +63,7 @@ Create `docs/research/claude-rea.md` with the independent checkpoint, method, sc
 
 Keep raw captures in ignored `work/rea-claude/` within the task worktree. Commit sanitized findings and original explanatory diagrams only. Build original MaexSocial behavior from documented requirements. Do not copy SocialEdge source bundles, complete UI designs or proprietary assets into the product or repository.
 
-Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`, recording actual outcomes. Update issue #4, status and work packages from observed results. Open a focused PR under repository review/merge rules. Use `Closes #4` only when bounded research acceptance criteria are satisfied, otherwise `Refs #4` with outstanding work. G1 stays open for synthesis and unaccepted material access gaps. Any code review uses an actually configured `gpt-6-astra` reviewer at reasoning `high`.
+Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`, recording actual outcomes. Update issue #4, status and work packages from observed results. Open a focused PR under repository review/merge rules. Use `Closes #4` only when bounded research acceptance criteria are satisfied, otherwise `Refs #4` with outstanding work. At the time of this assignment, G1 required synthesis and an owner decision on material access gaps. Any code review uses an actually configured `gpt-6-astra` reviewer at reasoning `high`.
 
 ## Reusable start prompt
 

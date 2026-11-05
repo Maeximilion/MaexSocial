@@ -30,7 +30,9 @@ On 2026-11-05 Maxi confirmed a public website with customer registration/login, 
 | G4 Media | Image-to-video workflow | Rights/provenance, approved input, render job lifecycle, quality review, cost cap and failed-job recovery | Release owner verifies acceptance |
 | G5 Bounded autonomy | Account operation under explicit policy | Scoped account authority, schedule and budget enforcement, stop control, retries/reconciliation, audit history, supervised pilot measurements | Maxi approves live operating envelope |
 
-Passing a gate requires dated evidence and a decision recorded in [status](01_STATUS.md). A completed issue or a green documentation build does not prove a product gate. Gate tags are created only after their criteria pass.
+On 2026-11-05 Maxi accepted the six G1 research deliverables within their documented scope and authorized Superpowers planning for G2. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) carries five evidence gaps forward in [gap tracker #88](https://github.com/Maeximilion/MaexSocial/issues/88), which blocks [G5](https://github.com/Maeximilion/MaexSocial/issues/18). Product design approval, implementation and customer operation require their own decisions.
+
+Passing a gate requires dated evidence and a decision recorded in [status](01_STATUS.md). A completed issue or a green documentation build does not prove a product gate. Apply the [gate procedure](../.claude/commands/gate.md) to carry explicitly deferred evidence forward. G5 requires closure of all carried gaps before acceptance and tagging.
 
 ## Scope and sequence
 
