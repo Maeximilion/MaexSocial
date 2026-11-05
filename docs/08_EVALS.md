@@ -60,4 +60,4 @@ Use synthetic businesses, accounts and content. Authorized test-account identifi
 
 Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds at G2 before interpreting a pilot as passing.
 
-A failed gate remains open. Fixes add regression coverage for the failing scenario. Code review uses `gpt-6-astra` with reasoning `high`, on the actual reviewed commit. Any later commit requires the relevant checks and review to apply to that new head.
+A failed gate remains open. Fixes add regression coverage for the failing scenario. Code review uses `gpt-6-astra` with reasoning `high`, on the actual reviewed commit. Any later commit requires the relevant checks and review to apply to that new head. The Claude review workflow (`.github/workflows/claude-review.yml`) is advisory and supplementary: its comments may surface findings, but it never replaces or satisfies the required `gpt-6-astra` high review.

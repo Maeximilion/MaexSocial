@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an advisory, SHA-pinned Claude Code PR review workflow for same-repository PRs and trusted `@claude` mentions; it supplements and never replaces the required GPT-6 Astra high review.
+
 - Add platform-native Claude/Codex skills, bounded agent roles, scoped rules and registered Stop checks; document loading/trust and plugin/MCP boundaries.
 - Guard repository SVG artwork with bounded allowlist validation and hostile-input regressions; record the separate MS-014 customer-upload security contract and proposed application anatomy.
 
