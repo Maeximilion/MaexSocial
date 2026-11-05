@@ -6,7 +6,7 @@ Stopped at (UTC) — 2026-11-05T11:26:14Z (evidence checkpoint).
 
 The previous wave delivered 16 merged PRs. The local register identifies 12 implementation or stewardship chats and five read-only probes. Initial inspection found the associated worktrees clean. A second inspection found 11 previously recorded directories missing. Ten had also disappeared from Git registration; a detached preview was still registered at its missing path. All 11 recorded commit objects remained accessible. The cause and the recovery status of ignored files are unknown. The coordinator received an urgent request to suspend further archival.
 
-Implementation/review — Codex compiled this record. Independent GPT-6 Astra with reasoning high and a GitHub Codex review are pending on the delivery commit. Claude review is paused.
+Codex compiled this record. The [independent GPT-6 Astra High review](https://github.com/Maeximilion/MaexSocial/pull/80#issuecomment-6656861912) and [GitHub Codex review](https://github.com/Maeximilion/MaexSocial/pull/80#issuecomment-6656891626) covered revision `2e69785`. Consult the PR for review results on subsequent revisions.
 
 ## Artifacts
 
@@ -14,7 +14,7 @@ Implementation/review — Codex compiled this record. Independent GPT-6 Astra wi
 - Task — [Maintenance #76](https://github.com/Maeximilion/MaexSocial/issues/76).
 - Branch — `dev-codex/76-archive-handover`.
 - Work head before the handover commit — `378cfa80523ef4f5d34e20e69f43c00285c74e06`.
-- Handover PR — pending at this checkpoint. Its branch and closing link to #76 identify the delivery.
+- Handover PR — [PR #80](https://github.com/Maeximilion/MaexSocial/pull/80), attached to its creating chat.
 - GitHub PR records supply the final heads and merges below. The issue links in the decisions section contain the outstanding owner actions.
 
 | PR | Final head | Merge | Steward, outcome and disposition |
@@ -22,7 +22,7 @@ Implementation/review — Codex compiled this record. Independent GPT-6 Astra wi
 | [#20](https://github.com/Maeximilion/MaexSocial/pull/20) | [25ecb057](https://github.com/Maeximilion/MaexSocial/commit/25ecb0572bda2fb5c75c1b2fb40522d779c31243) | [0a635d61](https://github.com/Maeximilion/MaexSocial/commit/0a635d61c3befec474cc3ef8aca1957dc4202bd7) | Dependabot opened the checkout update. Codex integrated it and closed #37. |
 | [#21](https://github.com/Maeximilion/MaexSocial/pull/21) | [a740510d](https://github.com/Maeximilion/MaexSocial/commit/a740510d8486b777557fa6ac91a3f4c4c77abe1d) | [def79cb5](https://github.com/Maeximilion/MaexSocial/commit/def79cb5e162f6f30eab336f9412b098d8083cb6) | Dependabot opened the github-script update. Codex integrated it and closed #36. |
 | [#23](https://github.com/Maeximilion/MaexSocial/pull/23) | [b6e210fd](https://github.com/Maeximilion/MaexSocial/commit/b6e210fd8dacdc48ad5e9ab0b7b2f1d047c9103d) | [8b72e6a0](https://github.com/Maeximilion/MaexSocial/commit/8b72e6a0a13f06614f25e243ea27e5ffd0c62830) | Dependabot opened the setup-python update. Codex integrated it and closed #35. The same steward closed umbrella #25 after checking the hosted reconciliation run. |
-| [#34](https://github.com/Maeximilion/MaexSocial/pull/34) | [3b97dd5d](https://github.com/Maeximilion/MaexSocial/commit/3b97dd5dcf096055dfb94a5560ecc7aa146ddae6) | [e12d9341](https://github.com/Maeximilion/MaexSocial/commit/e12d934112673a4b73038b7ff66c09ce359ae234) | Claude authored the discovery report. Codex corrected and reviewed the evidence. Maxi owns the remaining #4 scope decision. |
+| [#34](https://github.com/Maeximilion/MaexSocial/pull/34) | [3b97dd5d](https://github.com/Maeximilion/MaexSocial/commit/3b97dd5dcf096055dfb94a5560ecc7aa146ddae6) | [e12d9341](https://github.com/Maeximilion/MaexSocial/commit/e12d934112673a4b73038b7ff66c09ce359ae234) | Claude authored the discovery report. Codex corrected and reviewed the evidence. The coordinator accepted the five limits under delegated authority and closed #4. |
 | [#47](https://github.com/Maeximilion/MaexSocial/pull/47) | [001fba0b](https://github.com/Maeximilion/MaexSocial/commit/001fba0b4fe48f5ab3631516998c1fad0ff72c43) | [038d8d8e](https://github.com/Maeximilion/MaexSocial/commit/038d8d8e3f9363a367d068cf622858bf79f255c0) | Codex delivered the handover structure. #45 closed. |
 | [#48](https://github.com/Maeximilion/MaexSocial/pull/48) | [a3c4a68f](https://github.com/Maeximilion/MaexSocial/commit/a3c4a68fa5e8f55d71980b6685b647df60055b01) | [8c09b5be](https://github.com/Maeximilion/MaexSocial/commit/8c09b5be4dd51740793116edd56565c62012dc42) | Codex delivered the secret guards. #44 closed. |
 | [#52](https://github.com/Maeximilion/MaexSocial/pull/52) | [8c57875f](https://github.com/Maeximilion/MaexSocial/commit/8c57875f5ca86c0177a9430916f388bf4b43b772) | [fe053b59](https://github.com/Maeximilion/MaexSocial/commit/fe053b59f9112c5496f8f21a97d498af2bc39666) | The #47 implementer also delivered the anatomy assessment. #49 closed. #65 implements its approved procedure. |
@@ -34,7 +34,7 @@ Implementation/review — Codex compiled this record. Independent GPT-6 Astra wi
 | [#69](https://github.com/Maeximilion/MaexSocial/pull/69) | [191df84b](https://github.com/Maeximilion/MaexSocial/commit/191df84b4f78c1673b52a99b1a5ce852ae341676) | [58d7cc5f](https://github.com/Maeximilion/MaexSocial/commit/58d7cc5ff4be6ecd73398d106d4b68ca57a0a670) | Codex delivered the 17-row public inventory. #2 closed, and #71 and #73 used its results. |
 | [#70](https://github.com/Maeximilion/MaexSocial/pull/70) | [8dd54114](https://github.com/Maeximilion/MaexSocial/commit/8dd54114c4a36b44cf4cfa84908d3633384b04fc) | [073dc4b2](https://github.com/Maeximilion/MaexSocial/commit/073dc4b24de67295cf1609f1afbefd4230718951) | Codex delivered the bounded demo search. #6 closed. The original video remains unidentified and a paid trial requires separate authorization. |
 | [#71](https://github.com/Maeximilion/MaexSocial/pull/71) | [ed43b355](https://github.com/Maeximilion/MaexSocial/commit/ed43b35532d81425205d28f015207f783b931c19) | [ba464cfe](https://github.com/Maeximilion/MaexSocial/commit/ba464cfe85c9ac2a050b9fdc320f68aa56c46d4e) | Codex delivered the documented provider feasibility matrix. #5 closed. Account grants and successful external publication remain unverified. |
-| [#73](https://github.com/Maeximilion/MaexSocial/pull/73) | [2edb3b76](https://github.com/Maeximilion/MaexSocial/commit/2edb3b76fd721f705dc5f0068e64bc197b2dd580) | [378cfa80](https://github.com/Maeximilion/MaexSocial/commit/378cfa80523ef4f5d34e20e69f43c00285c74e06) | Codex delivered the bounded synthesis. Maxi owns the remaining #7 and #14 decisions following #4. |
+| [#73](https://github.com/Maeximilion/MaexSocial/pull/73) | [2edb3b76](https://github.com/Maeximilion/MaexSocial/commit/2edb3b76fd721f705dc5f0068e64bc197b2dd580) | [378cfa80](https://github.com/Maeximilion/MaexSocial/commit/378cfa80523ef4f5d34e20e69f43c00285c74e06) | Codex delivered the bounded synthesis. The coordinator tracks the remaining #7 criteria. Maxi owns the separate G1 decision in #14. |
 
 ## Decisions
 
@@ -42,13 +42,13 @@ The coordinator received the eligible chats in two groups. The coordinator and t
 
 ## Gate
 
-G1 remains open. In [#4](https://github.com/Maeximilion/MaexSocial/issues/4), Maxi must disposition embedded analytics, Google-side publication, write workflows, other account tiers and authenticated REA capture individually. For each, accept the documented limit or authorize a specific target, account, action and stopping point for further evidence. Maxi then reassesses [#7](https://github.com/Maeximilion/MaexSocial/issues/7#issuecomment-6656104146) and separately records the G1 decision in [#14](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6656100327). The synthesis and the gate decision have separate acceptance criteria.
+The coordinator [closed #4 under delegated authority](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747), accepting five scope limits: embedded analytics, Google-side publication, write workflows, other tiers and authenticated REA capture. All five remain unknowns. The [#7 completion check](https://github.com/Maeximilion/MaexSocial/issues/7#issuecomment-6658980072) can proceed. [G1 #14](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6658985105) remains open for a separate owner decision.
 
 ## Open
 
-1. Coordinator: hold further archival. Reconcile the 11 missing paths and any ignored evidence with the private register. Before resuming, establish a method that preserves worktrees, branches and ignored files. Verify each path and the desktop state before and after each archive action.
-2. Handover implementer: open the PR for #76, attach it to its creating chat and report checks and both reviews on its final SHA. The coordinator owns integration.
-3. Maxi: record the five scope decisions above before deciding whether #7 and G1 can close.
+1. Coordinator: hold further archival. The [#83 recovery owner](https://github.com/Maeximilion/MaexSocial/issues/83) reconciles the 11 missing paths and ignored evidence separately. Before resuming, establish a method that preserves worktrees, branches and ignored files. Verify each path and the desktop state before and after each archive action.
+2. Handover implementer: report final-head reviews and integration checks on #80. The coordinator owns integration.
+3. Coordinator: verify the remaining synthesis criteria in #7. Maxi retains the separate gate decision in #14.
 
 To resume after the owner's continuation, use PowerShell in any MaexSocial checkout. The command selects the exact registered task worktree without embedding a personal path:
 
@@ -60,7 +60,7 @@ Set-Location -LiteralPath ($record.Context.PreContext[0] -replace '^worktree ', 
 codex
 ```
 
-First message: “Resume maintenance #76 using this completed-wave handover. Verify the PR and reviews for the task branch, then reconcile the coordinator's archive acknowledgments and Maxi's decisions in #4, #7 and #14.”
+First message: “Resume maintenance #76 using this completed-wave handover. Verify the PR and reviews for the task branch, then check the #83 archival hold and the remaining decisions in #7 and #14.”
 
 ## Lessons
 
