@@ -6,3 +6,6 @@ enabled = true
 
 [plugins."ponytail@ponytail"]
 enabled = false
+
+[plugins."engineering-suite-ponytail@openai-curated-remote"]
+enabled = false

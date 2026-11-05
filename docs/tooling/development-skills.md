@@ -7,7 +7,7 @@ Owner decision, 2026-11-05; [maintenance issue #56](https://github.com/Maeximili
 | Coding work generally | Code Autopilot | Evidence-driven progress, useful checks and concise delivery; host/project rules override imported defaults |
 | Replies | Caveman, readable lite default | Preserve technical substance, uncertainty and clear instructions; code, commits and PR prose remain normal |
 | Small/medium implementation and fixes | Ponytail | Smallest complete change; reuse existing code; run relevant tests |
-| Code review | Ponytail review | Correctness/security/test coverage before simplification; actual GPT-6 Astra with reasoning high |
+| Code review | `ponytail:ponytail-review` from the pinned project catalog | Correctness/security/test coverage before simplification; actual GPT-6 Astra with reasoning high |
 | Requested repository audit | Ponytail audit | Stay within the requested repository and action scope |
 | Larger coupled changes, design and implementation plans | Superpowers | Relevant discovery/design/planning/execution/TDD/debugging skills; do not load the entire library |
 
@@ -21,6 +21,15 @@ Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-re
 codex plugin marketplace add ./docs/tooling/plugin-marketplace
 codex plugin add ponytail@maexsocial-reviewed --json
 ```
+
+The install command enables the new package in the user config. After installation, open your user `~/.codex/config.toml` and change the existing entry for this project-specific ID to the following value (edit the existing table once):
+
+```toml
+[plugins."ponytail@maexsocial-reviewed"]
+enabled = false
+```
+
+The trusted MaexSocial checkout enables this ID in its project config and disables the upstream and curated Ponytail alternatives there. Keep your existing user preferences for those other IDs. Run `codex plugin list --json` inside MaexSocial and from an unrelated directory to verify that the reviewed ID is enabled only inside MaexSocial.
 
 The [local catalog](plugin-marketplace/.agents/plugins/marketplace.json) pins the plugin source to the reviewed 5.3.3 commit `96608e078b2d5ea607c5c3b8b5a54d1c1fba6846`. The distinct catalog ID also works when the upstream `ponytail` marketplace is already registered. This project disables its unpinned plugin ID. Before trusting hooks, check that the installed hook definitions and scripts match the `hooks/` directory at that commit. Recheck the source and its hooks when updating the pin. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
 
@@ -53,4 +62,4 @@ Separate saved configuration, native catalog discovery, script tests and observe
 
 Observed on 2026-11-05: Codex's native `skills/list` reports one enabled canonical copy each of Code Autopilot and Caveman, disabled synchronized duplicates, the repository workflow entrypoint, Ponytail 5.3.3 and Superpowers 7.0.1 skills. Before introducing the pinned project catalog, Claude's plugin list reported project-enabled Superpowers 7.0.0 and Ponytail 5.3.3; its user skill junctions resolve to the same canonical sources. Router AST comparison permits only two updated status strings; seven isolated event/state comparisons preserve routing and pause behavior. The optional skill-creator validator could not run because local Python lacks PyYAML; native skill parsing/discovery succeeded. No new model session was launched to claim automatic behavior across all clients.
 
-On a clean test installation with an existing upstream Ponytail registry, the distinct project registry installed the pinned Codex package. All 20 hook files matched the reviewed commit after normalizing line endings. In a separate local configuration, explicit catalog registration and project-scoped installation resolved both pinned Claude packages (Superpowers 7.0.0 and Ponytail 5.3.3). These checks used plugin management commands only.
+On a clean test installation with an existing upstream Ponytail registry, the distinct project registry installed the pinned Codex package. With the documented user setting and a trusted canonical checkout, native plugin listings showed only the pinned ID enabled inside MaexSocial and only the upstream ID enabled in an unrelated directory. All 20 hook files matched the reviewed commit after normalizing line endings. In a separate local configuration, explicit catalog registration and project-scoped installation resolved both pinned Claude packages (Superpowers 7.0.0 and Ponytail 5.3.3). These checks used plugin management commands only.
