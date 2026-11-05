@@ -153,7 +153,7 @@ class FoundationTests(unittest.TestCase):
                 mutations.append(variables)
                 self.assertEqual(variables["project"], project_sync.PROJECT_ID)
                 next(item for item in project_items if item["id"] == variables["item"])["status"] = variables["option"]
-                return {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": variables["item"]}}}
+                return {"result": {"item": {"id": variables["item"]}}}
             self.fail(f"Unexpected GraphQL mutation or request: {query}")
 
         with patch.object(project_sync, "gh", side_effect=fake_gh), patch.object(project_sync, "graphql", side_effect=fake_graphql):
