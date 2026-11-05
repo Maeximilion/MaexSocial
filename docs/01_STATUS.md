@@ -17,7 +17,7 @@
 | Public product baseline, MS-002 | Public offer inventoried on 2026-11-05 | [Dated feature and service matrix](research/socialedge-feature-matrix.md) with scoped P2 evidence and inputs for MS-005 |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
 | Claude Code REA, MS-004 | Anonymous scope and a read-only authenticated walkthrough of one package-2 account (R3, UI evidence) submitted; three Astra review findings corrected, REA runtime capture and owner acceptance of listed gaps outstanding, issue #4 open | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report](research/claude-rea.md), [manifest](research/evidence-claude.json), checkpoint `35c61ac`; findings not yet accepted |
-| API feasibility, MS-005 | Planned, issue #5 open | Official integration feasibility matrix pending |
+| API feasibility, MS-005 | Public-source research submitted for [issue #5](https://github.com/Maeximilion/MaexSocial/issues/5) against the merged MS-002 matrix | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md). Account grants and provider outcomes remain untested. |
 | Video demo, MS-006 | Bounded search documented for issue #6 | [Four candidates, original media observations and a costed spike](research/photo-to-ad-demo.md). Original TikTok ad unidentified. |
 | Synthesis, MS-007 | Waiting for required research, issue #7 open | [Synthesis handover](handovers/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Pending G1 synthesis and owner design decision | Goals and gates defined, executable product plan still to be written |
@@ -37,7 +37,7 @@ GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is 
 ## What's next
 
 1. Review Claude's investigation in PR #34 under issue #4, including the R3 authenticated addendum. Accept or close its listed gaps (embedded analytics, Google-side publication results, unauthorized write flows, other tiers, REA runtime capture) before discovery acceptance.
-2. Use the public inventory for official API/MCP feasibility. Record missing runtime evidence and required access scope. Carry MS-006's unresolved TikTok identity into synthesis.
+2. Use the MS-002 inventory and MS-005 feasibility report in synthesis. Preserve the documented access and runtime gaps. Carry MS-006's unresolved TikTok identity into synthesis.
 3. Reconcile both research lanes in a new synthesis chat using claim IDs, independent evidence, source dates, scope and explicit comparison outcomes.
 4. Prepare and approve the G2 product design, then decompose the first slice into executable tasks and acceptance tests.
 
