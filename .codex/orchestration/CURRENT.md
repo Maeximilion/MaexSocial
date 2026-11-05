@@ -4,7 +4,7 @@
 
 The owner accepted bounded G1 discovery and authorized G2 planning with Superpowers. [Gate #14](https://github.com/Maeximilion/MaexSocial/issues/14) is completed. [PR #89](https://github.com/Maeximilion/MaexSocial/pull/89) merged in `e6cf4adbdffde01436c42be34b61d269b06b9d4f`; annotated tag `gate-g1` was verified on that commit. The five carried research gaps have individual closure criteria in [#88](https://github.com/Maeximilion/MaexSocial/issues/88), an open native blocker of [G5 / #18](https://github.com/Maeximilion/MaexSocial/issues/18). The [gate procedure](../../.claude/commands/gate.md) applies the same requirement to later deferred gaps and any nearer decision that depends on the evidence.
 
-Maxi chose one local business and one approved text post on **Google Business Profile** as the planning assumption. Record a verified Google-side outcome separately from submission. If the required access is missing, the workflow ends in export and reports that publication is unconfirmed. [Owner decision on #8](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692).
+Maxi chose one local business and one approved text post on **Google Business Profile** as the planning assumption. Record a verified Google-side outcome separately from submission. If access is unavailable before dispatch, export is the terminal outcome for that occurrence. After a dispatch has started, withhold export or retry until the original attempt is reconciled, since Google may already have published it. [Owner decision on #8](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692).
 
 | Issue and chat | Verified transition | Next action |
 | --- | --- | --- |
