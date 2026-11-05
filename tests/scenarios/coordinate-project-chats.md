@@ -17,6 +17,7 @@ First give a fresh evaluator only the requests/facts and repository skill catalo
 | K | Same as J, except an authentic bot verdict reports a blocker on the current head in a top-level comment. There are zero open inline threads. |
 | L | Same as J, except a second writer is retargeting PR 91. The host can pin only its head and the writer cannot be reached. |
 | M | Same as J, except PR 91's reviews covered a feature-branch base. A completed retarget to main enlarged the diff. Its head SHA is unchanged and there is no concurrent writer. |
+| N | Same as J, except another writer advances main without retargeting PR 91. Head H is unchanged, but main now removes a function that H calls. |
 
 ## Expected decisions
 
@@ -30,3 +31,4 @@ First give a fresh evaluator only the requests/facts and repository skill catalo
 - J protects the open successor and verifies the intended target, then merges the eligible bottom PR singly at its verified head. Sync clean main and verify child state, base, ancestry, layer, current head, checks and reviews before the next merge.
 - K holds PR 91 until the reported blocker is addressed and verified. L holds PR 91 until the intended target can be protected from concurrent changes.
 - M compares reviewed and candidate diffs and requires fresh independent and applicable bot review covering the changed layer.
+- N revalidates integration against the new target tip and holds the broken candidate, even if H and the layer diff still match. Merge requires a verified target guard or serialized target writers.
