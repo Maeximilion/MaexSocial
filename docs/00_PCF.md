@@ -12,7 +12,7 @@ MaexSocial will manage local visibility and social media through AI and supporte
 - Product implementation follows two independent REA investigations, synthesis in a new chat and an approved design.
 - The application language, database, deployment platform and paid providers remain design decisions at G2.
 - Code reviews use `gpt-6-astra` with reasoning `high`. Report the actual setting. A written recommendation does not switch a model.
-- Code-autopilot and caveman remain disabled. Code-autopilot originated in Claude Code and its GPT/Codex compatibility is unverified.
+- Initial Code Autopilot/Caveman deactivation was superseded by the owner on 2026-11-05: both are enabled with local Codex adaptations. [Development skill roles](tooling/development-skills.md) define Ponytail for small/medium work and reviews/audits, and Superpowers for larger plans.
 - Maxi requires the canonical local folder to remain on clean `main`, with regular `fetch --prune` and `pull --ff-only` after merges. Changes belong in separate worktrees. Never pull a dirty checkout.
 
 ## Gates

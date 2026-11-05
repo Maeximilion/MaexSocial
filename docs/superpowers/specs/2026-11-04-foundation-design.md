@@ -1,5 +1,7 @@
 # MaexSocial foundation design
 
+Historical snapshot: the disabled-skill decision below was superseded on 2026-11-05 by the [current development skill policy](../../tooling/development-skills.md).
+
 ## Authorization and intent
 
 On 2026-11-04 Maxi requested the GitHub repository, Project, milestones, tags, tasks, PR/issue maintenance, workflows, documentation and agent instructions modeled on Maex-Voice-Agent. He also requested separate Codex and Claude Code REA investigations, their synthesis in a new chat and implementation after planning. This design covers the authorized foundation and research preparation.

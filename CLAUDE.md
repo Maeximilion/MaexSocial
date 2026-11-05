@@ -6,11 +6,11 @@ AI-assisted local visibility, social account operations and creative production.
 
 ## Start
 
-Read `AGENTS.md`, `docs/00_PCF.md`, `docs/01_STATUS.md`, `docs/07_WORKPACKAGES.md`, then the active task issue. Check `git status` and the current branch. Use `/start` in Claude Code or the matching repository skill in Codex.
+Read `AGENTS.md`, `docs/00_PCF.md`, `docs/01_STATUS.md`, `docs/07_WORKPACKAGES.md`, then the active task issue. Check `git status` and the current branch. Execute `/start` or `/task` and their matching Codex skills only when explicitly requested; opening a session does not invoke them.
 
 ## Working agreement
 
-`AGENTS.md` is the shared rule source. This file adds Claude entry points. User instructions override repository guidance. Code-autopilot and caveman stay disabled. Do not copy their activation rules from Maex-Voice-Agent.
+`AGENTS.md` is the shared rule source. This file adds Claude entry points. User instructions override repository guidance. Code Autopilot and Caveman are explicitly enabled; use the [development skill roles](docs/tooling/development-skills.md) and preserve this repository's permissions and gates.
 
 One focused branch and PR per task or coherent task group. PR titles use Conventional Commits. Include `Closes #N`, the actual verification commands and outstanding limitations. Keep open work committed and pushed. PR merge, deployment, paid provider calls and account publication follow the user's actual authorization and gate decisions.
 

@@ -1,5 +1,7 @@
 # Agent anatomy and asset security implementation plan
 
+Historical snapshot: the disabled-skill decision below was superseded on 2026-11-05 by the [current development skill policy](../../tooling/development-skills.md).
+
 **Goal:** Deliver useful Claude/Codex anatomy and a tested artwork guard for issue #42.
 
 **Architecture:** Preserve existing command procedures and foundation CI. Add thin platform definitions, one shared quality-hook script and one narrow SVG checker; document future product boundaries without implementing them.

@@ -4,7 +4,7 @@ Status — Bounded Codex static report delivered in `docs/research/codex-rea.md`
 
 Artifacts — Repository `Maeximilion/MaexSocial`, local folder `C:/Users/Maxi/Documents/GitHub/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Continue the assigned research branch or create `research/MS-003-codex-rea` after checking existing work.
 
-Decisions — Gather reproducible application evidence for MaexSocial's feature baseline. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
+Decisions — Gather reproducible application evidence for MaexSocial's feature baseline. Code Autopilot and Caveman are explicitly enabled; preserve the [development skill roles and activation limits](../tooling/development-skills.md).
 
 Gate — G1 requires independent lanes, official API feasibility and synthesis. Product implementation waits for G2.
 
@@ -24,4 +24,4 @@ A login barrier is a scoped limitation. Continue supported public/static work an
 
 ## Start prompt
 
-Continue MaexSocial MS-003 from the latest recorded evidence. Read the installed REA skill and this handover. Analyze only the supplied SocialEdge target and available authorized artifacts, retain evidence IDs, and produce a sanitized report suitable for comparison with Claude Code's independent report. Preserve access gaps and keep code-autopilot/caveman disabled.
+Continue MaexSocial MS-003 from the latest recorded evidence. Read the installed REA skill and this handover. Analyze only the supplied SocialEdge target and available authorized artifacts, retain evidence IDs, and produce a sanitized report suitable for comparison with Claude Code's independent report. Preserve access gaps and use the enabled Code Autopilot/Caveman skills under the current repository rules.

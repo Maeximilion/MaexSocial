@@ -56,4 +56,4 @@ After each later push, rerun affected checks and post a new review request. Once
 
 The GitHub connector rejected issue creation with HTTP 403; the authorized GitHub CLI successfully created the issue and PR. Concurrent PR #46 advanced main during this work. Its changes were merged into this branch; the sole README folder-map conflict was resolved by retaining the expanded foundation map and the new handover/session entries. The larger post-merge suite passed (29 Python tests, up from 9; 20 Node.js tests).
 
-Code-autopilot and caveman remain disabled; code-autopilot's GPT/Codex compatibility is unverified. A same-family review is not the Claude review explicitly requested here. No bot authorship, automatic Claude action or completed receiving session is claimed.
+At the time of this session (superseded by the [development skill roles](../../tooling/development-skills.md)), code-autopilot and caveman were disabled; code-autopilot's GPT/Codex compatibility is unverified. A same-family review is not the Claude review explicitly requested here. No bot authorship, automatic Claude action or completed receiving session is claimed.
