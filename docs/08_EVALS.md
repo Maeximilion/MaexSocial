@@ -49,6 +49,8 @@ There is no deployment pipeline or production application yet. MS-009 must defin
 
 ## Test data
 
+At G2, accept and map the proposed MEDIA-01–04, PLAN-01–04 and ADS-01–04 cases in the [media-library proposal](18_MEDIA_LIBRARY.md) to executable tasks. They cover asset isolation, billable-job recovery, recurrence, approval/stop races and separate advertising authority. These cases are specifications only; no application/provider test has been run for them.
+
 Use synthetic businesses, accounts and content. Authorized test-account identifiers stay out of public fixtures. Provider fakes test deterministic behavior. Live provider tests must be labeled with environment, date and permission scope. A fake success does not establish live API availability.
 
 ## Report format

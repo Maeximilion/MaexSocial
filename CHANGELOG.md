@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Add the independent Claude Code SocialEdge report, evidence manifest and SE claim comparison with the Codex lane, plus a dated read-only authenticated runtime addendum.
+- Adopt Maxi's Deep Tech dark palette across brand artwork and README badges; document accessible color pairings for the future application.
+- Record customer-owned media uploads, AI creative production, calendar/recurrence and separately authorized advertising as G2 inputs, with bounded provider evidence and proposed acceptance cases.
+
 - Add named Overview and Delivery board Project views, with status columns and planning fields.
 - Extend automatic PR metadata and dedicated dependency-task Development links while preserving manual planning choices.
 - Choose TypeScript strict as the application-language baseline under delegated technology selection; retain G2 design and REA sequencing.

@@ -24,6 +24,7 @@
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
 | Registration, customer and platform-admin access, MS-013 | Confirmed requirements; design and runtime tests pending G2 | [Issue #30](https://github.com/Maeximilion/MaexSocial/issues/30), [access requirements](17_ACCESS_SECURITY.md) |
 | PR metadata and Project views | Maintenance delivery | [Issue #32](https://github.com/Maeximilion/MaexSocial/issues/32), [Project operations](16_GITHUB_PROJECT.md) |
+| Customer media library, calendar and optional advertising | Requested direction and G2 proposal; no integration or operating authority implemented | [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40), [workflow, API evidence and proposed acceptance cases](18_MEDIA_LIBRARY.md) |
 
 GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is closed. Gate issues #14–18 remain open.
 
@@ -39,6 +40,8 @@ GitHub issue states above were checked read-only on 2026-11-05. G0 issue #13 is 
 The first web-tool dashboard request failed, but a subsequent unauthenticated HTTP capture succeeded. REA 6.8.0 analyzed three selected client chunks as static text. The Codex report records evidence IDs and partial coverage. The Claude lane covered legal/pricing pages, an anonymous runtime capture and 36 public client chunks; 32 SE claims show no contradiction with Codex, and authenticated behavior remains unobserved. Authenticated runtime, private backend behavior and autonomous publication remain unverified. Historical diagnostics found direct Codex MCP registration missing and Claude registration present. They do not establish current live tool connectivity or a completed Claude investigation.
 
 ## Decisions and operating state
+
+Maxi selected the exact Deep Tech dark palette on 2026-11-05: Cyan-Electric `#00E5FF`, Warm Coral `#FF5E5B`, Midnight `#0B0F19`, Dark Slate `#161F30` and Off-White `#F8FAFC`. [Issue #38](https://github.com/Maeximilion/MaexSocial/issues/38) aligns the repository artwork and [brand guide](15_README_STRATEGY.md); the future application must use the same color roles.
 
 MaexSocial's name and public repository visibility are confirmed by Maxi. Public research reports are sanitized. Reference-repository conventions are adapted to this project. Code-autopilot and caveman remain disabled. Under Maxi's delegated choice, TypeScript strict is the application-language baseline; [ADR 0001](decisions/0001-application-language.md) records the rationale. Framework, runtime version, provider and deployment choices remain at G2. Software implementation follows independent Claude REA, synthesis and approved design.
 
