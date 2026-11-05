@@ -38,7 +38,7 @@ The browser may call public registration, verification and customer-scoped route
 |---|---|---|
 | Anonymous | Register, verify and recover | Uniform public responses, bounded attempts, single-use expiring verification bound to identity |
 | Verified member | Read or edit assigned tenant drafts | Derive tenant from current membership and validate object ownership on every operation |
-| Customer approver | Approve exact revision, account and occurrence | Verify tenant role, destination authority and fresh revision. A change invalidates approval |
+| Workspace admin (proposed first approver) | Approve exact revision, account and occurrence | Verify tenant role, destination authority and fresh revision. A change invalidates approval |
 | Platform admin on enrolled PC | List customers, select target, inspect permitted status, suspend and hold | MFA, explicit target and audited reason/outcome. No implied permission to publish as a customer or read all customer content |
 | Worker | Claim one approved occurrence | Check current membership/policy, active tenant, grant, stop and funds at dispatch. Treat client or job identifiers as untrusted |
 
