@@ -1,14 +1,14 @@
 # Handover 2026-11-05 — MS-007, research synthesis
 
-Status — G0 complete, G1 ongoing. The MS-002–006 reports are on main. The [bounded synthesis](../research/synthesis.md) reconciles their evidence. MS-004 scope acceptance is outstanding.
+Status — G0 complete, G1 ongoing. The MS-002–006 reports are on main. The [bounded synthesis](../research/synthesis.md) reconciles their evidence. The [delegated MS-004 decision](https://github.com/Maeximilion/MaexSocial/issues/4#issuecomment-6658967747) accepted the five documented limits.
 
 Artifacts — [Issue #7](https://github.com/Maeximilion/MaexSocial/issues/7), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, `docs/research/`, [work packages](../07_WORKPACKAGES.md), [charter](../00_PCF.md) and [status](../01_STATUS.md).
 
 Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. [ADR 0001](../decisions/0001-application-language.md) chooses TypeScript strict under Maxi's delegated technology choice. Frameworks, hosting and paid providers remain G2 decisions.
 
-Gate — G1 closes with reconciled evidence and explicitly accepted coverage limits. G2 requires Maxi's product design approval.
+Gate — [G1](https://github.com/Maeximilion/MaexSocial/issues/14) awaits separate owner acceptance. G2 requires Maxi's product design approval.
 
-Open — Verify actual completion of MS-002–006 before claiming a complete synthesis.
+Delivery — [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) contains the reviewed synthesis. Issues #2–6 are closed within their recorded scopes.
 
 Lessons — Source claims, static observations and runtime behavior establish different facts. Claude contributes its own observations before comparing Codex's report. Code Autopilot and Caveman are explicitly enabled; follow [development skill roles and activation limits](../tooling/development-skills.md).
 
@@ -31,6 +31,6 @@ Treat the [owner-requested media-library/calendar/advertising proposal](../18_ME
 
 If a material gap needs authenticated runtime access or an action outside the established scope, stop that check and ask Maxi for precise access and action permission. Keep the gap visible while completing other authorized work. MS-008–012 become implementation-ready only after their detailed design and planning gates are met.
 
-## Start prompt for the new chat
+## Original MS-007 assignment (completed)
 
 Work on MaexSocial MS-007 using docs/handovers/synthesis.md. Verify that both independent REA reports and required G1 inputs exist, then reconcile them with their manifests and official API sources. Preserve both lanes and use claim IDs with confirm/contradict/extend/unverifiable outcomes, source dates, scope and unknowns. Produce the evidence matrix and disagreement ledger separately from a proposed MaexSocial first slice. Keep missing access explicit and prepare G2 decisions with Superpowers before product implementation.
