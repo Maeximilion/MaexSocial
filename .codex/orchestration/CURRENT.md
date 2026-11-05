@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Owner disposition for the next test · 2026-11-05 23:36 UTC
+
+Run exactly one direct API fixture test after [#104](https://github.com/Maeximilion/MaexSocial/issues/104) is delivered. Both outcomes now release #30 and #9 to continue their assigned planning work: success uses the verified Claude route without Codex self-mentions; failure keeps Claude disabled, leaves the API issue open with evidence, and uses `@codex review` through the weekend. Reassess on Monday, November 9; do not automatically reenable the failing route or the superseded OAuth workflow. Independent Astra/high remains required. Do not trigger another paid test after this attempt without a new owner decision.
+
 ## Failed API probe · 2026-11-05 23:33 UTC
 
 [#103](https://github.com/Maeximilion/MaexSocial/pull/103) merged at `b0db9568a6573dc6ab6f570bbcbc90f9fba90ee3`; its work chat was archived after verified handover, restoration and archive readback. The [probe run](https://github.com/Maeximilion/MaexSocial/actions/runs/42129500055) used Opus 5.5 / high but returned no structured result, 0 model usage and an estimated USD 0. The [failure notice](https://github.com/Maeximilion/MaexSocial/pull/60#issuecomment-6672212183) is not review completion. The workflow was disabled again. The owner confirms available credit and the USD 75 monthly cap. The actual failure reason is unknown. [Anthropic's credit FAQ](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans) distinguishes direct API applications from the Claude Code GitHub Action for promotional credit; this does not establish the owner's funding type.
