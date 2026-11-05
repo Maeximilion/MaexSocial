@@ -3,6 +3,7 @@
 from http.client import HTTPException, HTTPSConnection, IncompleteRead
 import json
 import os
+import unicodedata
 from pathlib import Path
 
 
@@ -48,7 +49,7 @@ def result_from(message):
 
     def bounded(value, limit):
         return (isinstance(value, str) and 0 < len(value) <= limit and value.strip()
-                and all(c.isprintable() or c in "\n\t\r" for c in value))
+                and all(c.isprintable() or unicodedata.category(c) == "Zs" or c in "\n\t\r" for c in value))
 
     if (not isinstance(result, dict) or set(result) != {"summary", "findings"}
             or not bounded(result["summary"], 4000) or not isinstance(result["findings"], list)
@@ -58,8 +59,10 @@ def result_from(message):
         if (not isinstance(f, dict) or set(f) != {"path", "line", "side", "body"}
                 or not bounded(f["path"], 300) or not bounded(f["body"], 1000)
                 or type(f["line"]) is not int or not 1 <= f["line"] <= 2**31 - 1
-                or f["side"] not in ("LEFT", "RIGHT")):
+                or not isinstance(f["side"], str) or not f["side"].isascii()
+                or f["side"].upper() not in ("LEFT", "RIGHT")):
             raise ReviewFailure("invalid_schema")
+        f["side"] = f["side"].upper()
     return result
 
 

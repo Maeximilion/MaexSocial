@@ -114,7 +114,7 @@ class ClaudeReviewTests(unittest.TestCase):
                 self.assertIn("Partial result", body)
 
     def test_workflow_mismatch_skips_pr_events_without_attributing_a_change_to_the_pr(self):
-        for event, kind in [("pull_request_target", "review"), ("pull_request_review_comment", "mention")]:
+        for event, kind in [("pull_request_target", "review"), ("issue_comment", "mention")]:
             with self.subTest(event=event):
                 data, calls = self.prepare(mismatch=True, GITHUB_EVENT_NAME=event, KIND=kind)
                 self.assertFalse(any("/compare/" in command[2] or "/files" in command[2] for command in calls))
@@ -189,8 +189,9 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertNotIn("return value", self.output.read_text("utf-8"))
         result = {"summary": "One parity bug.", "findings": [{"path": "tests/fixtures/claude_publication_probe.py",
                   "line": 6, "side": "RIGHT", "body": "is_even(2) returns False."}]}
+        variation = {"summary": "One\u202fparity bug.", "findings": [result["findings"][0] | {"side": "Right"}]}
         response = {"type": "message", "role": "assistant", "model": client.MODEL, "stop_reason": "end_turn",
-                    "content": [{"type": "thinking", "thinking": "PRIVATE"}, {"type": "text", "text": json.dumps(result)}],
+                    "content": [{"type": "thinking", "thinking": "PRIVATE"}, {"type": "text", "text": json.dumps(variation)}],
                     "usage": {"input_tokens": 17, "output_tokens": 42, "speed": "standard"}}
         with patch.object(client, "HTTPSConnection") as connect:
             reply = connect.return_value.getresponse.return_value
@@ -218,10 +219,11 @@ class ClaudeReviewTests(unittest.TestCase):
         body = self.post(0, inline_status=0, HEAD_SHA=data["head_sha"], OUTPUT=json.dumps(output))
         self.assertEqual(self.posted_review["comments"], result["findings"])
         self.assertEqual(self.posted_review["commit_id"], data["head_sha"])
-        self.assertIn(result["summary"], body)
+        self.assertIn(variation["summary"], body)
         self.assertNotIn("PRIVATE", body)
 
     def test_workflow_runs_default_branch_client(self):
+        self.assertNotIn("pull_request_review_comment:", WORKFLOW)
         self.assertIn("  pull_request_target:", WORKFLOW)
         self.assertIn("ref: ${{ github.event.repository.default_branch }}", WORKFLOW)
         self.assertEqual(WORKFLOW.count("secrets.ANTHROPIC_API_KEY"), 1)
