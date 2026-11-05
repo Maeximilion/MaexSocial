@@ -59,7 +59,7 @@ Before planning, `docs/01_STATUS.md` was read as required by repository rules. I
 
 ### 3.4 Publication
 
-- **ST** Approved posts are synchronized to Google through `/api/posts/gbp` with actions `sync`, `delete` and per-user `enable`/`disable`. The client retries a partial sync up to five times at 60-second intervals (CE-015).
+- **ST** Client code can request synchronization of approved posts through `/api/posts/gbp` with actions `sync`, `delete` and per-user `enable`/`disable`. The client retries a partial sync request up to five times at 60-second intervals (CE-015). Whether posts are actually delivered to Google is unverified.
 - **ST** Twelve displayed publication states: queued, sending, waiting (publishes on the scheduled day), scheduled at Google, processing at Google, live, rejected by Google, error (will retry), failed (re-save required), removed manually at Google, cancelled, deleted (CE-015).
 - **ST** For posts without a Google sync record, the client sets `status` to published once an approved post's scheduled time has passed (CE-015). **INF** For such posts "published" reflects time, not a confirmed provider result.
 - **VC** Contract terms: Google decides on display and removal. A publication failure caused by SocialEdge is corrected and re-sent (CE-004 §2.9).
@@ -123,7 +123,7 @@ At the R1/R2 checkpoint, C-S6 required Maxi to provide a SocialEdge account sess
 
 The committed Phase B comparison (`5ac75fa`) follows checkpoint commits `35c61ac` and `13ccff8`; the actual reading sequence is Claude's disclosure, not independently observed. Sources: [Codex report](codex-rea.md) and [Codex manifest](evidence-codex.json), both unchanged by this lane. Codex sections are cited as SM (Scope and method), EV (Evidence), OSF (Observed static facts), MC (Marketed capabilities), VD (video-demo candidates). Codex evidence is `ev_ff44c65c…` (complete analysis) with capture hashes from its manifest.
 
-**Version alignment.** Both lanes captured on 2026-11-04 UTC. Byte-identical SHA-256 values for the dashboard shell (`5bafea14…`), homepage (`b477a09b…`), pricing page (`b14a1f97…`), language layout (`8f7f25b6…`), dashboard layout (`518093de…`) and dashboard page (`465ab7d8…`) show the same deployed versions. REA route IDs for the eleven dashboard routes are identical in both lanes because the same layout chunk was analyzed. Agreement on those routes is therefore same-source corroboration produced by separate runs, not independent sources.
+**Version alignment.** Both lanes captured on 2026-11-04 UTC. Both public manifests record byte-identical SHA-256 values for five artifacts: the dashboard shell (`5bafea14…`), homepage (`b477a09b…`), pricing page (`b14a1f97…`), dashboard layout (`518093de…`) and dashboard page (`465ab7d8…`). These show the same deployed versions for those artifacts. The language layout digest (`8f7f25b6…`) appears only in the Codex manifest; Claude's manifest covers that chunk only through the set digest of CE-013. Both lanes report eleven `/dashboard` route candidates derived from the same layout chunk (`518093de…`). Claude's manifest lists no per-route REA IDs for CE-028, so equality of route IDs is not demonstrated in the public evidence; only the route paths and counts are compared. Agreement on those routes is same-source corroboration produced by separate runs, not independent sources.
 
 | Claim ID and exact claim | Codex evidence | Independent Claude evidence | Result | Source dates and scope | Unknowns and next check |
 |---|---|---|---|---|---|
@@ -133,7 +133,7 @@ The committed Phase B comparison (`5ac75fa`) follows checkpoint commits `35c61ac
 | SE-004 The client app is built with Next.js | OSF (inference from `/_next/` paths) | CE-010 shell markup, CE-013 Next.js App Router chunk layout, CE-003 states Vercel hosting | confirm | Static + vendor claim | Framework version unknown |
 | SE-005 The dashboard layout holds navigation for analytics, billing, history, media library, posts, reviews, settings and support | OSF; `518093de…` | CE-014 same chunk, separately parsed; CE-028 route candidates | confirm | Same chunk, separate runs | Reachability per plan needs C-S6 |
 | SE-006 The layout also references academy, fundament and rechner | OSF | CE-014; CE-028 lists `/dashboard/fundament`, `/dashboard/rechner`; CE-025 academy page chunk | extend | Static | Claude adds: academy and analytics are plan-gated, foundation and calculator appear conditionally (CE-014, CE-021) |
-| SE-007 REA recovers eleven `/dashboard` route candidates | OSF; manifest `route_candidates` | CE-028 (15 candidates incl. same eleven) | confirm | Separate REA runs, overlapping sources | Server-only routes unknown |
+| SE-007 REA recovers eleven `/dashboard` route candidates | OSF; manifest `route_candidates` | CE-028 (15 candidates incl. the same eleven paths; per-route IDs not listed in the Claude manifest) | confirm | Separate REA runs, overlapping sources | Server-only routes unknown |
 | SE-008 The source contains pending-post and pending-review labels | OSF | CE-014 badges `pendingPosts`, `pendingReviews`, `unreadChats` | confirm | Static | Badge data source unverified |
 | SE-009 The source contains a `googleAccess` identifier | OSF | CE-013 `/dashboard?googleAccess=1` link; CE-017 manager-access setup and `/api/google-access/check` | extend | Static + vendor claim CE-003 | Server check logic unverified |
 | SE-010 The source contains dashboard activity and ranking-scan text | OSF | CE-018 activities, notifications, Local Dominator heat-map iframe | extend | Static + vendor claim CE-003 §10 | Scan cadence per plan unverified |
@@ -150,7 +150,7 @@ The committed Phase B comparison (`5ac75fa`) follows checkpoint commits `35c61ac
 | SE-021 Anonymous dashboard access calls `/api/auth/session` and redirects to `/de/sign-in` | Absent | CE-011 | extend | Runtime, anonymous | None |
 | SE-022 Public self-registration and a free plan exist | Absent | CE-027, CE-004 §3.3, CE-019 | extend | Static + terms | Free-plan limits at runtime need C-S6 |
 | SE-023 Posts move through pending/approved/rejected/published with a per-user auto-approve flag and structured rejection reasons | Absent (labels only, SE-008) | CE-015; CE-004 §2.3–2.4 | extend | Static + terms | Server transitions unverified |
-| SE-024 Approved posts sync to Google via `/api/posts/gbp` with twelve displayed states and client retry | Absent | CE-015 | extend | Static | Server write path, idempotency |
+| SE-024 Client code can request Google sync of approved posts via `/api/posts/gbp`, defines twelve displayed sync states and retries the request | Absent | CE-015 | extend | Static; successful delivery to Google unverified | Server write path, provider result, idempotency |
 | SE-025 Posts without a Google sync record are marked published client-side once their scheduled time passes | Absent | CE-015 (code), inference on meaning | extend | Static, inference labelled | Whether such posts still occur |
 | SE-026 Review responses can be approved, rejected or auto-approved | Absent (labels only) | CE-016; CE-004 §2.5 | extend | Static + terms | Publication path to Google unverified |
 | SE-027 Google access is granted as profile Manager; the Business Profile API is not yet active | Absent | CE-017, CE-003 §9 | extend | Static + vendor claim dated 2026-10-30 | Contradiction with SE-024 server path open |
@@ -228,7 +228,7 @@ The private observation log with business, post, review and account-holder conte
 |---|---|---|
 | SE-005, SE-006 navigation | Observed for P2: seven main and two account items. Academy, foundation and calculator are absent from navigation; academy is blocked, foundation and calculator redirect | CE-102, CE-112 |
 | SE-008 pending badges | Offered; nothing pending at capture | CE-106, CE-107 |
-| SE-021 anonymous redirect | Observed again | CE-101 |
+| SE-021 anonymous redirect | Not re-observed in R3; the R1 runtime observation stands. CE-101 is anonymous form inspection only | CE-011 |
 | SE-022 self-registration | Offered (form only, not submitted) | CE-101 |
 | SE-023 post states and auto-approve | Observed "Live" and "Genehmigt" states and the auto-accept toggle. Pending and rejected flows static only | CE-106 |
 | SE-024 twelve Google sync states and `/api/posts/gbp` | Static only. No sync label appeared on 23 posts and no call to `/api/posts/gbp` occurred on load | CE-106, CE-114 |
@@ -262,7 +262,7 @@ The private observation log with business, post, review and account-holder conte
 3. Keep auto-approval opt-in and auditable per channel. Here it was active for review replies (SE-037).
 4. Make all reviews reachable with paging and filters (SE-038).
 5. Keep reads free of server writes, or make page-load writes idempotent and auditable (SE-041).
-6. Plan team roles and integration screens explicitly. SocialEdge offers none to customers (SE-042), while MaexSocial's access requirements need them.
+6. Plan team roles and integration screens explicitly. SocialEdge offered none in the inspected package-2 account (SE-042; other tiers unobserved), while MaexSocial's access requirements need them.
 
 ### 9.6 Remaining gaps after R3
 

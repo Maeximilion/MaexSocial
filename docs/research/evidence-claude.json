@@ -354,7 +354,7 @@
       "scenario": "C-S6",
       "url": "https://app.socialedge.ai/de/sign-in, /de/sign-up, /de/reset-password",
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
-      "method": "Claude in Chrome, authenticated read-only",
+      "method": "Claude in Chrome, anonymous read-only form inspection before Maxi's sign-in; no redirect observation recorded",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
       "hash_basis": "whole private observation log",
       "locator": "section CE-101",
