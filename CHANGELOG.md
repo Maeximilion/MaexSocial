@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an advisory, SHA-pinned Claude Code PR review workflow for same-repository PRs (including drafts and Dependabot) and trusted `@claude` mentions, with edit, commit and push tools denied; it supplements and never replaces the required GPT-6 Astra high review. Dependabot bumps of `actions/checkout` or `claude-code-action` change this workflow file, so the action skips review there (workflow validation) while the job still reports success.
+
 - Add platform-native Claude/Codex skills, bounded agent roles, scoped rules and registered Stop checks; document loading/trust and plugin/MCP boundaries.
 - Guard repository SVG artwork with bounded allowlist validation and hostile-input regressions; record the separate MS-014 customer-upload security contract and proposed application anatomy.
 
