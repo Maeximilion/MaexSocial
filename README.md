@@ -96,7 +96,8 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 .agents/       Codex entry points for the shared commands
 docs/          Charter, status, design questions and work packages
   research/    Sanitized findings and evidence manifests
-  handovers/   Independent research, synthesis and build briefs
+  handovers/   Handover index and research, synthesis, build and review briefs
+    sessions/  One dated record per session handover
   superpowers/ Design records and implementation plans
 scripts/       Repository validation and Project reconciliation
 tests/         Regression checks for the repository tooling

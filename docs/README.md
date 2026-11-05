@@ -23,6 +23,8 @@ Start with [status](01_STATUS.md), then the [project charter](00_PCF.md) and [wo
 | [18 Customer media library](18_MEDIA_LIBRARY.md) | Requested uploads, AI creation, calendar, recurrence and optional advertising; bounded API evidence and proposed acceptance cases |
 | [Foundation design](superpowers/specs/2026-11-04-foundation-design.md) | Authorized repository foundation |
 | [Foundation plan](superpowers/plans/2026-11-04-foundation.md) | Verifiable setup steps |
+| [Handover index and template](handovers/README.md) | Lane briefs, separate session records and required restart information |
+| [Review workflow brief](handovers/review-workflow.md) | Handover-structure delivery, manual review and MS-014 sequence |
 | [Claude REA handover](handovers/claude-rea.md) | Independent application analysis |
 | [Codex REA handover](handovers/codex-rea.md) | Reproducible application evidence |
 | [Synthesis handover](handovers/synthesis.md) | Reconcile research before design |
