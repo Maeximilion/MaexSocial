@@ -1,8 +1,8 @@
 # Architecture decisions to establish at G2
 
-Status — TypeScript with strict checking is the chosen application-language baseline under Maxi's delegated technology decision. Product boundaries remain provisional. Framework, authentication provider, persistence and deployment choices remain open for G2.
+Status — Maxi chose local-first planning with a synthetic Google adapter, PostgreSQL, Keycloak and a separate signed Windows client. Production deployment and G2 acceptance remain open. [Owner decision](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463)
 
-[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. The direction is TypeScript for browser code and Node.js-based API/job orchestration. Existing Python repository tooling stays in use. Product implementation follows Claude's independent REA report, synthesis and G2 acceptance.
+[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. Use strict TypeScript for the portal and Node.js API/worker, PostgreSQL SQL for migrations and C#/.NET with WPF for the Windows administrator. Python maintains repository tooling. Product implementation requires G2 acceptance and the MS-009 plan.
 
 ## Candidate responsibilities
 

@@ -1,42 +1,41 @@
-# ADR 0001 — Application language
+# ADR 0001 — Implementation language by component
 
-Status — Language baseline chosen on 2026-11-05 under Maxi's explicit delegation of technology selection. Full G2 product scope and architecture approval remain pending.
+**Decided for local pilot planning, 2026-11-05.** Maxi delegated language selection in [#100](https://github.com/Maeximilion/MaexSocial/issues/100). The [local-first decision on #8](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463) adopts the portal, worker, PostgreSQL and Keycloak from [ADR 0002](0002-google-text-pilot.md) for a synthetic Google text pilot. G2 approval, implementation and release are separate decisions.
 
-## Context
+## What already exists
 
-MaexSocial needs a public website, customer registration/login, customer dashboards, separate platform administration and integration-heavy content/media workflows. Research synthesis must still establish the first release and provider capabilities. The repository already uses Python for maintenance and validation.
+At the [planning baseline](https://github.com/Maeximilion/MaexSocial/tree/43992502562093b6a20c11c23600e19fb0d3a74f), `scripts/check_repo.py` and `scripts/project_sync.py` maintain the repository and Project. Python and Node/CommonJS tests exercise foundation behavior. There is no product portal, API, worker, Windows client or migration series to port. Keycloak's JVM and PostgreSQL's engine are upstream software we must patch and restore. Neither dictates the language of our application.
 
 ## Decision
 
-Use **TypeScript with strict checking** as the primary application language. Use TypeScript in browser code and Node.js as the default direction for API and job orchestration. Start with one coherent application and introduce a background worker when durable or long-running work requires it. Keep existing Python repository tooling.
-
-This records a development direction. Frameworks, authentication services, database, queue, package versions, runtime version and deployment remain G2 decisions. Product scaffolding follows Claude's independent REA report, synthesis and the approved implementation plan.
-
-## Rationale and consequences
-
-One language across browser and application code supports shared contracts and tooling. Strict checking catches categories of mistakes before execution. This is a maintainability choice for the current product requirements. TypeScript annotations are erased and do not change runtime behavior, so this decision makes no inherent execution-speed or security claim. [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict.html) · [Type erasure](https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types)
-
-Validate requests, webhooks, provider responses and model outputs at runtime before trusting them. Keep server-side authorization, tenant isolation, session controls, idempotency and the [access acceptance cases](../17_ACCESS_SECURITY.md) explicit. A type assertion cannot establish the validity of untrusted data.
-
-Keep API request work bounded and avoid blocking Node's event loop. Schedule long-running media work through suitable provider jobs or workers. We expect external generation, uploads and network/database activity to contribute substantially to latency, but this is a workload hypothesis to measure during the first slice. [Node.js event-loop guidance](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop)
-
-## Alternatives considered
-
-| Language | Relevant property | MaexSocial decision |
+| Component | Language and runtime | What it owns |
 |---|---|---|
-| TypeScript | Static checks plus the JavaScript browser/runtime ecosystem | Chosen baseline for application code |
-| Go | Concurrency and tooling are central design goals | Consider for a specific measured service need that justifies an additional language |
-| Rust | Compiler-checked ownership for memory management | Consider for a demonstrated native component or resource constraint |
-| Python | Existing repository tools and potential specialized libraries | Preserve current tools; add product use only for a concrete library/inference requirement |
+| Customer portal | Strict TypeScript compiled to browser JavaScript | Public pages, customer login and tenant dashboard. Server checks every protected action. |
+| Customer and private admin APIs | Strict TypeScript on maintained Node.js 24 LTS | Validate requests, identity, device proof and provider data at runtime. Share contracts with the portal where useful. TypeScript's types are erased. [Strict mode](https://www.typescriptlang.org/tsconfig/strict.html) · [Type erasure](https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types) |
+| Publication worker | Strict TypeScript on the same Node.js release, separate process and credentials | Claim a durable occurrence, dispatch once and reconcile an uncertain result. The pilot predominantly waits on database and provider I/O. Measure event-loop delay and CPU time before moving compute to another runtime. [Node event-loop guidance](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop) |
+| Product schema and migrations | Versioned SQL executed by PostgreSQL 17 | Enforce tenant keys, occurrence uniqueness and atomic claims in the database. Rehearse applying migrations to existing data and recovery with compatible binaries. Keep the Keycloak database and its upgrade procedure separate. [PostgreSQL transactions](https://www.postgresql.org/docs/17/tutorial-transactions.html) |
+| Installed Windows administrator | C# on maintained .NET 10 LTS, WPF on supported Windows 11 | Small customer list, target confirmation and audited hold. Use the private admin API. The client receives neither a provider credential nor database access. [WPF](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/overview/) · [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) |
+| Repository tooling | Keep Python 3 for current checks, with existing JavaScript/Node automation | Foundation checks, GitHub maintenance and their tests have their own dependencies and lifecycle. |
+| Later media or ML | Keep provider orchestration in TypeScript/Node. Consider an isolated Python process only for a required library/model or measured compute bottleneck | The text pilot rejects media. Before enabling a processor, agree its owner, resource limits, patch path, job contract and [upload acceptance cases](../security/uploads.md). |
 
-Go's concurrency/tooling goals and Rust's ownership model are documented properties, not comparative MaexSocial benchmarks. Python's type annotations also lack automatic runtime enforcement. The alternatives add another application toolchain if introduced alongside browser TypeScript. [Go FAQ](https://go.dev/doc/faq#What_is_the_purpose_of_the_project) · [Rust ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html) · [Python typing](https://docs.python.org/3/library/typing.html)
+## Why C# for this one client?
 
-## Follow-up at G2
+Both WPF and WinUI 3 fit a Windows-only client. The pilot needs an accessible list, a confirmation dialog and Windows cryptography. WPF supplies the controls within .NET Desktop. WinUI 3 is Microsoft's recommended new Windows UI and supports packaged deployment, but its Windows App SDK adds a runtime to service. Reopen the UI choice if an accepted workflow needs one of its features. For WPF, explicitly produce and sign the MSIX. Plan a self-contained build so a clean PC can install it. The release owner must rebuild and redistribute the client for bundled .NET security patches. [Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/) · [Windows packaging](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/publish-first-app) · [.NET publishing modes](https://learn.microsoft.com/en-us/dotnet/core/deploying/)
 
-- Confirm the first workflow from the completed research synthesis.
-- Select frameworks, maintained authentication/session handling and runtime validation contracts.
-- Set performance, cost and security acceptance targets before implementation.
-- Add type checking and the selected application's behavioral tests to CI when application code exists.
-- Revisit a language boundary only when measurements or a required provider/library establish a concrete need.
+TypeScript/Electron could reuse web skills, launch the system browser and ship signed MSIX updates. It would also require isolating the renderer, validating each privileged IPC operation, bridging to the device key and patching bundled Chromium, Node and Electron. The portal has no privileged screens to reuse. A native WPF client avoids that renderer boundary at the cost of maintaining a second application toolchain. Reconsider Electron for a funded cross-platform requirement with equivalent device and recovery evidence. [Electron security](https://www.electronjs.org/docs/latest/tutorial/security) · [Electron MSIX updates](https://www.electronjs.org/docs/latest/api/auto-updater/)
 
-Official sources consulted on 2026-11-05. No application benchmark or implementation is claimed by this decision.
+| Boundary | Required evidence before real administrator use |
+|---|---|
+| Enroll and sign in | Independently verify the operator and target PC. Create a non-exportable key through the Microsoft Platform Crypto Provider, verify hardware-backed key evidence and prove possession in a fresh challenge. Deny enrollment if proof is absent. Use a maintained public native OIDC client, system browser, authorization code with PKCE S256, exact loopback IP redirect with ephemeral port, state and nonce. No shared client secret. The API checks the admin audience, active role, bound device proof and fresh MFA for a hold. [TPM key properties](https://learn.microsoft.com/en-us/windows/security/hardware-security/tpm/tpm-fundamentals) · [Key attestation](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/tpm-key-attestation) · [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252) |
+| Install and update | On a clean test PC, accept only the approved MSIX identity, trusted signer and increasing release version from the owner's HTTPS App Installer feed. Reject altered, wrong-publisher and downgraded builds. Recover from a bad release by signing the known-good code as a higher version. Keep signing keys separate from device keys. [MSIX signing](https://learn.microsoft.com/en-us/windows/msix/package/signing-package-overview) · [App Installer updates and repair](https://learn.microsoft.com/en-us/windows/msix/app-installer/auto-update-and-repair--overview) |
+| Lose a PC or signer | Revoke device, identity and sessions from an independent control plane. Deny the old session on its next protected request, including over an open connection. Re-enroll a clean replacement with a spare authenticator. For signer compromise, suspend distribution and ingress until trusted signing and enrollment are restored. [Access and recovery cases](../17_ACCESS_SECURITY.md) |
+
+MS-009 can plan deterministic success and denial fixtures on synthetic devices. Before release, #82 needs separately authorized tests with actual supported hardware, trust chain, update feed and independent recovery. Fixture results cannot establish a real TPM, signing identity or operator recovery capability.
+
+## When to reconsider
+
+A new service in C#, Go or Java would add another server runtime for the same I/O-bound workflow. Reopen if a required integration or measured capacity limit justifies operating it. Consider Rust or C/C++ only for a bounded native library or measured processing constraint with an owner and isolation tests. Record the affected workload, evidence, maintenance cost and recovery impact. [Go design goals](https://go.dev/doc/faq#What_is_the_purpose_of_the_project) · [Rust ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html)
+
+## Implementation issue convention
+
+In each implementation issue give the affected component, its actual language/runtime and a link to this ADR. List one assignment per component in mixed tasks. For example, a hold spans the C#/.NET desktop client, the TypeScript/Node admin API and PostgreSQL SQL for the audit transaction. MS-009 carries these assignments into file-level tasks and test fixtures. Research, design-only work and gate acceptance need no language field. A runtime change needs the exception evidence above. This convention grants no implementation authority.
