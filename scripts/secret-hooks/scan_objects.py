@@ -1,5 +1,6 @@
 """Scan immutable Git payloads and tree entry names as separate in-memory inputs."""
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from itertools import islice
 import hashlib
 import os
 from pathlib import Path
@@ -12,6 +13,21 @@ import sys
 AUDITED = {"08851459ccc813a5b5993aff0601e99543b04c51", "f96e246f16dd3107ce7a56465d90e00081c3d486"}
 
 
+# Gitleaks 8.30.1 sniffs MIME in its first 100,000-byte read. Keep object bytes
+# beyond that entire read; its first newline ends the initial sniff even on a short read.
+PREFIX = b"!\n" + b" " * 99_997 + b"\n"
+
+
+def bounded(pool, operation, items):
+    items = iter(items)
+    pending = {pool.submit(operation, item) for item in islice(items, 4)}
+    while pending:
+        done, pending = wait(pending, return_when=FIRST_COMPLETED)
+        results = [future.result() for future in done]
+        yield from results
+        pending.update(pool.submit(operation, item) for item in islice(items, len(done)))
+
+
 def digest(path):
     with path.open("rb") as stream:
         h = hashlib.sha256()
@@ -20,14 +36,21 @@ def digest(path):
         return h.digest()
 
 
-def check(scanner, revisions):
+def check(scanner, git_binary, revisions):
+    git_path = Path(git_binary)
+    if not git_path.is_absolute():
+        raise ValueError("Git path must be absolute")
+    git_path = git_path.resolve(strict=True)
+    if Path.cwd().resolve() in git_path.parents:
+        raise ValueError("Git must be outside the worktree")
+    git_binary = str(git_path)
     here = Path(__file__).resolve().parent
     config, ignore = here / "gitleaks.toml", here / ".gitleaksignore"
     command = [scanner, "stdin", "--config", str(config), "--gitleaks-ignore-path", str(ignore),
                "--ignore-gitleaks-allow", "--redact=100", "--no-banner", "--no-color", "--log-level", "error"]
     env = {k: v for k, v in os.environ.items() if not k.startswith("GITLEAKS_")}
     env["GIT_NO_REPLACE_OBJECTS"] = "1"
-    policy = hashlib.sha256(b"".join(digest(p) for p in (Path(scanner), Path(__file__), config, ignore))).digest()
+    policy = hashlib.sha256(b"".join(digest(p) for p in (Path(scanner), git_path, Path(__file__), config, ignore))).digest()
     # This local, disposable cache stores only IDs verified under the exact policy.
     # Failure to read or save it affects speed only.
     cache = None
@@ -44,12 +67,12 @@ def check(scanner, revisions):
             cache = None
 
     def git(*args, input=None):
-        return subprocess.check_output(["git", *args], input=input, stderr=subprocess.DEVNULL, env=env)
+        return subprocess.check_output([git_binary, *args], input=input, stderr=subprocess.DEVNULL, env=env)
 
     def scan(data):
         # A fixed non-secret text prefix prevents MIME sniffing from skipping a
         # SQLite/PDF/etc. payload. EOF belongs to this input alone.
-        r = subprocess.run(command, input=b"!\n" + data, capture_output=True, env=env, cwd=here)
+        r = subprocess.run(command, input=PREFIX + data, capture_output=True, env=env, cwd=here)
         if r.returncode or r.stdout or r.stderr:
             raise ValueError("leaks found or scan failed")
 
@@ -67,25 +90,31 @@ def check(scanner, revisions):
             raise ValueError("missing Git object")
         # Pipe the object directly to the scanner so large blobs do not fill Python memory.
         reader, writer = os.pipe()
-        with os.fdopen(reader, "rb") as source, os.fdopen(writer, "wb", buffering=0) as sink:
-            sink.write(b"!\n")
-            with subprocess.Popen(["git", "cat-file", kind, oid], stdout=sink,
-                                  stderr=subprocess.DEVNULL, env=env) as producer:
-                sink.close()
+        with os.fdopen(reader, "rb") as source, os.fdopen(writer, "wb") as sink:
+            with subprocess.Popen(command, stdin=source, stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, env=env, cwd=here) as detector:
+                source.close()
                 try:
-                    r = subprocess.run(command, stdin=source, capture_output=True, env=env, cwd=here)
+                    sink.write(PREFIX)
+                    sink.flush()
+                    with subprocess.Popen([git_binary, "cat-file", kind, oid], stdout=sink,
+                                          stderr=subprocess.DEVNULL, env=env) as producer:
+                        sink.close()
+                        output, _ = detector.communicate()
+                        if producer.wait() or detector.returncode or output:
+                            raise ValueError("leaks found or scan failed")
                 finally:
-                    source.close()
-                if producer.wait() or r.returncode or r.stdout or r.stderr:
-                    raise ValueError("leaks found or scan failed")
+                    # Also deliver EOF on setup/producer errors.
+                    sink.close()
         return ()
 
     try:
         with ThreadPoolExecutor(max_workers=4) as pool:
-            for entries in pool.map(check_object, lines):
+            for entries in bounded(pool, check_object, lines):
                 names.update(entries)
             pending = {"name-" + hashlib.sha256(name).hexdigest(): name for name in names}
-            list(pool.map(scan, (name for key, name in pending.items() if key not in clean)))
+            for _ in bounded(pool, scan, (name for key, name in pending.items() if key not in clean)):
+                pass
         if cache:
             try:
                 with cache:
@@ -100,6 +129,6 @@ def check(scanner, revisions):
 
 if __name__ == "__main__":
     try:
-        check(sys.argv[1], sys.argv[2:])
+        check(sys.argv[1], sys.argv[2], sys.argv[3:])
     except (OSError, ValueError, subprocess.SubprocessError):
         sys.exit("Secret scan blocked: leaks found or scan failed.")

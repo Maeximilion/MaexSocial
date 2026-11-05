@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 # Install this file as both pre-commit and pre-push in the shared Git hooks directory.
 set -euo pipefail
+# Resolve executables in the invoking shell. Windows CreateProcess otherwise
+# searches the worktree before PATH when Python launches an unqualified program.
+trusted_path() {
+    local path
+    path=$(type -P "$1") || return 1
+    [[ $path == /* && $path != "$(pwd -P)/"* ]] || return 1
+    printf '%s\n' "$path"
+}
+git_binary=$(trusted_path git.exe || trusted_path git) || {
+    echo "Secret scan requires Git on a trusted absolute PATH." >&2; exit 1;
+}
+git() { "$git_binary" "$@"; }
 hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 scanner=$(git config --path --get maexsocial.gitleaksPath) || {
     echo "Secret scan blocked: configure maexsocial.gitleaksPath (docs/19_LOCAL_SECURITY.md)." >&2
@@ -37,11 +49,15 @@ scan() {
     fi
 }
 scan_objects() {
-    local python
-    python=$(command -v python3 || command -v python) || {
-        echo "Secret scan requires Python 3." >&2; return 1;
-    }
-    "$python" -I -B "$hook_dir/scan_objects.py" "$scanner" "$@"
+    local name python
+    for name in python3 python; do
+        python=$(trusted_path "$name") || continue
+        if "$python" -I -B -c 'import sys; sys.exit(sys.version_info < (3, 8))' </dev/null >/dev/null 2>&1; then
+            "$python" -I -B "$hook_dir/scan_objects.py" "$scanner" "$git_binary" "$@"
+            return $?
+        fi
+    done
+    echo "Secret scan requires a working Python 3.8+ interpreter." >&2; return 1
 }
 case "$(basename -- "$0")" in
     pre-commit)

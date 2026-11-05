@@ -6,6 +6,7 @@ import secrets
 import shutil
 import string
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -240,10 +241,38 @@ class SecretHooksTest(unittest.TestCase):
         self.git("add", key)
         ignore = self.repo / ".git/hooks/.gitleaksignore"
         original = ignore.read_text()
-        ignore.write_text(original + "\n:generic-api-key:2\n")
+        ignore.write_text(original + "\n:generic-api-key:3\n")
         self.git("commit", "-qm", "Allowed under first policy")
         ignore.write_text(original)
         self.assertNotEqual(self.git("hook", "run", "pre-commit", check=False).returncode, 0)
+
+    def test_shifted_tar_signature_cannot_hide_plaintext_token(self):
+        data = b"\0" * 255 + b"ustar\0" + b"\0" * 260 + b"token=" + self.token.encode()
+        (self.repo / "capture.bin").write_bytes(data)
+        self.git("add", "capture.bin")
+        r = self.git("commit", "-qm", "Must be blocked", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn(self.token, r.stderr)
+
+    def test_unusable_python3_falls_back_to_working_python(self):
+        stub_dir = Path(self.temp.name) / "stubs"
+        stub_dir.mkdir()
+        stub = stub_dir / "python3"
+        stub.write_bytes(b"#!/bin/sh\nexit 1\n")
+        stub.chmod(0o755)
+        env = dict(os.environ, PATH=str(stub_dir) + os.pathsep + os.environ["PATH"])
+        r = subprocess.run(["git", "hook", "run", "pre-commit"], cwd=self.repo, env=env,
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "Windows executable search regression")
+    def test_worktree_git_executable_is_never_launched_by_python(self):
+        executable = shutil.which("git")
+        (self.repo / "git.exe").write_bytes(b"invalid, deliberately not an executable")
+        r = subprocess.run([sys.executable, "-I", "-B", str(self.repo / ".git/hooks/scan_objects.py"),
+                            str(Path(SCANNER).resolve()), executable, "HEAD"], cwd=self.repo,
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
 
     def test_clean_push_succeeds(self):
         remote = Path(self.temp.name) / "remote.git"
