@@ -1,5 +1,16 @@
 # Current coordinator handover
 
+## API pause · 2026-11-05 23:06 UTC (00:06 Europe/Berlin, November 6)
+
+**Paused by owner until the Claude API review route is verified.** Two work chats received and confirmed the order. No open PR, uncompleted process or active reviewer remained at the final check. Keep both worktrees and their current assignments intact. No new intake, product changes, new PRs, pushes, reviews or merges. The local PR dashboard remains read-only.
+
+| Work | Verified checkpoint | Resume action |
+| --- | --- | --- |
+| [#30 customer roles](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885) | Branch `dev-codex/30-pilot-roles` at `a4d9de18125f482bf87d4cb7d5941568e5fac08f` was pushed **before** the pause. Four documentation files committed, worktree clean, no PR. Independent reviewer interrupted before a verdict. The already-running Python suite exited 0, 79 tests including one skip; Node 20/20 and repository checks were previously reported. | Resume independent review only after verified control relay. This PR precedes the #9 plan. |
+| [#9 pilot plan](https://github.com/Maeximilion/MaexSocial/issues/9#issuecomment-6671747970) | `dev-codex/9-pilot-roles-plan` at `4277c72a2fc6bf71dea6bd5593c670788210ba68`. Two uncommitted plan files remain local; the coordinator made and verified a separate private copy of both. No PR, push of the new branch, test run or reviewer in flight. | Keep the local amendments and finish checks after the pause; hold publication until #30 merges. |
+
+Review routing: Maxi selected USD 50 per calendar month for MaexSocial API reviews. Existing `claude-review.yml` uses subscription OAuth and remains disabled. No Anthropic API Actions secret or verified capped workspace was observed. The Monday automation that could reactivate OAuth is paused. The owner-supplied standalone `API` command in the coordinator requests a check of the cap, credential and actual API review; a quoted word or PR comment is not a control. Switch off coordinator-issued `@codex review` mentions only after the verified cutover. Keep independent Astra/high. No review was started during the pause. This local checkpoint awaits publication upon authorized resume.
+
 ## Customer roles and invitations · 2026-11-05 23:01 UTC (00:01 Europe/Berlin on November 6)
 
 The [owner's customer-management decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744) defines two customer roles, Manager and Employee, plus the separate Windows platform administrator. Managers may invite and remove Employees from their own customer account. DEV/Admin manages customer organizations, provisions users and may approve account access. First-time invitees set their own password and provide first and last name; remaining profile fields are optional. The [approval/export decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885) reserves publication approval to the tenant Manager and permits Employees to export the exact Manager-approved revision only under the existing pre-dispatch Google fallback.
