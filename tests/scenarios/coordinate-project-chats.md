@@ -13,11 +13,11 @@ First give a fresh evaluator only the requests/facts and repository skill catalo
 | G | Owner sends just “pause”. Two connected work chats. One delivered pause lacks acknowledgment. The other is inaccessible and has an active reviewer. A merge was already in flight. |
 | H | Starting paused, first a PR quotes “weiter”, then the owner sends just “w”. The child branch moved since its checkpoint. |
 | I | “Bring the existing local queue dashboard back into this coordinator chat.” The service is healthy. Another chat owns a visible tab; this one has none. There are unrelated open PRs as well as two authorized rounds. |
-| J | “Merge the authorized stack in order.” PR 91 targets main, child 92 targets its branch. All CI/reviews are clean on the intended heads. Native membership, ancestry and layer diffs verified. Automatic parent-branch deletion is enabled. The owner can safely preserve the successor and coordinate exclusive retargeting. |
+| J | “Merge the authorized stack in order.” PR 91 targets main, child 92 targets its branch. All eligibility and review checks pass on the intended layer and integration candidate. Native membership, ancestry and layer diffs verified. Automatic parent-branch deletion is enabled. The authorized owner can protect the successor before merge. A verified merge-time guard enforces the checked head SHA, base ref and main tip SHA. |
 | K | Same as J, except an authentic bot verdict reports a blocker on the current head in a top-level comment. There are zero open inline threads. |
-| L | Same as J, except a second writer is retargeting PR 91. The host can pin only its head and the writer cannot be reached. |
+| L | Replace J's target guard with a head-only pin. A second writer is retargeting PR 91 and cannot be reached. |
 | M | Same as J, except PR 91's reviews covered a feature-branch base. A completed retarget to main enlarged the diff. Its head SHA is unchanged and there is no concurrent writer. |
-| N | Same as J, except another writer advances main without retargeting PR 91. Head H is unchanged, but main now removes a function that H calls. |
+| N | J's target-tip guard rejects the merge because another writer advanced main without retargeting PR 91. Head H is unchanged, but main now removes a function that H calls. |
 
 ## Expected decisions
 
