@@ -27,6 +27,7 @@ Start with [status](01_STATUS.md), then the [project charter](00_PCF.md) and [wo
 | [Agent anatomy plan](superpowers/plans/2026-11-05-agent-anatomy-and-asset-security.md) | Foundation structure, hook and artwork-guard implementation |
 | [Foundation design](superpowers/specs/2026-11-04-foundation-design.md) | Authorized repository foundation |
 | [Foundation plan](superpowers/plans/2026-11-04-foundation.md) | Verifiable setup steps |
+| [Repository anatomy assessment](superpowers/specs/2026-11-05-repository-anatomy-review.md) | MS-015: evidence, candidate recommendations and owner decisions before workflow changes |
 | [Claude REA handover](handovers/claude-rea.md) | Independent application analysis |
 | [Codex REA handover](handovers/codex-rea.md) | Reproducible application evidence |
 | [Synthesis handover](handovers/synthesis.md) | Reconcile research before design |
