@@ -1,5 +1,14 @@
 # Current coordinator handover
 
+## Gate wave · 2026-11-05 22:29 UTC (23:29 Europe/Berlin)
+
+[PR #92](https://github.com/Maeximilion/MaexSocial/pull/92) merged at `e9083571d6bdc98e6f56b63873baf60220543730`; clean canonical main is synchronized. Its [#43 handover](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671135131), independent restore of 150 worktree/Git files and archive readback of the two complete transcripts were verified. #43 remains open for the media design disposition.
+
+Three occupied gate-wave slots, zero pending reservations:
+- [#93 / PR #94](https://github.com/Maeximilion/MaexSocial/issues/93#issuecomment-6671169772): updated head `7bc9e766e744c483e9659fb847893e4d27eb2b7e`, candidate `9fd79808bd9ac15344451853807077b2c784dce6` against the merged #92. CI, Project, independent Astra/high and both Codex receipts passed. The supplemental CodeQL comparison reported neutral with Python missing. The PR owner is checking evidence from the two existing analyses.
+- [#97](https://github.com/Maeximilion/MaexSocial/issues/97): proposed architecture and cost scenario incorporates the single audited admin hold from [#30](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6670980326). The proposed ADR branch is pushed at `fd2b992300e4f992f92dfa59ce0152568dc465c5`. Hold its PR until #94 merges.
+- [#9](https://github.com/Maeximilion/MaexSocial/issues/9#issuecomment-6671186754): the verified #92 merge/archive pair reserved the third slot; [dispatch confirmed](https://github.com/Maeximilion/MaexSocial/issues/9#issuecomment-6671195874). Under G2 package G prepare only the map from existing requirements to synthetic tests. Keep #9 blocked for finalization and PR until #8/#30/#43 design decisions and the preceding deliveries. G2 acceptance remains with the owner.
+
 ## Resumed · 2026-11-05 22:18 UTC (23:18 Europe/Berlin)
 
 The owner explicitly resumed work after the evening handover. The earlier 17:40 cutoff has expired. Standard speed remains in force. The three occupied gate-wave slots are [#43 / PR #92](https://github.com/Maeximilion/MaexSocial/pull/92), [#93 / PR #94](https://github.com/Maeximilion/MaexSocial/pull/94) and [#97 · G2 pilot ADR](https://github.com/Maeximilion/MaexSocial/issues/97). Both PR owners resumed from their pushed checkpoints. #97 was admitted using the verified merge and archive of #96/#95; [reservation](https://github.com/Maeximilion/MaexSocial/issues/97#issuecomment-6670995698), [confirmed dispatch](https://github.com/Maeximilion/MaexSocial/issues/97#issuecomment-6671004685). No admission is pending.
