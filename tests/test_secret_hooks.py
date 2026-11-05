@@ -135,6 +135,26 @@ class SecretHooksTest(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("scan failed", r.stderr)
 
+    def test_diff_attribute_cannot_hide_staged_or_pushed_text(self):
+        (self.repo / ".gitattributes").write_text("settings.txt -diff\n")
+        self.stage_secret()
+        r = self.git("commit", "-qm", "Must be blocked", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported")
+        self.assert_push_rejected("HEAD")
+
+    def test_push_scans_tag_and_commit_messages(self):
+        remote = Path(self.temp.name) / "remote.git"
+        self.git("init", "--bare", "-q", str(remote))
+        self.git("tag", "-a", "annotated", "-m", "token=" + self.token)
+        r = self.git("push", str(remote), "refs/tags/annotated", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn(self.token, r.stderr)
+        self.git("commit", "--allow-empty", "-qm", "token=" + self.token)
+        r = self.git("push", str(remote), "HEAD:refs/heads/main", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn(self.token, r.stderr)
+
     def test_clean_push_succeeds(self):
         remote = Path(self.temp.name) / "remote.git"
         self.git("init", "--bare", "-q", str(remote))

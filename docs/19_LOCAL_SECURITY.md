@@ -9,7 +9,7 @@ The shared `.gitignore` excludes common local credentials, private keys, agent w
 The [hook source](../scripts/git-secret-hook.sh) is installed twice, as `pre-commit` and `pre-push`, in the clone's common Git hooks directory. That location covers its linked worktrees independently of their branch contents. It does not activate automatically in a new clone.
 
 - Commit: scan the staged index, including a staged secret whose working copy was subsequently cleaned.
-- Push: scan all local refs plus the commit histories sent by Git, including first-parent merge diffs and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
+- Push: scan all local refs plus the commit histories sent by Git, including first-parent merge diffs, commit messages, outgoing annotated tag messages and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
 - Scanner missing or scan failure: block the Git operation.
 - Findings: redact secret values. Do not paste raw captures into issue or PR bodies.
 
@@ -57,19 +57,39 @@ Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory 'pre-push')
 Copy-Item scripts/secret-hooks/gitleaks.toml $hookDirectory
 Copy-Item scripts/secret-hooks/.gitleaksignore $hookDirectory
 git config --local maexsocial.gitleaksPath $gitleaksExecutable
+if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 $env:MAEXSOCIAL_TEST_GITLEAKS = $gitleaksExecutable
 python -m unittest discover -s tests -p test_secret_hooks.py -v
+if ($LASTEXITCODE -ne 0) { throw "Failed: python verification or setup" }
 git hook run pre-commit
+if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 git hook run pre-push
+if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 ```
 
-Git for Windows supplies the shell used by these hooks. On Unix, mark both installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
+Use Git with `--attr-source` support and Bash (included in Git for Windows). The hook selects an empty attribute source to prevent repository diff attributes from hiding text. On Unix, mark both installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
 
-To locate a staged finding, run the scanner with the installed configuration and project only its metadata (PowerShell, from the worktree root). For push triage, replace `--staged` with `'--log-opts=--all --full-history --diff-merges=first-parent'`, appending any outgoing commit IDs outside those refs inside that option. A missing scanner, forbidden scan-root ignore file or Git error also blocks the hook.
+For a blocked staged scan, the following PowerShell example lists only file, line, rule and commit. Error diagnostics remain in memory and are never printed. An empty report covers only the selected scan. Push checks also cover commit and outgoing tag messages.
 
 ```powershell
-& $gitleaksExecutable git --staged --config "$hookDirectory/gitleaks.toml" --gitleaks-ignore-path "$hookDirectory/.gitleaksignore" --ignore-gitleaks-allow --redact=100 --no-banner --report-format json --report-path - 2>$null |
-    Out-String | ConvertFrom-Json | ForEach-Object { $_ } | Select-Object File, StartLine, RuleID
+$gitleaksExecutable = git config --path --get maexsocial.gitleaksPath
+if ($LASTEXITCODE -ne 0) { throw 'Scanner path unavailable' }
+$gitCommon = git rev-parse --path-format=absolute --git-common-dir
+if ($LASTEXITCODE -ne 0) { throw 'Common Git directory unavailable' }
+$hookDirectory = Join-Path $gitCommon 'hooks'
+if (Test-Path -LiteralPath .gitleaksignore) { throw 'Remove the scan-root ignore override' }
+$priorAttrs = $env:GIT_ATTR_SOURCE
+try {
+    $nullDevice = if ($env:OS -eq 'Windows_NT') { 'NUL' } else { '/dev/null' }
+    $env:GIT_ATTR_SOURCE = git hash-object -t tree -- $nullDevice
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve empty tree' }
+    $records = @(& $gitleaksExecutable git --staged --config "$hookDirectory/gitleaks.toml" --gitleaks-ignore-path "$hookDirectory/.gitleaksignore" --ignore-gitleaks-allow --redact=100 --log-level error --no-banner --report-format json --report-path - 2>&1)
+    $code = $LASTEXITCODE
+    if ($code -notin @(0,1) -or @($records | Where-Object { $_ -is [Management.Automation.ErrorRecord] }).Count) { throw 'Scanner error' }
+    $hits = ($records -join [Environment]::NewLine) | ConvertFrom-Json -ErrorAction Stop
+    if ($code -eq 1 -and !$hits) { throw 'Scan failed without findings' }
+    $hits | Select-Object File, StartLine, RuleID, Commit
+} finally { $env:GIT_ATTR_SOURCE = $priorAttrs }
 ```
 
 Update installed copies after reviewed hook changes; changing source files alone does not update other clones. Before rollback, back up the current state again. Remove only installed files whose hashes still match the installation manifest; preserve later modifications. Unset `maexsocial.gitleaksPath` only if it still equals the installed value (or restore its recorded previous value). Do not overwrite the entire Git config with an old backup.

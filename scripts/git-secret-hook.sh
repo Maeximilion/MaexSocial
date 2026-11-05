@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Install this file as both pre-commit and pre-push in the shared Git hooks directory.
-set -eu
+set -euo pipefail
 hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 scanner=$(git config --path --get maexsocial.gitleaksPath) || {
     echo "Secret scan blocked: configure maexsocial.gitleaksPath (docs/19_LOCAL_SECURITY.md)." >&2
@@ -16,12 +16,29 @@ if [ -e .gitleaksignore ] || [ -L .gitleaksignore ]; then
     exit 1
 fi
 export GIT_NO_REPLACE_OBJECTS=1
+# Use a neutral attribute source so repository-controlled diff drivers cannot hide text.
+GIT_ATTR_SOURCE=$(git hash-object -t tree --stdin </dev/null)
+export GIT_ATTR_SOURCE
+git --attr-source="$GIT_ATTR_SOURCE" rev-parse --git-dir >/dev/null || {
+    echo "Secret scan requires Git with --attr-source support." >&2; exit 1;
+}
+# In 8.30.1 a failed Git subprocess can log an error but leave exit status zero.
+# At error level successful scans are silent. Never echo captured diagnostics.
+scan() {
+    local diagnostics
+    if ! diagnostics=$("$scanner" "$@" --config "$hook_dir/gitleaks.toml" \
+        --gitleaks-ignore-path "$hook_dir/.gitleaksignore" --log-level error \
+        --ignore-gitleaks-allow --redact=100 --no-banner --no-color 2>&1) || [ -n "$diagnostics" ]; then
+        echo "Secret scan blocked: leaks found or scan failed." >&2
+        return 1
+    fi
+}
 case "$(basename -- "$0")" in
-    pre-commit) set -- --staged ;;
+    pre-commit) scan git --staged ;;
     pre-push)
         shallow=$(git rev-parse --is-shallow-repository)
         [ "$shallow" = false ] || { echo "Secret scan requires full history." >&2; exit 1; }
-        revisions="--all --full-history --diff-merges=first-parent"
+        objects=()
         while read -r local_ref oid remote_ref old_oid; do
             case "$oid" in
                 ''|*[!0-9a-f]*) echo "Invalid pre-push object ID." >&2; exit 1 ;;
@@ -29,18 +46,18 @@ case "$(basename -- "$0")" in
                     commit=$(git rev-parse --verify "$oid^{commit}") || {
                         echo "Cannot scan a non-commit push target." >&2; exit 1;
                     }
-                    revisions="$revisions $commit" ;;
+                    objects+=("$commit")
+                    # Annotated tags (including nested tags) carry their own message.
+                    while [ "$oid" != "$commit" ]; do
+                        git cat-file tag "$oid" | scan stdin
+                        oid=$(git cat-file tag "$oid" | sed -n '1s/^object //p')
+                    done ;;
                 *) ;; # Ref deletion.
             esac
         done
-        set -- "--log-opts=$revisions" ;;
+        git log --format=%B --no-patch --no-show-signature --all "${objects[@]}" -- | scan stdin
+        revisions="--all --full-history --diff-merges=first-parent --pretty=medium --text --no-ext-diff --no-textconv"
+        for commit in "${objects[@]}"; do revisions="$revisions $commit"; done
+        scan git "--log-opts=$revisions" ;;
     *) echo "Secret scan blocked: unexpected hook name." >&2; exit 1 ;;
 esac
-# In 8.30.1 a failed Git subprocess can log an error but leave exit status zero.
-# At error level successful scans are silent. Never echo captured diagnostics.
-if ! diagnostics=$("$scanner" git "$@" --config "$hook_dir/gitleaks.toml" \
-    --gitleaks-ignore-path "$hook_dir/.gitleaksignore" --log-level error \
-    --ignore-gitleaks-allow --redact=100 --no-banner --no-color 2>&1) || [ -n "$diagnostics" ]; then
-    echo "Secret scan blocked: leaks found or scan failed." >&2
-    exit 1
-fi
