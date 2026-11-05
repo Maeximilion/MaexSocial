@@ -16,6 +16,11 @@ if [ -e .gitleaksignore ] || [ -L .gitleaksignore ]; then
     exit 1
 fi
 export GIT_NO_REPLACE_OBJECTS=1
+# Gitleaks parses machine-readable patches; ANSI escapes hide additions.
+config_index=${GIT_CONFIG_COUNT:-0}
+[[ $config_index =~ ^[0-9]+$ ]] || exit 1
+export "GIT_CONFIG_KEY_$config_index=color.diff" "GIT_CONFIG_VALUE_$config_index=never"
+export GIT_CONFIG_COUNT=$((10#$config_index + 1))
 # Use a neutral attribute source so repository-controlled diff drivers cannot hide text.
 GIT_ATTR_SOURCE=$(git hash-object -t tree --stdin </dev/null)
 export GIT_ATTR_SOURCE
@@ -34,11 +39,23 @@ scan() {
     fi
 }
 case "$(basename -- "$0")" in
-    pre-commit) scan git --staged ;;
+    pre-commit)
+        scan git --staged
+        # Git omits binary patches from --staged. Scan those exact indexed blobs too.
+        git diff --cached --numstat -z --no-renames --no-ext-diff --no-textconv --no-color \
+            --diff-filter=AMT -- | while IFS= read -r -d '' entry; do
+            if [[ $entry == $'-\t-\t'* ]]; then
+                path=${entry#$'-\t-\t'}
+                blob=$(git rev-parse --verify ":$path")
+                git cat-file blob "$blob" | scan stdin || {
+                    echo "Staged blob scan failed: $blob" >&2; exit 1;
+                }
+            fi
+        done ;;
     pre-push)
         shallow=$(git rev-parse --is-shallow-repository)
         [ "$shallow" = false ] || { echo "Secret scan requires full history." >&2; exit 1; }
-        objects=()
+        objects=(--all)
         while read -r local_ref oid remote_ref old_oid; do
             case "$oid" in
                 ''|*[!0-9a-f]*) echo "Invalid pre-push object ID." >&2; exit 1 ;;
@@ -55,8 +72,11 @@ case "$(basename -- "$0")" in
                 *) ;; # Ref deletion.
             esac
         done
-        git log --format=%B --no-patch --no-show-signature --all "${objects[@]}" -- | scan stdin
-        revisions="--all --full-history --diff-merges=first-parent --pretty=medium --text --no-ext-diff --no-textconv"
+        # Raw objects include mergetag headers and bypass presentation encodings.
+        git rev-list "${objects[@]}" -- | git cat-file --batch | scan stdin || {
+            echo "Commit metadata scan failed (see triage in docs/19_LOCAL_SECURITY.md)." >&2; exit 1;
+        }
+        revisions="--full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv"
         for commit in "${objects[@]}"; do revisions="$revisions $commit"; done
         scan git "--log-opts=$revisions" ;;
     *) echo "Secret scan blocked: unexpected hook name." >&2; exit 1 ;;

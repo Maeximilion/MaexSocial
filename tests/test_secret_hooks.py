@@ -51,6 +51,8 @@ class SecretHooksTest(unittest.TestCase):
         self.git("add", "settings.txt")
 
     def test_staged_secret_blocks_commit_even_with_clean_working_copy(self):
+        self.git("config", "color.ui", "always")
+        self.git("config", "color.diff", "always")
         self.stage_secret()
         (self.repo / "settings.txt").write_text("Clean working copy.\n")
         result = self.git("commit", "-qm", "Must be blocked", check=False)
@@ -143,6 +145,14 @@ class SecretHooksTest(unittest.TestCase):
         self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported")
         self.assert_push_rejected("HEAD")
 
+    def test_nul_does_not_hide_an_ascii_token_in_the_index(self):
+        (self.repo / ".gitattributes").write_text("settings.dat diff\n")
+        (self.repo / "settings.dat").write_bytes(b"\0token=" + self.token.encode() + b"\n")
+        self.git("add", "settings.dat")
+        r = self.git("commit", "-qm", "Must be blocked", check=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn(self.token, r.stdout + r.stderr)
+
     def test_push_scans_tag_and_commit_messages(self):
         remote = Path(self.temp.name) / "remote.git"
         self.git("init", "--bare", "-q", str(remote))
@@ -150,6 +160,7 @@ class SecretHooksTest(unittest.TestCase):
         r = self.git("push", str(remote), "refs/tags/annotated", check=False)
         self.assertNotEqual(r.returncode, 0)
         self.assertNotIn(self.token, r.stderr)
+        self.git("config", "i18n.logOutputEncoding", "UTF-16LE")
         self.git("commit", "--allow-empty", "-qm", "token=" + self.token)
         r = self.git("push", str(remote), "HEAD:refs/heads/main", check=False)
         self.assertNotEqual(r.returncode, 0)
