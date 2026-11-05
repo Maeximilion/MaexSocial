@@ -194,6 +194,8 @@ jobs:
           elif env.get("WORKFLOW_CHANGED") == "true":
               body = (f"Skipped, not reviewed: this PR changes {env['EVIDENCE']}. The pinned action only runs a"
                       " workflow identical to the default branch, so review resumes after merge.")
+          elif env.get("CLAUDE_OUTCOME") != "success":
+              body, code = f"Failed: Claude step {env.get('CLAUDE_OUTCOME') or 'unknown'}. See {env['RUN_URL']}.", 1
           else:
               try:
                   summary = json.loads(env.get("OUTPUT") or "")["summary"]
