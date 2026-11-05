@@ -62,4 +62,6 @@ Run negative authorization cases at the server and worker boundaries, not only t
 
 ## G2 decisions still required
 
+Coordinate media access with [MS-014 upload security](security/uploads.md): private originals/derivatives, scoped worker credentials, safe delivery, signed-link revocation and URL retrieval. A separate admin entry point or storage bucket does not replace server-side authorization.
+
 Choose authentication/session provider, tenant role/action matrix, administrator bootstrap and recovery, MFA methods, customer MFA policy, verification-token behavior, expiry/revocation bounds, rate limits, audit retention, sensitive-management operations and external domain/deployment. Specify public-site content and the exact self-registration lifecycle. MS-009 then assigns concrete files, fixtures, contracts and tests to each accepted case.

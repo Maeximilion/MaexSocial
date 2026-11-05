@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B -c \"import pathlib,runpy,subprocess; root=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],encoding='utf-8',timeout=5).rstrip('\\n')); runpy.run_path(str(root/'.claude/hooks/check_repository.py'),run_name='__main__')\"",
+            "commandWindows": "python -B -c \"import pathlib,runpy,subprocess; root=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],encoding='utf-8',timeout=5).rstrip('\\n')); runpy.run_path(str(root/'.claude/hooks/check_repository.py'),run_name='__main__')\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
