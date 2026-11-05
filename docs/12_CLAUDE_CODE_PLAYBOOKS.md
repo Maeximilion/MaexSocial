@@ -2,7 +2,7 @@
 
 ## Start a session
 
-Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Code-autopilot and caveman remain disabled. Their presence on a machine does not authorize activation.
+Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Code Autopilot and Caveman are explicitly enabled under the current owner decision. Follow [development skill roles](tooling/development-skills.md); installation alone does not prove live activation.
 
 ## Canonical checkout and worktrees
 
