@@ -6,7 +6,7 @@ Status — Requested product direction, recorded 2026-11-05 in [planning issue #
 
 Maxi wants the customer dashboard's library to hold the customer's own images and videos, support AI-assisted media production through providers such as Higgsfield or Runway, and feed planned and recurring social posts or Stories. Customers should also be able to request advertising for their intended audience. “Runaway” is interpreted as Runway unless corrected.
 
-Maxi contrasted this with explanatory/promotional videos in [SocialEdge's library](https://app.socialedge.ai/de/dashboard/library). That description is an owner observation, not an independently verified finding here: the public web-tool request could not access the page. The existing Codex report establishes a library navigation route, not its authenticated behavior. Keep this MaexSocial proposal separate from the REA evidence lanes.
+Maxi contrasted this with explanatory/promotional videos in [SocialEdge's library](https://app.socialedge.ai/de/dashboard/library). That description is an owner observation, not an independently verified finding here: the public web-tool request could not access the page. The existing Codex report establishes a library navigation route, not its authenticated behavior. The later [Claude walkthrough](research/claude-rea.md#92-coverage) independently saw four vendor videos in one P2 account (CE-109). It did not exercise customer uploads or verify other tiers.
 
 ## Proposed customer journey
 
@@ -33,7 +33,7 @@ Recommendation for G2: own the library and calendar, start with one eligible Met
 
 ## Public API evidence — bounded check on 2026-11-05
 
-These are documented capabilities and constraints, not successful live integration tests. MS-005 still owns the complete feasibility matrix, including selected versions, permissions, reviews, quotas, costs, terms and account-specific verification.
+These are documented capabilities and constraints, not successful live integration tests. The [MS-005 feasibility matrix](research/platform-api-feasibility.md) records versioned operations, permissions, reviews, quotas, cost examples and policy limits. Customer-specific verification remains open.
 
 | Area | Supported planning conclusion | Primary source / remaining verification |
 |---|---|---|
