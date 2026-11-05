@@ -1,0 +1,12 @@
+diff --git a/tests/fixtures/claude_publication_probe.py b/tests/fixtures/claude_publication_probe.py
+new file mode 100644
+index 0000000..51265ef
+--- /dev/null
++++ b/tests/fixtures/claude_publication_probe.py
+@@ -0,0 +1,6 @@
++"""Disposable code-review fixture for issue 57."""
++
++
++def is_even(value: int) -> bool:
++    """Return True for an even integer."""
++    return value % 2 == 1
