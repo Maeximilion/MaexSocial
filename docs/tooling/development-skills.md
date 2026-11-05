@@ -15,7 +15,7 @@ Use one primary workflow for a task. Code Autopilot supplies execution disciplin
 
 ## Native project integration
 
-Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine; configuration alone does not download them or establish project trust. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
+Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine. For Ponytail, first run `codex plugin marketplace add DietrichGebert/ponytail`, then `codex plugin add ponytail@ponytail`; configuration alone does not download them or establish project trust. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
 
 Claude Code: `.claude/settings.json` declares project enablement and marketplace sources for `superpowers@claude-plugins-official` and `ponytail@ponytail`; `.claude/skills/development-workflow` points here. These use the native plugin loader, not a fake `.claude/plugins` folder. For a new clone, trust the project normally and install the declared plugins:
 

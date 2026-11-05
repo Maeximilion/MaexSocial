@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Add staged-commit and full-history push secret hooks, shared credential/capture ignore rules and verified local Codex hook/CLI guidance.
-- Document advisory Dependabot and security/quality notices and the repository Stop hook.
+- Run advisory Dependabot and security/quality checks only on explicit `/start` or `/task`. The periodic check is paused. Findings and repository Stop-hook warnings allow ordinary work to continue.
 - Add an advisory, SHA-pinned Claude Code PR review workflow for same-repository PRs (including drafts and Dependabot) and trusted `@claude` mentions, with edit, commit and push tools denied; it supplements and never replaces the required GPT-6 Astra high review. Dependabot bumps of `actions/checkout` or `claude-code-action` change this workflow file, so the action skips review there (workflow validation) while the job still reports success.
 
 - Add platform-native Claude/Codex skills, bounded agent roles, scoped rules and registered Stop checks; document loading/trust and plugin/MCP boundaries.
