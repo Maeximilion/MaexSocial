@@ -6,10 +6,10 @@ Task: [issue #44](https://github.com/Maeximilion/MaexSocial/issues/44). These ar
 
 The shared `.gitignore` excludes common local credentials, private keys, agent worktrees/settings and browser captures. Store raw authenticated research under ignored `work/`. Ignore rules neither remove tracked files nor clean history. Never force-add confidential files.
 
-The [hook source](../scripts/git-secret-hook.sh) is installed twice, as `pre-commit` and `pre-push`, in the clone's common Git hooks directory. That location covers its linked worktrees independently of their branch contents. It does not activate automatically in a new clone.
+The [hook source](../scripts/git-secret-hook.sh) is installed as `pre-commit`, `pre-applypatch`, `pre-merge-commit` and `pre-push`, in the clone's common Git hooks directory. That location covers its linked worktrees independently of their branch contents. It does not activate automatically in a new clone.
 
-- Commit: scan staged additions and the complete tree produced from the actual index. The tree includes file names and blob contents, including unchanged indexed files.
-- Push: scan all local refs plus the commit histories sent by Git, including root and first-parent merge diffs, raw reachable objects, decoded commit identities and messages, outgoing annotated tags and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
+- Commit: scan staged additions and the complete tree produced from the actual index. The tree includes file names and blob contents, including unchanged indexed files. Patch imports and automatic merge commits use the same staged scan. BOM-marked UTF-16 and UTF-32 blobs receive a second scan decoded to UTF-8.
+- Push: scan all local refs plus the commit histories sent by Git, including destination ref components, root and first-parent merge diffs, raw reachable objects, decoded commit identities and messages, outgoing annotated tags and secrets deleted by later commits. Shallow clones and outgoing objects that do not resolve to a commit are rejected. An unrelated local branch can therefore block a push; narrow the scan only if repository growth justifies a separately tested change.
 - Scanner missing or scan failure: block the Git operation.
 - Findings: redact secret values. Do not paste raw captures into issue or PR bodies.
 
@@ -33,7 +33,7 @@ $hookDirectory = Join-Path $gitCommon 'hooks'
 # Replace this with the absolute path to your verified executable.
 $gitleaksExecutable = 'C:/Tools/gitleaks/gitleaks.exe'
 if (!(Test-Path -LiteralPath $gitleaksExecutable)) { throw 'Gitleaks is missing' }
-foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
+foreach ($name in @('pre-commit', 'pre-applypatch', 'pre-merge-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
     if (Test-Path -LiteralPath (Join-Path $hookDirectory $name)) {
         throw "Preserve and review existing file: $name"
     }
@@ -45,15 +45,16 @@ if (Test-Path (Join-Path $gitCommon 'info/exclude')) {
     Copy-Item -LiteralPath (Join-Path $gitCommon 'info/exclude') -Destination $backup.FullName
 }
 if (Test-Path $hookDirectory) { Copy-Item $hookDirectory $backup.FullName -Recurse }
-$files = foreach ($name in @('pre-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
+$files = foreach ($name in @('pre-commit', 'pre-applypatch', 'pre-merge-commit', 'pre-push', 'gitleaks.toml', '.gitleaksignore', 'scan_objects.py')) {
     $source = if ($name -like 'pre-*') { 'scripts/git-secret-hook.sh' } else { "scripts/secret-hooks/$name" }
     @{ path = (Join-Path $hookDirectory $name); sha256 = (Get-FileHash -LiteralPath $source).Hash }
 }
 @{ files = $files; previousLocalScanner = $null; scanner = $gitleaksExecutable } |
     ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $backup.FullName 'installation.json')
 New-Item -ItemType Directory -Force $hookDirectory | Out-Null
-Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory 'pre-commit')
-Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory 'pre-push')
+foreach ($name in @('pre-commit', 'pre-applypatch', 'pre-merge-commit', 'pre-push')) {
+    Copy-Item scripts/git-secret-hook.sh (Join-Path $hookDirectory $name)
+}
 Copy-Item scripts/secret-hooks/gitleaks.toml $hookDirectory
 Copy-Item scripts/secret-hooks/.gitleaksignore $hookDirectory
 Copy-Item scripts/secret-hooks/scan_objects.py $hookDirectory
@@ -68,9 +69,9 @@ git hook run pre-push
 if ($LASTEXITCODE -ne 0) { throw "Failed: git verification or setup" }
 ```
 
-Use Python 3.8+, Git with `--attr-source` support and Bash (included in Git for Windows). The hook selects an empty attribute source to prevent repository diff attributes from hiding text. On Unix, mark both installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
+Use Python 3.8+, Git with `--attr-source` support and Bash (included in Git for Windows). The hook selects an empty attribute source to prevent repository diff attributes from hiding text. On Unix, mark all four installed hook files executable and set the local scanner path to the verified platform executable. The behavioral suite uses temporary repositories and a local bare remote; no test credential is sent to GitHub. Tests are explicitly skipped when Gitleaks is unavailable; install it and set the test variable for security verification. Foundation CI does not currently install Gitleaks.
 
-Run triage from the repository root. For a blocked staged scan, the following PowerShell example lists only file, line, rule and commit. Error diagnostics remain in memory and are never printed. An empty report covers only the selected scan. Push checks also cover commit and outgoing tag messages.
+Run triage from the repository root. For a blocked staged scan, the following PowerShell example lists only line, rule and commit; file names can themselves contain secrets. Error diagnostics remain in memory and are never printed. An empty report covers only the selected scan. Push checks also cover commit and outgoing tag messages.
 
 ```powershell
 $gitleaksExecutable = git config --path --get maexsocial.gitleaksPath
@@ -95,7 +96,7 @@ try {
     if ($code -notin @(0,1) -or @($records | Where-Object { $_ -is [Management.Automation.ErrorRecord] }).Count) { throw 'Scanner error' }
     $hits = ($records -join [Environment]::NewLine) | ConvertFrom-Json -ErrorAction Stop
     if ($code -eq 1 -and !$hits) { throw 'Scan failed without findings' }
-    $hits | Select-Object File, StartLine, RuleID, Commit
+    $hits | Select-Object StartLine, RuleID, Commit
 } finally {
     $env:GIT_ATTR_SOURCE = $priorAttrs
     $env:GIT_CONFIG_PARAMETERS = $priorGitParams
@@ -115,7 +116,7 @@ case "$OSTYPE" in msys*|cygwin*) git_binary=$(type -P git.exe) ;; *) git_binary=
 # Set oid to the candidate ID first. Keep raw bytes in the pipe.
 python -I -B "$hooks/scan_objects.py" "$scanner" "$git_binary" "$oid"
 # For a commit, also check its decoded message.
-git log -1 --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" -- | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
+{ printf '!\n%*s\n' 99997 ''; git log -1 --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature "$oid" --; } | "$scanner" stdin --config "$hooks/gitleaks.toml" --gitleaks-ignore-path "$hooks/.gitleaksignore" --redact=100 --ignore-gitleaks-allow --no-banner --log-level error
 ```
 
 Update installed copies after reviewed hook changes; changing source files alone does not update other clones. Before rollback, back up the current state again. Remove only installed files whose hashes still match the installation manifest; preserve later modifications. Unset `maexsocial.gitleaksPath` only if it still equals the installed value (or restore its recorded previous value). Do not overwrite the entire Git config with an old backup.

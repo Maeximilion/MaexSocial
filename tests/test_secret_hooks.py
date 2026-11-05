@@ -30,7 +30,7 @@ class SecretHooksTest(unittest.TestCase):
         self.git("config", "core.hooksPath", str(self.repo / ".git/hooks"))
         self.git("config", "maexsocial.gitleaksPath", str(Path(SCANNER).resolve()))
         hooks = self.repo / ".git/hooks"
-        for name in ("pre-commit", "pre-push"):
+        for name in ("pre-commit", "pre-applypatch", "pre-merge-commit", "pre-push"):
             source = ROOT / "scripts/git-secret-hook.sh"
             shutil.copyfile(source, hooks / name)
             (hooks / name).chmod(0o755)
@@ -68,6 +68,32 @@ class SecretHooksTest(unittest.TestCase):
         self.git("add", "settings.txt")
         (self.repo / "settings.txt").write_text("token=" + self.token + "\n")
         self.git("commit", "-qm", "Clean index")
+
+    def test_bom_marked_script_is_blocked_on_commit_and_push(self):
+        (self.repo / "settings.ps1").write_bytes(("token=" + self.token).encode("utf-16"))
+        self.git("add", "settings.ps1")
+        result = self.git("commit", "-qm", "Unsafe script", check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("leaks found", result.stderr)
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported script")
+        self.assert_push_rejected("HEAD")
+
+    def test_unsafe_patch_import_and_automatic_merge_leave_head_unchanged(self):
+        base = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("checkout", "-qb", "import")
+        self.stage_secret()
+        self.git("-c", "core.hooksPath=", "commit", "-qm", "Imported patch")
+        patch = Path(self.temp.name) / "import.patch"
+        with patch.open("wb") as stream:
+            subprocess.run(["git", "format-patch", "-1", "--stdout"], cwd=self.repo, stdout=stream, check=True)
+        self.git("checkout", "-q", "--detach", base)
+        for operation in (("am", str(patch)), ("merge", "--no-ff", "import")):
+            with self.subTest(operation=operation[0]):
+                result = self.git(*operation, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("leaks found", result.stderr)
+                self.assertEqual(self.git("rev-parse", "HEAD").stdout.strip(), base)
+                self.git(operation[0], "--abort")
 
     def test_linked_worktree_commit_all_scans_the_temporary_index(self):
         linked = Path(self.temp.name) / "linked worktree"
@@ -158,7 +184,7 @@ class SecretHooksTest(unittest.TestCase):
 
     def test_push_scans_decoded_imported_commit_message(self):
         tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
-        identity = "Hook Test <hooks@example.invalid> 1700000000 +0000"
+        identity = "%PDF-1.4 <hooks@example.invalid> 2100000000 +0000"
         # A valid ASCII reset splits the token on disk but decodes away.
         split = self.token[:2].encode() + b"\x1b(B" + self.token[2:].encode()
         for field in ("author", "body"):
@@ -278,6 +304,14 @@ class SecretHooksTest(unittest.TestCase):
                             str(Path(SCANNER).resolve()), executable, "HEAD"], cwd=self.repo,
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_push_rejects_secret_in_new_remote_ref(self):
+        remote = Path(self.temp.name) / "remote.git"
+        self.git("init", "--bare", "-q", str(remote))
+        ref = "refs/heads/" + self.token
+        result = self.git("push", str(remote), "HEAD:" + ref, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.git("ls-remote", str(remote), ref).stdout, "")
 
     def test_clean_push_succeeds(self):
         remote = Path(self.temp.name) / "remote.git"

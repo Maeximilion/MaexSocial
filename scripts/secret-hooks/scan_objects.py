@@ -1,6 +1,7 @@
 """Scan immutable Git payloads and tree entry names as separate in-memory inputs."""
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from itertools import islice
+import codecs
 import hashlib
 import os
 from pathlib import Path
@@ -88,24 +89,35 @@ def check(scanner, git_binary, revisions):
             return git("ls-tree", "--full-tree", "-z", "--name-only", oid).split(b"\0")[:-1]
         if kind not in ("commit", "tag", "blob"):
             raise ValueError("missing Git object")
-        # Pipe the object directly to the scanner so large blobs do not fill Python memory.
-        reader, writer = os.pipe()
-        with os.fdopen(reader, "rb") as source, os.fdopen(writer, "wb") as sink:
-            with subprocess.Popen(command, stdin=source, stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT, env=env, cwd=here) as detector:
-                source.close()
-                try:
-                    sink.write(PREFIX)
-                    sink.flush()
-                    with subprocess.Popen([git_binary, "cat-file", kind, oid], stdout=sink,
-                                          stderr=subprocess.DEVNULL, env=env) as producer:
-                        sink.close()
-                        output, _ = detector.communicate()
-                        if producer.wait() or detector.returncode or output:
+        # Scan the original bytes first. For BOM-marked text, replay the blob as UTF-8.
+        encoding = None
+        while True:
+            decoder = codecs.getincrementaldecoder(encoding)(errors="replace") if encoding else None
+            with subprocess.Popen([git_binary, "cat-file", kind, oid], stdout=subprocess.PIPE,
+                                  stderr=subprocess.DEVNULL, env=env) as producer:
+                with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, env=env, cwd=here) as detector:
+                    try:
+                        detector.stdin.write(PREFIX)
+                        block = producer.stdout.read(65536)
+                        if kind == "blob" and not decoder:
+                            if block.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)):
+                                encoding = "utf-32"
+                            elif block.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+                                encoding = "utf-16"
+                        while block:
+                            detector.stdin.write(decoder.decode(block).encode() if decoder else block)
+                            block = producer.stdout.read(65536)
+                        if decoder:
+                            detector.stdin.write(decoder.decode(b"", final=True).encode())
+                        detector.stdin.close()
+                        if detector.stdout.read() or detector.wait() or producer.wait():
                             raise ValueError("leaks found or scan failed")
-                finally:
-                    # Also deliver EOF on setup/producer errors.
-                    sink.close()
+                    finally:
+                        producer.stdout.close()
+                        detector.stdin.close()
+            if decoder or not encoding:
+                break
         return ()
 
     try:

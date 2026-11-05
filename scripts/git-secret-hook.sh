@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install this file as both pre-commit and pre-push in the shared Git hooks directory.
+# Install this file under the four shared Git hook names documented in docs/19_LOCAL_SECURITY.md.
 set -euo pipefail
 # Resolve executables in the invoking shell. Windows CreateProcess otherwise
 # searches the worktree before PATH when Python launches an unqualified program.
@@ -52,6 +52,10 @@ scan() {
         return 1
     fi
 }
+scan_text() {
+    # Match the object checker's neutral first read for non-object inputs.
+    { printf '!\n%*s\n' 99997 ''; cat; } | scan stdin
+}
 scan_objects() {
     local name python
     for name in python3 python; do
@@ -64,7 +68,7 @@ scan_objects() {
     echo "Secret scan requires a working Python 3.8+ interpreter." >&2; return 1
 }
 case "$(basename -- "$0")" in
-    pre-commit)
+    pre-commit|pre-applypatch|pre-merge-commit)
         scan git --staged
         tree=$(git write-tree)
         scan_objects "$tree" ;;
@@ -76,13 +80,15 @@ case "$(basename -- "$0")" in
             case "$oid" in
                 ''|*[!0-9a-f]*) echo "Invalid pre-push object ID." >&2; exit 1 ;;
                 *[1-9a-f]*)
+                    # Ref components are published too. Do not echo their contents.
+                    printf '%s\n' "${remote_ref//\//$'\n'}" | scan_text
                     commit=$(git rev-parse --verify "$oid^{commit}") || {
                         echo "Cannot scan a non-commit push target." >&2; exit 1;
                     }
                     objects+=("$commit")
                     # Annotated tags (including nested tags) carry their own message.
                     while [ "$oid" != "$commit" ]; do
-                        git cat-file tag "$oid" | scan stdin
+                        git cat-file tag "$oid" | scan_text
                         oid=$(git cat-file tag "$oid" | sed -n '1s/^object //p')
                     done ;;
                 *) ;; # Ref deletion.
@@ -92,7 +98,7 @@ case "$(basename -- "$0")" in
         scan_objects "${objects[@]}"
         # Imported commit messages may declare a non-UTF-8 encoding in the header.
         git log --format=%an%n%ae%n%cn%n%ce%n%B --encoding=UTF-8 --no-color --no-patch --no-show-signature \
-            "${objects[@]}" -- | scan stdin
+            "${objects[@]}" -- | scan_text
         revisions="--root --full-history --diff-merges=first-parent --pretty=medium --encoding=UTF-8 --no-color --text --no-ext-diff --no-textconv"
         for commit in "${objects[@]}"; do revisions="$revisions $commit"; done
         scan git "--log-opts=$revisions" ;;
