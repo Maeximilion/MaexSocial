@@ -180,6 +180,14 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("Failed", body)
         self.assertNotIn("Stale success", body)
 
+    def test_shared_action_uses_only_api_key_and_bounded_opus_high(self):
+        action = WORKFLOW.split("      - id: claude\n")[1].split("      - name: Post result\n")[0]
+        self.assertIn("          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}\n", action)
+        self.assertNotIn("oauth", WORKFLOW.lower())
+        args = action.split("          claude_args: |\n")[1]
+        for flag, value in [("model", "claude-opus-5-5"), ("effort", "high"), ("max-budget-usd", "1.00")]:
+            self.assertEqual(re.findall(rf"(?m)^ +--{flag} (.+)$", args), [value])
+
     def test_model_configuration_excludes_repository_hooks_and_runner_tools(self):
         action = WORKFLOW.split("      - id: claude\n")[1].split("      - name: Post result\n")[0]
         self.assertIn("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1", action)
