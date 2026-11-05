@@ -9,6 +9,28 @@ node_modules/
 dist/
 .DS_Store
 Thumbs.db
+
+# Local credentials, private keys and agent settings
+.envrc
+.npmrc
+.pypirc
+credentials.json
+service-account*.json
+service_account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
 **/CLAUDE.local.md
 **/.claude/settings.local.json
 **/.claude/worktrees/
+
+# Authenticated browser state and raw research captures belong in work/
+cookies*.json
+storageState*.json
+storage-state*.json
+*.har
+*.saz
+*.log

@@ -1,4 +1,4 @@
-"""Read-only Stop check shared by the Claude and Codex hook registrations."""
+"""Advisory-only Stop check shared by the Claude and Codex hook registrations."""
 
 import json
 from pathlib import Path
@@ -9,11 +9,14 @@ import sys
 MAX_INPUT_BYTES = 256 * 1024
 CHECK_TIMEOUT_SECONDS = 20
 ROOT = Path(__file__).resolve().parents[2]
-RETRY = "Run python scripts/check_repo.py from the repository root and fix its reported failures."
+RETRY = (
+    "Follow-up needed: run python scripts/check_repo.py from the repository root. "
+    "This is a reminder only; no task pause or automatic retry is required."
+)
 
 
 def evaluate(stream):
-    """Skip irrelevant/invalid events and request at most one corrective turn."""
+    """Skip irrelevant/invalid events and warn without controlling the task."""
     try:
         raw = stream.read(MAX_INPUT_BYTES + 1)
         if len(raw) > MAX_INPUT_BYTES:
@@ -37,11 +40,11 @@ def evaluate(stream):
             timeout=CHECK_TIMEOUT_SECONDS, check=False,
         )
     except subprocess.TimeoutExpired:
-        return {"decision": "block", "reason": f"Repository validation timed out. {RETRY}"}
+        return {"systemMessage": f"Repository validation timed out. {RETRY}"}
     except OSError:
-        return {"decision": "block", "reason": f"Repository validation could not start. {RETRY}"}
+        return {"systemMessage": f"Repository validation could not start. {RETRY}"}
     if result.returncode:
-        return {"decision": "block", "reason": f"Repository validation failed. {RETRY}"}
+        return {"systemMessage": f"Repository validation failed. {RETRY}"}
     return {}
 
 
