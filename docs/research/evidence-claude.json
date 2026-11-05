@@ -7,10 +7,12 @@
     "revision": "R1",
     "frozen_at_utc": "2026-11-04T23:34:59Z",
     "codex_lane_read_before_checkpoint": false,
+    "disclosure_basis": "Claude self-report; Git ancestry establishes checkpoint before committed comparison, not the actual reading sequence.",
     "prior_exposure": "docs/01_STATUS.md summary only: Codex used REA 6.8.0 on three static client chunks; its report contains candidate demos.",
     "freeze_commit": "35c61ac6fa426c893b57c8e14f0333f54e24d078"
   },
   "access": {
+    "scope": "R1/R2; see runtime_addendum for R3 read-only UI coverage",
     "tier": "anonymous visitor",
     "account": null,
     "actions_performed": [
@@ -354,7 +356,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-101",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-101",
       "notes": "Form fields, consent checkboxes, links; nothing submitted"
     },
     {
@@ -365,7 +368,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-102",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-102",
       "notes": "Nine navigation items, single location, header controls"
     },
     {
@@ -376,7 +380,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-103",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-103",
       "notes": "Performance Hub, activity checklists, heat-map card"
     },
     {
@@ -387,7 +392,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-104",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-104",
       "notes": "Rank and review/post deltas, embedded scan history"
     },
     {
@@ -398,7 +404,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-105",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-105",
       "notes": "Embedded Local Dominator client dashboard; content not readable"
     },
     {
@@ -409,7 +416,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-106",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-106",
       "notes": "Post list and states, auto-accept toggle, two expanded details"
     },
     {
@@ -420,7 +428,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-107",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-107",
       "notes": "Rating summary, auto-approve active, 14-item list with replies"
     },
     {
@@ -431,7 +440,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-108",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-108",
       "notes": "Chat controls; nothing sent"
     },
     {
@@ -442,7 +452,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-109",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-109",
       "notes": "Four videos"
     },
     {
@@ -453,7 +464,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-110",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-110",
       "notes": "Active package 2, plan cards; portal not opened"
     },
     {
@@ -464,7 +476,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-111",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-111",
       "notes": "Field labels, read-only fields, notification toggles; nothing saved"
     },
     {
@@ -475,7 +488,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-112",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-112",
       "notes": "Academy access denied; foundation and calculator redirect"
     },
     {
@@ -486,7 +500,8 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-113",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-113",
       "notes": "Avatar menu items; no location dropdown"
     },
     {
@@ -497,12 +512,13 @@
       "captured_utc": "2026-11-04T23:50:00Z/2026-11-05T00:07:00Z",
       "method": "Claude in Chrome, authenticated read-only",
       "sha256": "9087dee4bbafbafb41a9241a4278123aa9ad9b894073e4f9d474cb2fcfe363ec",
-      "hash_basis": "private observation log section CE-114",
+      "hash_basis": "whole private observation log",
+      "locator": "section CE-114",
       "notes": "URLs and status codes only: /api/auth/session, /api/create-admin-welcome-message, Firebase Auth, Firestore channels; no /api/posts/gbp"
     }
   ],
   "coverage_boundaries": [
-    "No authenticated UI or runtime (scenario C-S6 blocked pending access and action scope).",
+    "R1/R2: no authenticated UI or runtime; C-S6 was blocked pending access and action scope. R3 adds 14 UI evidence records from a read-only walkthrough of one package-2 account (CE-101–CE-114); authenticated REA runtime capture and external provider results remain unverified.",
     "No server-side code, API responses for authenticated calls, background jobs or AI prompts observed.",
     "Static candidates do not establish reachability, permissions or current server behavior.",
     "36 chunks from 15 route shells; unreferenced code-split chunks may be missing.",

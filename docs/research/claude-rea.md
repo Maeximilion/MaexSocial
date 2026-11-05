@@ -4,12 +4,14 @@
 
 **Report revisions**
 
-| Revision | Date (UTC) | Content |
+| Revision | Time basis (UTC) | Content |
 |---|---|---|
-| R1 — independent checkpoint | 2026-11-04T23:34:59Z, commit `35c61ac` | Sections 1–5. Written before the Codex report or manifest was read |
-| R1a — own evidence addendum | 2026-11-04T23:40Z | CE-028 REA route analysis completed after the freeze, still before reading the Codex lane |
-| R2 — comparison | 2026-11-04T23:50Z | Sections 6–8 after reading the Codex report and manifest |
-| R3 — authenticated runtime addendum | 2026-11-05T00:07Z | Section 9, scenario C-S6. Earlier sections unchanged |
+| R1 — independent checkpoint | Git commit time 2026-11-04T23:34:59Z, `35c61ac` | Sections 1–5. Claude reports no prior reading of the Codex report or manifest |
+| R1a — own evidence addendum | Git commit time 2026-11-04T23:36:11Z, `13ccff8` | CE-028 route analysis added after R1; Claude reports this preceded reading the Codex lane |
+| R2 — comparison | Git commit time 2026-11-04T23:38:30Z, `5ac75fa` | Sections 6–8 contain the Codex comparison |
+| R3 — authenticated UI addendum | Reported observation-window end 2026-11-05T00:07Z | Section 9, scenario C-S6 |
+
+The R1–R2 timestamps above are Git committer times, not observation times (`git show -s --format=%cI 35c61ac 13ccff8 5ac75fa`, converted to UTC). Git ancestry establishes that the checkpoint commits precede the committed comparison; it does not independently establish when Claude read the Codex files. Exact R1a observation and R2 reading times are unverified; the earlier revision labels 23:40Z and 23:50Z are withdrawn. Capture windows elsewhere remain as originally reported, not revalidated by this correction. Sections 1–8 preserve the R1/R2 scope; section 9 records later R3 UI coverage and current gaps.
 
 ## 1. Method, scope and access
 
@@ -27,7 +29,7 @@ Static bundle method. The dashboard HTML shell is served with HTTP 200 to anonym
 
 ## 2. Exposure disclosure
 
-Before planning, `docs/01_STATUS.md` was read as required by repository rules. It states that Codex analyzed three selected client chunks with REA 6.8.0 and that its report contains candidate demos. No Codex report body or manifest content was read before this checkpoint revision was committed.
+Before planning, `docs/01_STATUS.md` was read as required by repository rules. It states that Codex analyzed three selected client chunks with REA 6.8.0 and that its report contains candidate demos. Claude reports that no Codex report body or manifest content was read before this checkpoint revision was committed; Git history does not independently verify that reading sequence.
 
 ## 3. Independent findings
 
@@ -100,7 +102,7 @@ Before planning, `docs/01_STATUS.md` was read as required by repository rules. I
 
 ## 4. Coverage limits and open questions
 
-- Authenticated UI and runtime behavior (C-S6) were not observed. All app statements above are static candidates; reachability, permissions and server logic are unverified.
+- In R1/R2, authenticated UI and runtime behavior (C-S6) were not observed. All app statements above are static candidates; reachability, permissions and server logic are unverified.
 - Server routes (`/api/*`), background jobs, AI prompting and Google write paths are not visible to the client.
 - Per-package feature mapping on the pricing table was taken from text order; checkmark columns were not parsed.
 - Bundle completeness: 36 chunks from 15 routes. Code-split chunks not referenced by these shells may be missing.
@@ -115,11 +117,11 @@ Questions for the authorized walkthrough:
 
 ## 5. Access request
 
-C-S6 requires Maxi to provide a SocialEdge account session (free tier at minimum, paid tier for posts, reviews and analytics) and an explicit action scope. Read-only navigation is the proposed default. Approving, rejecting, toggling auto-approval, uploading, chatting or purchasing each needs separate permission because they notify staff or change account state.
+At the R1/R2 checkpoint, C-S6 required Maxi to provide a SocialEdge account session (free tier at minimum, paid tier for posts, reviews and analytics) and an explicit action scope. Read-only navigation is the proposed default. Approving, rejecting, toggling auto-approval, uploading, chatting or purchasing each needs separate permission because they notify staff or change account state.
 
 ## 6. Comparison with the Codex lane (Phase B)
 
-Phase B started after commits `35c61ac` and `13ccff8`. Sources: [Codex report](codex-rea.md) and [Codex manifest](evidence-codex.json), both unchanged by this lane. Codex sections are cited as SM (Scope and method), EV (Evidence), OSF (Observed static facts), MC (Marketed capabilities), VD (video-demo candidates). Codex evidence is `ev_ff44c65c…` (complete analysis) with capture hashes from its manifest.
+The committed Phase B comparison (`5ac75fa`) follows checkpoint commits `35c61ac` and `13ccff8`; the actual reading sequence is Claude's disclosure, not independently observed. Sources: [Codex report](codex-rea.md) and [Codex manifest](evidence-codex.json), both unchanged by this lane. Codex sections are cited as SM (Scope and method), EV (Evidence), OSF (Observed static facts), MC (Marketed capabilities), VD (video-demo candidates). Codex evidence is `ev_ff44c65c…` (complete analysis) with capture hashes from its manifest.
 
 **Version alignment.** Both lanes captured on 2026-11-04 UTC. Byte-identical SHA-256 values for the dashboard shell (`5bafea14…`), homepage (`b477a09b…`), pricing page (`b14a1f97…`), language layout (`8f7f25b6…`), dashboard layout (`518093de…`) and dashboard page (`465ab7d8…`) show the same deployed versions. REA route IDs for the eleven dashboard routes are identical in both lanes because the same layout chunk was analyzed. Agreement on those routes is therefore same-source corroboration produced by separate runs, not independent sources.
 
@@ -174,10 +176,10 @@ These proposals derive from the observations above and the repository's G2 const
 
 ## 8. Limitations and next checks
 
-- All app behavior is static or anonymous-runtime evidence. C-S6 remains blocked pending access and action scope.
+- At R1/R2, app evidence was static or anonymous-runtime and C-S6 was blocked pending access and action scope. R3 adds 14 UI evidence records from a read-only walkthrough of one package-2 account; authenticated REA runtime capture and external provider results remain unverified (section 9.6).
 - Vendor claims (pricing, terms, privacy policy) describe intent and contracts, not verified operation.
 - Shared-source corroboration: SE-005 and SE-007 rest on the same layout chunk in both lanes.
-- Smallest next checks: (a) read-only walkthrough of a free account for SE-022 and plan gating; (b) paid-tier read-only view of posts and reviews for SE-024–SE-026; (c) ask SocialEdge or observe a post sync to settle SE-027 versus SE-024.
+- Proposed at R2 (see section 9 for subsequent coverage and remaining gaps): (a) read-only walkthrough of a free account for SE-022 and plan gating; (b) paid-tier read-only view of posts and reviews for SE-024–SE-026; (c) ask SocialEdge or observe a post sync to settle SE-027 versus SE-024.
 
 ## 9. Runtime addendum R3 — authenticated read-only walkthrough (C-S6)
 
