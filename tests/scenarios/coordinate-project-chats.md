@@ -1,6 +1,6 @@
 # Orchestration dry run
 
-Supply the requests and facts below to a fresh evaluator with the repository skill catalogue and the selected skill body. Use invented IDs only. Ask for the selected skill, proposed next action and missing evidence for each case. No tool calls, changes, messages or actual assignments. Score the responses against the expectations after the run.
+First give a fresh evaluator only the requests/facts and repository skill catalogue (names and descriptions). Ask which skill, if any, it would select for A–F. Record that selection before exposing a skill body. In a separate dry run, supply the coordination skill body and the cases. Ask for next actions and missing evidence. Withhold the answer key in both stages. Use invented IDs only, with no tool calls, changes, messages or actual assignments.
 
 | Case | Request and available evidence |
 | --- | --- |
@@ -16,6 +16,7 @@ Supply the requests and facts below to a fresh evaluator with the repository ski
 | J | “Merge the authorized stack in order.” PR 91 targets main, child 92 targets its branch. All CI/reviews are clean on the intended heads. Native membership, ancestry and layer diffs verified. Automatic parent-branch deletion is enabled. The owner can safely preserve the successor and coordinate exclusive retargeting. |
 | K | Same as J, except an authentic bot verdict reports a blocker on the current head in a top-level comment. There are zero open inline threads. |
 | L | Same as J, except a second writer is retargeting PR 91. The host can pin only its head and the writer cannot be reached. |
+| M | Same as J, except PR 91's reviews covered a feature-branch base. A completed retarget to main enlarged the diff. Its head SHA is unchanged and there is no concurrent writer. |
 
 ## Expected decisions
 
@@ -28,3 +29,4 @@ Supply the requests and facts below to a fresh evaluator with the repository ski
 - I opens the verified URL visibly in the requesting chat and verifies the loaded content. A visible matching tab in that chat would be reused. Preserve the ten-minute cadence, the repository-wide open total, and separate work rounds.
 - J protects the open successor and verifies the intended target, then merges the eligible bottom PR singly at its verified head. Sync clean main and verify child state, base, ancestry, layer, current head, checks and reviews before the next merge.
 - K holds PR 91 until the reported blocker is addressed and verified. L holds PR 91 until the intended target can be protected from concurrent changes.
+- M compares reviewed and candidate diffs and requires fresh independent and applicable bot review covering the changed layer.
