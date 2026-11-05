@@ -29,7 +29,9 @@ Claude memory/skills/rules behavior: [memory and imports](https://code.claude.co
 
 ## Stop hook
 
-The hook performs only the cheap links/JSON/TOML/SVG check. It does not format files, commit, publish, contact providers or replace full tests. A failed check asks the agent to resolve/report it; repeated Stop invocation is skipped to avoid an infinite continuation loop. Invalid/oversized input and unrelated events are skipped without running validation; execution failures/timeouts request a manual check. A skipped callback is not evidence of a passing check.
+The hook performs only the cheap links/JSON/TOML/SVG check. It does not format files, commit, publish, contact providers or replace full tests. Failed checks, startup errors and timeouts emit only a user-visible `systemMessage` warning with a manual follow-up command; they do not block task completion or force another agent turn. Invalid/oversized input, unrelated events and repeated Stop invocations are skipped without running validation. A warning or skipped callback is not evidence of a passing check. The checker itself and required CI still reject invalid repository content.
+
+Owner preference, 2026-11-05: workflow reminders and quality-check hooks are advisory by default. The model-routing hook keeps its explicit decision pause. Secret-prevention Git hooks and product acceptance gates are separate controls. The inspected active Ponytail session/prompt hooks already supply context without task-blocking decisions; disabled legacy hooks remain disabled. This inventory covers the inspected local Codex configuration and MaexSocial registrations, not all hooks in other repositories or future plugin versions.
 
 Claude runs Python directly with its project-directory argument. Codex resolves the Git root from the session directory before running the same script, including nested working directories. Python and Git must be available. Check the script/configuration and tests together after changes. [Claude hooks](https://code.claude.com/docs/en/hooks), [Codex hooks](https://learn.chatgpt.com/docs/hooks)
 

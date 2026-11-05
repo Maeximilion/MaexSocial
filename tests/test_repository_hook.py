@@ -44,7 +44,9 @@ class RepositoryHookTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         self.assertEqual(result.stderr, b"")
         self.assertLess(len(result.stdout), 4096)
-        return json.loads(result.stdout)
+        output = json.loads(result.stdout)
+        self.assertLessEqual(set(output), {"systemMessage"}, "Hook output must not control the task")
+        return output
 
     def test_success_uses_script_root_not_payload_or_session_cwd(self):
         self.checker(
@@ -54,12 +56,11 @@ class RepositoryHookTests(unittest.TestCase):
         )
         self.assertEqual(self.run_hook({**STOP, "cwd": "untrusted/nonexistent"}), {})
 
-    def test_failure_requests_a_fix_without_echoing_checker_output(self):
+    def test_failure_warns_without_blocking_or_echoing_checker_output(self):
         self.checker("print('private fixture ' * 100000)\nraise SystemExit(1)\n")
         result = self.run_hook(STOP)
-        self.assertEqual(result["decision"], "block")
-        self.assertIn("scripts/check_repo.py", result["reason"])
-        self.assertNotIn("private fixture", result["reason"])
+        self.assertIn("scripts/check_repo.py", result["systemMessage"])
+        self.assertNotIn("private fixture", result["systemMessage"])
 
     def test_repeated_stop_cannot_create_a_continuation_loop(self):
         self.checker("raise SystemExit(1)\n")
@@ -86,23 +87,23 @@ class RepositoryHookTests(unittest.TestCase):
         self.assertEqual(list(self.root.rglob("__pycache__")), [])
 
     def test_missing_checker_is_reported_as_failure(self):
-        self.assertEqual(self.run_hook(STOP)["decision"], "block")
+        self.assertIn("failed", self.run_hook(STOP)["systemMessage"])
 
     def test_timeout_is_reported_with_valid_bounded_json(self):
         self.checker("import time\ntime.sleep(2)\n")
         module = runpy.run_path(str(self.hook))
         with patch.dict(module["evaluate"].__globals__, CHECK_TIMEOUT_SECONDS=0.05):
             result = module["evaluate"](io.BytesIO(json.dumps(STOP).encode()))
-        self.assertEqual(result["decision"], "block")
-        self.assertIn("timed out", result["reason"])
+        self.assertEqual(set(result), {"systemMessage"})
+        self.assertIn("timed out", result["systemMessage"])
         self.assertLess(len(json.dumps(result)), 4096)
 
     def test_spawn_error_is_reported_without_raw_system_details(self):
         module = runpy.run_path(str(self.hook))
         with patch.object(module["sys"], "executable", str(self.root / "private local path")):
             result = module["evaluate"](io.BytesIO(json.dumps(STOP).encode()))
-        self.assertEqual(result["decision"], "block")
-        self.assertNotIn("private local path", result["reason"])
+        self.assertEqual(set(result), {"systemMessage"})
+        self.assertNotIn("private local path", result["systemMessage"])
 
     def test_claude_registered_command_works_from_a_nested_path_with_spaces(self):
         self.checker("raise SystemExit(1)\n")
@@ -111,7 +112,7 @@ class RepositoryHookTests(unittest.TestCase):
         command = [handler["command"], *[
             arg.replace("${CLAUDE_PROJECT_DIR}", str(self.root)) for arg in handler["args"]
         ]]
-        self.assertEqual(self.run_hook(STOP, command)["decision"], "block")
+        self.assertIn("failed", self.run_hook(STOP, command)["systemMessage"])
 
     def test_codex_registered_command_resolves_git_root_from_nested_path(self):
         self.checker("raise SystemExit(1)\n")
@@ -122,7 +123,7 @@ class RepositoryHookTests(unittest.TestCase):
             ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", handler["commandWindows"]]
             if os.name == "nt" else ["sh", "-c", handler["command"]]
         )
-        self.assertEqual(self.run_hook(STOP, command)["decision"], "block")
+        self.assertIn("failed", self.run_hook(STOP, command)["systemMessage"])
 
 
 if __name__ == "__main__":

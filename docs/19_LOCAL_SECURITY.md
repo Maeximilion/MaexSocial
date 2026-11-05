@@ -63,6 +63,8 @@ After concurrent PR #46 introduced the project Stop check, its canonical-checkou
 
 Inspect `/hooks` in the CLI or Settings > Hooks in the desktop app. Changed definitions can require renewed trust; do not bypass the trust check. The desktop and terminal are separate surfaces, and simultaneous agents must not edit the same task worktree. [Official hooks documentation](https://learn.chatgpt.com/docs/hooks), [CLI documentation](https://learn.chatgpt.com/docs/cli), consulted 2026-11-05.
 
+The owner's later workflow-hook preference makes the shared repository Stop check advisory: failures, startup errors and timeouts produce a warning without an automatic corrective turn. Its updated script and both registered command paths were tested with controlled failures. The previously observed live CLI callback used the older script; live warning display for this revision has not been observed. The model-routing decision pause and installed Git secret guards are unchanged.
+
 ## Advisory security and dependency check
 
 Owner decision revised on 2026-11-05: this check only reminds us of work that needs attention. It replaces the earlier mandatory pause and automatic remediation-chat policy. Check at session start, before every new work package, before resuming ordinary work, and when notified of a new alert. Query the current GitHub state, paginate all results and record the check time. Never interpret a permission/network error as an empty result; report the uncertainty and continue the requested task.
