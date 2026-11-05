@@ -7,9 +7,9 @@ Checked against official documentation and local CLI capabilities on 2026-11-05:
 | Location | Purpose and loading boundary |
 |---|---|
 | `AGENTS.md` | Shared repository instructions; Codex reads applicable instruction files. Claude imports this file through `@AGENTS.md` in `CLAUDE.md` |
-| `.claude/commands/` | Eight existing manual workflows; canonical source for both platforms |
+| `.claude/commands/` | Manual workflows; canonical source for both platforms |
 | `.claude/skills/` | Claude's repository-check skill; Claude does not automatically discover `.agents/skills/` |
-| `.agents/skills/` | Codex repository-check skill and eight thin wrappers for the shared commands |
+| `.agents/skills/` | Codex repository-check skill and thin wrappers for the shared commands |
 | `.claude/agents/` | Read-only evidence researcher with a limited tool list and inherited Claude model; never an Astra code reviewer |
 | `.codex/agents/` | Reviewer definition selecting GPT-6 Astra high; actual session/model availability must be verified when invoked |
 | `.claude/rules/` | Path-scoped research/application guidance; shared obligations also live in AGENTS-linked documents for Codex |
@@ -18,6 +18,10 @@ Checked against official documentation and local CLI capabilities on 2026-11-05:
 | `.codex/hooks.json` | Separate Codex registration, with POSIX/Windows commands and Git-root resolution |
 
 Claude memory/skills/rules behavior: [memory and imports](https://code.claude.com/docs/en/memory), [skills](https://code.claude.com/docs/en/skills), [subagents](https://code.claude.com/docs/en/sub-agents). Codex behavior: [instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [skills](https://learn.chatgpt.com/docs/build-skills), [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
+## Repository anatomy
+
+Codex is the primary programmer here. Request [source-command-anatomy](../../.agents/skills/source-command-anatomy/SKILL.md) for a read-only overview or name a reader path, issue or PR. The wrapper resolves the worktree root and uses the [shared procedure](../../.claude/commands/anatomy.md). Claude Code reads that same file as `/anatomy`. In a Claude-first repository, start with its local instructions and map its own sources.
 
 ## Normal task flow
 
