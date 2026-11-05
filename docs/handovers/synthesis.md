@@ -1,6 +1,6 @@
 # Handover 2026-11-05 — MS-007, research synthesis
 
-Status — G0 complete, G1 ongoing. Codex's bounded static report exists. Claude's independent report, full API feasibility and remaining discovery work are pending.
+Status — G0 complete, G1 ongoing. The MS-002–006 reports are on main. The [bounded synthesis](../research/synthesis.md) reconciles their evidence. MS-004 scope acceptance is outstanding.
 
 Artifacts — [Issue #7](https://github.com/Maeximilion/MaexSocial/issues/7), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, `docs/research/`, [work packages](../07_WORKPACKAGES.md), [charter](../00_PCF.md) and [status](../01_STATUS.md).
 
@@ -14,9 +14,9 @@ Lessons — Source claims, static observations and runtime behavior establish di
 
 ## Working directory and inputs
 
-Keep the canonical folder on clean `main`. Use branch `docs/MS-007-synthesis` in a separate worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). Fetch with pruning at session start and after PR updates. After merge, pull only the clean canonical checkout with `--ff-only`.
+Keep the canonical folder on clean `main`. Use a task branch in a separate worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). Fetch with pruning at session start and after PR updates. After merge, pull only the clean canonical checkout with `--ff-only`.
 
-Read `docs/research/codex-rea.md`, `docs/research/evidence-codex.json`, the independent Claude report and manifest when delivered, and completed public-inventory/API/demo research. A missing input remains an explicit dependency. Preserve both REA reports and their evidence identifiers.
+Read `docs/research/codex-rea.md`, `docs/research/evidence-codex.json`, the independent Claude report and manifest, and completed public-inventory/API/demo research. A missing input remains an explicit dependency. Preserve both REA reports and their evidence identifiers.
 
 ## Synthesis procedure
 

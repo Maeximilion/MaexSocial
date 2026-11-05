@@ -59,9 +59,9 @@ Goals, gate criteria, dependencies and task IDs are defined. Detailed product im
 
 ## Research with evidence
 
-SocialEdge is the comparison baseline. The [Codex report](docs/research/codex-rea.md) analyzes three public JavaScript bundles and records partial coverage in its [evidence manifest](docs/research/evidence-codex.json). Authenticated workflows and backend behavior remain unverified.
+SocialEdge is the comparison baseline. The [Codex report](docs/research/codex-rea.md) analyzes three public JavaScript bundles and records partial coverage in its [evidence manifest](docs/research/evidence-codex.json). This lane did not exercise authenticated workflows or observe backend behavior.
 
-The [Claude report](docs/research/claude-rea.md) and [evidence manifest](docs/research/evidence-claude.json) landed in [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34). [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4) tracks the remaining runtime evidence and owner acceptance of scope limits. The [synthesis brief](docs/handovers/synthesis.md) brings both reports together before the product design is approved.
+The [Claude report](docs/research/claude-rea.md) and [evidence manifest](docs/research/evidence-claude.json) landed in [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34). [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4) tracks the remaining runtime evidence and owner acceptance of scope limits. The [bounded synthesis](docs/research/synthesis.md) compares the two lanes, maps all 17 inventory rows to documented provider feasibility and separates the proposed first slice from G2 decisions.
 
 ## Start here
 
@@ -81,7 +81,7 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | --- | --- |
 | Understand the product and gates | [Project charter](docs/00_PCF.md) |
 | Review the independent Claude investigation | [Report and findings](docs/research/claude-rea.md) |
-| Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
+| Compare the research lanes | [Synthesis, gaps and proposed first slice](docs/research/synthesis.md) |
 | Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
 | Understand the application-language choice | [TypeScript decision](docs/decisions/0001-application-language.md) |
