@@ -6,7 +6,7 @@ A **brief**, `docs/handovers/<lane>.md`, assigns future work to a session or a l
 
 A **session handover**, `docs/handovers/sessions/YYYY-MM-DD-<topic>.md`, records where one session stopped. Save the complete `/handover` block in one new file per handover. Never append another handover to a shared file or overwrite a previous session record. If the date and topic already exist, use a distinct topic suffix such as `-02`.
 
-Before context runs out, stop at a clean checkpoint, write the session handover, add one dated line linking it under **Delivered evidence and handovers** in [status](../01_STATUS.md), then commit and push. Only then start an authorized new session. A saved file alone does not mean it has been pushed or that the receiving session has started.
+Before context runs out, stop at a clean checkpoint, write the session handover, then commit and push. [Status](../01_STATUS.md) links directly to the [sessions folder](sessions/); change status only for a gate, work lane or blocker. Only then start an authorized new session. A saved file alone does not mean it has been pushed or that the receiving session has started.
 
 ## Briefs
 
@@ -14,7 +14,7 @@ Before context runs out, stop at a clean checkpoint, write the session handover,
 - [codex-rea](codex-rea.md) — Continue bounded Codex research with reproducible evidence and explicit access limits.
 - [synthesis](synthesis.md) — Reconcile the research lanes and prepare G2 decisions.
 - [build](build.md) — Plan and implement the approved product scope after G2.
-- [review-workflow](review-workflow.md) — Coordinate the handover-structure PR, manual cross-model review and subsequent MS-014 work.
+- [review-workflow](review-workflow.md) — Coordinate the handover-structure PR, manual cross-model review and the subsequent review-policy task.
 
 ## Session template
 
@@ -61,7 +61,7 @@ Next concrete action first, followed by remaining work and blockers.
 
 ## Lessons
 
-Constraints, failed approaches and useful findings. Code-autopilot and caveman remain disabled; code-autopilot's GPT/Codex compatibility is unverified.
+Constraints, failed approaches and useful findings. Record current owner-selected skill settings when relevant.
 ````
 
-Replace every placeholder with observed facts. Keep credentials, raw authenticated captures and personal customer data out of public handovers. See the [handover command](../../.claude/commands/handover.md) for the delivery procedure and [status](../01_STATUS.md#delivered-evidence-and-handovers) for the dated session index.
+Replace every placeholder with observed facts. Keep credentials, raw authenticated captures and personal customer data out of public handovers. See the [handover command](../../.claude/commands/handover.md) for the delivery procedure and [status](../01_STATUS.md#delivered-evidence-and-handovers) for the permanent sessions-folder link.

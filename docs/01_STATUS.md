@@ -53,7 +53,7 @@ The owner configured the dedicated GitHub Project credential. Targeted API queri
 
 ## Delivered evidence and handovers
 
-- 2026-11-05 — [Session handover: Maintenance #45, handover structure](handovers/sessions/2026-11-05-handover-structure.md) records the implementation, verification and restart instructions for [PR #47](https://github.com/Maeximilion/MaexSocial/pull/47).
+[Session handovers](handovers/sessions/) record each session's stopping point and runnable restart instructions.
 - 2026-11-04 — Reference conventions inspected, foundation authored, public repository and Project #5 verified. Twelve task issues, six parent gate issues, six milestones and three genuine iterations provisioned. PR #19 delivered the foundation and bounded Codex report. Local validation and nine regression tests passed. Astra high review found a partial-PR status defect that received a regression test and fix.
 - 2026-11-04 — PR #24 replaced generic CLI Project access with scoped GraphQL queries. [Hosted reconciliation](https://github.com/Maeximilion/MaexSocial/actions/runs/41929472537) passed. G0 technical acceptance was recorded in the charter after CI, review and maintenance verification. The foundation tag marks the initial snapshot, with the API correction subsequently on main.
 - 2026-11-05 — Issue #27 refines branding and research handover. Claude's brief now requires independent evidence first, a comparison matrix second, and a separate product proposal. Detailed product planning remains future G2 work.
