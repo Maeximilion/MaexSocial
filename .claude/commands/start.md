@@ -1,1 +1,3 @@
 Read AGENTS.md, CLAUDE.md, docs/00_PCF.md and docs/01_STATUS.md. Check git status and branch. Fetch origin with --prune. In the clean canonical main checkout, pull --ff-only origin main. Stop on divergence or unrelated edits. Identify the next unblocked task from docs/07_WORKPACKAGES.md and its GitHub issue. State the scope and verification before editing. Create a separate worktree from current main for changes, using the client's managed tool when available.
+
+Before selecting ordinary work, run the priority check in docs/19_LOCAL_SECURITY.md. Dependabot P0/P1 and security/quality blockers must be handled first in a dedicated remediation chat; reuse an existing owner and preserve paused work.
