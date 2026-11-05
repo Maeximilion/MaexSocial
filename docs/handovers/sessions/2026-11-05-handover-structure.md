@@ -24,7 +24,7 @@ At the work head below, `python scripts/check_repo.py` passed, `python -m unitte
 
 Keep lane briefs at their existing paths. Store each session stopping point in its own dated file and exactly one link in status. Record the full work SHA before the handover commit rather than attempting a self-referential commit hash. The handover's delivery commit is available from Git history.
 
-The imported owner's brief keeps the requested Start message and manual review procedure. Its historical MS-014 review-workflow assignment conflicts with existing [MS-014 upload security #43](https://github.com/Maeximilion/MaexSocial/issues/43). Maxi has been asked whether to assign the review task a new free MS number or a Maintenance issue; preserve #43 and resolve this before creating the next issue.
+The imported owner's brief keeps the requested Start message and manual review procedure. Its historical MS-014 review-workflow assignment conflicts with existing [MS-014 upload security #43](https://github.com/Maeximilion/MaexSocial/issues/43). Maxi explicitly chose a new free MS number for the review task. Preserve #43 and verify the next available number against live issues and work packages before creating the next issue.
 
 The external source `C:/Users/Maxi/Documents/MaexSocial-handover-review-workflow.md` remains intact. Maxi authorized deleting that copy only after this PR merges.
 
