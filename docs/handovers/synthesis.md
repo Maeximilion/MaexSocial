@@ -4,7 +4,7 @@ Status — G0 complete, G1 ongoing. Codex's bounded static report exists. Claude
 
 Artifacts — [Issue #7](https://github.com/Maeximilion/MaexSocial/issues/7), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, `docs/research/`, [work packages](../07_WORKPACKAGES.md), [charter](../00_PCF.md) and [status](../01_STATUS.md).
 
-Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. Technology and paid providers remain G2 decisions.
+Decisions — MaexSocial is the product name. SocialEdge supplies a comparison baseline. Intended capabilities include local visibility, account care, publication, media editing and image-to-ad creation. [ADR 0001](../decisions/0001-application-language.md) chooses TypeScript strict under Maxi's delegated technology choice. Frameworks, hosting and paid providers remain G2 decisions.
 
 Gate — G1 closes with reconciled evidence and explicitly accepted coverage limits. G2 requires Maxi's product design approval.
 
@@ -19,6 +19,8 @@ Keep the canonical folder on clean `main`. Use branch `docs/MS-007-synthesis` in
 Read `docs/research/codex-rea.md`, `docs/research/evidence-codex.json`, the independent Claude report and manifest when delivered, and completed public-inventory/API/demo research. A missing input remains an explicit dependency. Preserve both REA reports and their evidence identifiers.
 
 ## Synthesis procedure
+
+Treat the [owner-requested media-library/calendar/advertising proposal](../18_MEDIA_LIBRARY.md) as a separate MaexSocial requirement. Compare its feasibility with official provider evidence without converting the user's description of SocialEdge's library into an independently observed claim. Preserve both REA reports; provider selection and paid operating scope remain G2 decisions.
 
 1. Reuse stable `SE-NNN` claim IDs from Claude's comparison. Add atomic claims with new IDs when necessary. Keep a matrix with exact claim, Codex evidence, independent Claude evidence, result, source dates/scope and unknowns/next check. Results are `confirm`, `contradict`, `extend` or `unverifiable` as defined in [Claude's brief](claude-rea.md).
 2. Check whether conflicts arise from target version, date, account tier or scenario coverage. Resolve a contradiction only with new evidence or a documented scope distinction. Preserve unresolved disagreements.
