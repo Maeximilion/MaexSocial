@@ -2,7 +2,7 @@
 
 ## Start a session
 
-Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Code-autopilot and caveman remain disabled. Their presence on a machine does not authorize activation.
+Read root agent instructions, [status](01_STATUS.md), [work packages](07_WORKPACKAGES.md) and the task's specific source. Check the current branch, working tree and open PRs before editing. Preserve another session's files. State the next deliverable and its verification. Follow the owner's current skill preferences for this session.
 
 ## Canonical checkout and worktrees
 
@@ -32,7 +32,11 @@ Read [charter](00_PCF.md) criteria. Link dated evidence for each. Record outstan
 
 ## Handover
 
-Use the repository `/handover` command. Include status, files/branch/commits, decisions, gate state, next step and lessons. A handover to a separate session is self-contained and links the full brief. Update status once. Record blocked access without claiming the receiving session has run. The prepared briefs are in [handovers](handovers/synthesis.md).
+Use the repository [/handover command](../.claude/commands/handover.md) and [handover index and template](handovers/README.md). A lane brief assigns future work; a session handover records where the current session stopped. Preserve existing brief paths. Save each complete session block in a new `docs/handovers/sessions/YYYY-MM-DD-<topic>.md`, never appended to a shared file, and use the permanent folder link under **Delivered evidence and handovers** in [status](01_STATUS.md). Update status only when a gate, work lane or blocker changes.
+
+Include repository, task ID and issue, branch, full work-head SHA and PR, implementation/review direction, and a runnable start with console, folder/worktree, full command and first message. Record actual checks, review state, gate evidence, decisions, next action and lessons. Explicitly distinguish pending or blocked work from observed results.
+
+Hand over before context runs out: stop at a clean checkpoint, write the handover, verify local links, commit and push, then start an authorized new session. Capture the work head before the handover commit; Git history records the handover's own delivery commit. A local file or prepared prompt does not establish a successful push or a started receiving session.
 
 ## GitHub maintenance
 
