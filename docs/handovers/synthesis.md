@@ -31,6 +31,6 @@ Treat the [owner-requested media-library/calendar/advertising proposal](../18_ME
 
 If a material gap needs authenticated runtime access or an action outside the established scope, stop that check and ask Maxi for precise access and action permission. Keep the gap visible while completing other authorized work. MS-008–012 become implementation-ready only after their detailed design and planning gates are met.
 
-## Start prompt for the new chat
+## Original MS-007 assignment (completed)
 
 Work on MaexSocial MS-007 using docs/handovers/synthesis.md. Verify that both independent REA reports and required G1 inputs exist, then reconcile them with their manifests and official API sources. Preserve both lanes and use claim IDs with confirm/contradict/extend/unverifiable outcomes, source dates, scope and unknowns. Produce the evidence matrix and disagreement ledger separately from a proposed MaexSocial first slice. Keep missing access explicit and prepare G2 decisions with Superpowers before product implementation.

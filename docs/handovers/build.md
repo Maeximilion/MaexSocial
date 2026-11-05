@@ -1,6 +1,6 @@
 # Handover 2026-11-04 — MS-008 to MS-010, product design and first build
 
-Status — Future session. Product implementation awaits completed synthesis and approved G2 design.
+Status — Future session. The [research synthesis](../research/synthesis.md) is complete. G1 awaits owner acceptance. Product implementation requires approved G2 design and the MS-009 plan.
 
 Artifacts — Repository `Maeximilion/MaexSocial`, [synthesis handover](synthesis.md), [charter](../00_PCF.md), [architecture questions](../02_ARCHITECTURE.md), [work packages](../07_WORKPACKAGES.md). Create a task branch after checking current main and open work.
 
