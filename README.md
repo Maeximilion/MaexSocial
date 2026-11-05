@@ -12,7 +12,7 @@
 <p align="center">
   <a href="docs/README.md">Documentation</a> ·
   <a href="docs/07_WORKPACKAGES.md">Roadmap &amp; tasks</a> ·
-  <a href="docs/handovers/claude-rea.md">Claude handover</a> ·
+  <a href="docs/handovers/README.md">Handovers</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -61,7 +61,7 @@ Goals, gate criteria, dependencies and task IDs are defined. Detailed product im
 
 SocialEdge is the comparison baseline. The [Codex report](docs/research/codex-rea.md) analyzes three public JavaScript bundles and records partial coverage in its [evidence manifest](docs/research/evidence-codex.json). Authenticated workflows and backend behavior remain unverified.
 
-The [Claude assignment](docs/handovers/claude-rea.md) requires independent observations followed by an evidence-by-evidence comparison. Findings may confirm, contradict or extend the baseline, or remain unverifiable. The [synthesis brief](docs/handovers/synthesis.md) brings both reports together before the product design is approved.
+The [Claude report](docs/research/claude-rea.md) and [evidence manifest](docs/research/evidence-claude.json) landed in [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34). [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4) tracks the remaining runtime evidence and owner acceptance of scope limits. The [synthesis brief](docs/handovers/synthesis.md) brings both reports together before the product design is approved.
 
 ## Start here
 
@@ -80,7 +80,7 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | If you are here to… | Start with… |
 | --- | --- |
 | Understand the product and gates | [Project charter](docs/00_PCF.md) |
-| Perform the independent Claude investigation | [Claude REA handover](docs/handovers/claude-rea.md) |
+| Review the independent Claude investigation | [Report and findings](docs/research/claude-rea.md) |
 | Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
 | Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
@@ -97,7 +97,7 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 .github/          Workflows, templates, branch rules and original artwork
 .claude/
   agents/         Bounded evidence researcher
-  commands/       Eight shared task, gate and handover procedures
+  commands/       Shared procedures for explicit workflow requests
   skills/         Repository-check entry point
   hooks/          Tested Stop quality check
   rules/          Scoped research and application guidance

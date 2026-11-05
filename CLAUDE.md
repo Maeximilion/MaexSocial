@@ -22,7 +22,7 @@ The product must eventually enforce tenant isolation, account authorization, pub
 
 ## Commands
 
-`/start`, `/task`, `/done`, `/gate`, `/handover`, `/project`, `/eval`, `/ship` live in `.claude/commands/`. These are procedural instructions, not installed security hooks. GitHub branch rules and checks provide technical enforcement where configured.
+Codex is the primary programmer here. Manual Codex command skills use the same procedures as Claude Code in [the commands directory](.claude/commands/). Request `source-command-anatomy` in Codex or `/anatomy` in Claude Code for a read-only repository check. These are procedural instructions, not installed security hooks. GitHub branch rules and checks provide technical enforcement where configured.
 
 Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs` for the foundation. See `docs/16_GITHUB_PROJECT.md` for Project synchronization and credential setup. G2 access and upload design must cover MS-013 and MS-014.
 

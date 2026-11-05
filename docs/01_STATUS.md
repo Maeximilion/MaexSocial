@@ -13,6 +13,7 @@
 | Work | State | Evidence |
 |---|---|---|
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
+| Repository anatomy | [Issue #63](https://github.com/Maeximilion/MaexSocial/issues/63), maintenance implementation | [Approved design](superpowers/specs/2026-11-05-reusable-repository-anatomy-design.md) and [manual procedure](../.claude/commands/anatomy.md) |
 | Public product baseline, MS-002 | In progress, issue #2 open | Initial public SocialEdge sources identified |
 | Codex REA, MS-003 | Done for bounded static scope, issue #3 closed | [Report](research/codex-rea.md) and [manifest](research/evidence-codex.json), authenticated runtime unverified |
 | Claude Code REA, MS-004 | Anonymous scope and a read-only authenticated walkthrough of one package-2 account (R3, UI evidence) submitted; three Astra review findings corrected, REA runtime capture and owner acceptance of listed gaps outstanding, issue #4 open | [PR #34](https://github.com/Maeximilion/MaexSocial/pull/34), [report](research/claude-rea.md), [manifest](research/evidence-claude.json), checkpoint `35c61ac`; findings not yet accepted |
