@@ -2,6 +2,8 @@
 
 Checked against official documentation and local CLI capabilities on 2026-11-05: Claude Code 2.1.304 and Codex 0.166.0-alpha.6. Configured files, direct script tests and actual session loading are separate claims. The supplied anatomy image is inspiration, not a configuration specification.
 
+See the [role comparison and public research handover example](agent-evidence.md) when assigning evidence work.
+
 ## What loads where
 
 | Location | Purpose and loading boundary |
