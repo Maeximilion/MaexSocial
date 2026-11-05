@@ -17,6 +17,12 @@ There are three open PRs. All target main independently; there is no stack in th
 
 ## Archive incident and prior deliveries
 
+### Backlog note received during pause
+
+On November 5 the owner proposed a customer portal on a web domain and a separately authenticated administrator application on the owner's PC. The coordinator updated [G2 access design #30](https://github.com/Maeximilion/MaexSocial/issues/30) and recorded [G3 staging security tests #82](https://github.com/Maeximilion/MaexSocial/issues/82) as blocked pending approved design and a testable slice. No worker assigned, tool installed or security test started. The 12:30 pause still applies.
+
+### Archive evidence
+
 - The coordinator archived twelve completed work chats and five probes after reviewing the handovers. A further completed chat (#77) brought the verified archive count to 18. **Further archival is suspended.** Archival verification must cover the files on disk as well as the sidebar.
 - Eleven previously clean paths are missing, ten removed from the Git worktree list and one nested detached preview still registered. Ten snapshot refs match their documented heads; the detached preview commit `5f8c7864f384adf297844408eb481143c0e6b42c` also exists. Ignored-file contents are unverified. Preserve snapshot refs, archive evidence and nested registration. Do not prune, delete or recreate the missing paths until recoverability of ignored evidence is assessed. The sanitized [archive handover](https://github.com/Maeximilion/MaexSocial/pull/80) and its private per-path ledger identify the affected worktrees. After resume, first identify recoverable copies/snapshots and preserve needed ignored material, then restore and verify expected tracked and local contents.
 - The earlier queue merged #20, #21, #23, #34, #47, #48, #52, #58, #59, #65, #67, #68, #69, #70, #71 and #73. #53, #54 and #60 closed without merge as stack probes. #48 preceded #59; #23 followed that stack. See [#76](https://github.com/Maeximilion/MaexSocial/issues/76) for per-PR provenance and follow-ups.
