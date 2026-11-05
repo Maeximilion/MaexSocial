@@ -4,17 +4,23 @@ Status — Future session. Product implementation awaits completed synthesis and
 
 Artifacts — Repository `Maeximilion/MaexSocial`, [synthesis handover](synthesis.md), [charter](../00_PCF.md), [architecture questions](../02_ARCHITECTURE.md), [work packages](../07_WORKPACKAGES.md). Create a task branch after checking current main and open work.
 
-Decisions — Reuse the established repository process. Choose technology from the first approved slice. All code reviews use `gpt-6-astra` with reasoning `high`, verified in the actual review session.
+Decisions — Reuse the established repository process and [TypeScript strict language baseline](../decisions/0001-application-language.md). Choose frameworks, runtime validation, storage and deployment from the first approved slice. Existing Python maintenance tooling stays. All code reviews use `gpt-6-astra` with reasoning `high`, verified in the actual review session.
 
 Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan, MS-010 implements and proves G3.
 
+Visual direction — Use Maxi's selected [Deep Tech dark palette](../15_README_STRATEGY.md): primary `#00E5FF`, accent `#FF5E5B`, base `#0B0F19`, surface `#161F30`, text `#F8FAFC`. Follow its contrast rules, including Midnight text on filled accents. The palette is settled; component layout, interaction states and accessibility tests remain G2/G3 work.
+
 Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–14 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
+
+Upload prerequisite — Include [MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) and [UPLOAD-01–10](../security/uploads.md). The initial proposal rejects customer SVG/SVGZ, requires private quarantine and isolates decoding/transcoding. Review the [proposed code anatomy](../architecture/README.md) and [agent tooling](../tooling/agent-workflow.md); neither a folder layout nor a repository SVG check proves these runtime boundaries.
 
 Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
 
 Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
 
 ## Required plan
+
+Include the requested [customer media library, calendar and optional advertising](../18_MEDIA_LIBRARY.md) in scope selection. Its provider evidence and MEDIA/PLAN/ADS cases are G2 inputs, not completed integrations or authorization to spend. Select one verified provider/channel path first; keep customer upload, generation, organic publication and paid-ad activation authority distinct.
 
 Keep `C:/Users/Maxi/Documents/GitHub/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
 

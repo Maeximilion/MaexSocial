@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["-B", "${CLAUDE_PROJECT_DIR}/.claude/hooks/check_repository.py"],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

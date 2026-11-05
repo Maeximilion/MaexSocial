@@ -17,6 +17,8 @@ MaexSocial will manage local visibility and social media through AI and supporte
 
 ## Gates
 
+Language update, 2026-11-05 — Maxi delegated technology selection. [ADR 0001](decisions/0001-application-language.md) chooses TypeScript with strict checking as the application baseline, with Node.js API/orchestration as the direction. Framework, authentication, database, deployment and provider decisions remain part of G2. This updates the initial language deferral above without approving the full product design.
+
 On 2026-11-05 Maxi confirmed a public website with customer registration/login, a tenant-isolated customer dashboard, and separate platform-administrator access to view and manage customers. [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) defines the access design and tests as part of G2. The requirements are confirmed; authentication provider, detailed controls and architecture still need design acceptance.
 
 | Gate | Outcome | Required evidence | Authority |
@@ -36,4 +38,8 @@ G0 establishes collaboration. G1 compares capabilities and technical feasibility
 
 ## Open decisions
 
+On 2026-11-05 Maxi requested a customer-owned media library feeding AI-assisted creative production, scheduled/recurring social content and optional customer-authorized advertising. [The feature proposal](18_MEDIA_LIBRARY.md) records this direction separately from observed SocialEdge functionality. Providers, first channel, detailed behavior and advertising priority remain G2 decisions.
+
 At G2 decide first customer type and channel, target account ownership, paid service budget, hosting region, retention periods, publication authority and required human escalation. These decisions must be tied to the first release rather than guessed across every possible integration.
+
+Upload-security update, 2026-11-05 — [MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) adds explicit upload, processing and delivery contracts to G2. The [proposal](security/uploads.md) rejects customer SVG/SVGZ initially and requires private quarantine, bounded isolated decoding and tenant-safe retrieval. Accept and map UPLOAD-01–10 before implementing uploads; verify relevant cases before customer access in G3 and provider media processing in G4. The repository artwork guard is foundation evidence only.

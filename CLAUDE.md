@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # MaexSocial
 
 AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is underway. Product capabilities in the roadmap are planned capabilities.
@@ -22,4 +24,8 @@ The product must eventually enforce tenant isolation, account authorization, pub
 
 `/start`, `/task`, `/done`, `/gate`, `/handover`, `/project`, `/eval`, `/ship` live in `.claude/commands/`. These are procedural instructions, not installed security hooks. GitHub branch rules and checks provide technical enforcement where configured.
 
-Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/pr_metadata.test.cjs` for the foundation. See `docs/16_GITHUB_PROJECT.md` for Project synchronization and credential setup. G2 access design must cover `docs/17_ACCESS_SECURITY.md` and MS-013.
+Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs` for the foundation. See `docs/16_GITHUB_PROJECT.md` for Project synchronization and credential setup. G2 access and upload design must cover MS-013 and MS-014.
+
+## Platform entry points
+
+See `docs/tooling/agent-workflow.md` for skills, the read-only evidence researcher, scoped rules and the registered Stop hook. The hook checks links, JSON/TOML and repository SVG policy; it does not run the full test suite or establish upload security. Code reviews must use the configured Codex Astra reviewer with the actual model/effort verified; a Claude agent cannot substitute for it.

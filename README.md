@@ -6,8 +6,8 @@
 <p align="center">AI-powered local visibility, social operations and creative production.</p>
 <p align="center">
   <a href="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml"><img src="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml/badge.svg" alt="Foundation CI"></a>
-  <a href="https://github.com/users/Maeximilion/projects/5"><img src="https://img.shields.io/badge/Project-delivery_board-2563EB" alt="Project delivery board"></a>
-  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-B91C1C" alt="Stage G1 discovery"></a>
+  <a href="https://github.com/users/Maeximilion/projects/5/views/2"><img src="https://img.shields.io/badge/Project-delivery_board-161F30?labelColor=0B0F19" alt="Project delivery board"></a>
+  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-161F30?labelColor=0B0F19" alt="Stage G1 discovery"></a>
 </p>
 <p align="center">
   <a href="docs/README.md">Documentation</a> ·
@@ -27,8 +27,9 @@ MaexSocial is being designed to turn approved business facts and product images 
 | --- | --- |
 | **Local visibility** | Maintain business profiles, offers, products and reputation |
 | **Social operations** | Prepare, schedule and publish content through authorized accounts |
-| **Creative production** | Turn approved photos and briefs into images and advertising videos |
+| **Creative production** | Upload customer images/videos to a private media library and turn approved assets and briefs into creative variants |
 | **Bounded autonomy** | Operate within account permissions, brand rules and cost limits |
+| **Optional advertising** | Propose campaigns for a customer-selected audience, with separate budget and activation approval |
 
 ## From business facts to published content
 
@@ -40,6 +41,8 @@ MaexSocial is being designed to turn approved business facts and product images 
 4. **Measure and improve.** Use observed results to plan the next action.
 
 These steps define the product direction. Provider availability, platform restrictions and implementation contracts are research and design decisions.
+
+The requested [media library and calendar](docs/18_MEDIA_LIBRARY.md) connects customer uploads, AI-assisted creation, review and recurring publication. Paid distribution is optional and requires separate customer authority. These capabilities remain planned.
 
 ## Where the project stands
 
@@ -69,7 +72,7 @@ git clone https://github.com/Maeximilion/MaexSocial.git
 cd MaexSocial
 python scripts/check_repo.py
 python -m unittest discover -s tests
-node --test tests/pr_metadata.test.cjs
+node --test tests/*.test.cjs
 ```
 
 For an existing clone, check for local changes before fetching and fast-forwarding `main`. Make changes in a separate task worktree. Follow the [agent playbooks](docs/12_CLAUDE_CODE_PLAYBOOKS.md).
@@ -81,22 +84,42 @@ For an existing clone, check for local changes before fetching and fast-forwardi
 | Compare the research lanes | [Synthesis handover](docs/handovers/synthesis.md) |
 | Work on an issue | [Contributing](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) |
 | Maintain GitHub automation | [Project operations](docs/16_GITHUB_PROJECT.md) |
+| Understand the application-language choice | [TypeScript decision](docs/decisions/0001-application-language.md) |
 | Understand access and security requirements | [Registration, customer and admin access](docs/17_ACCESS_SECURITY.md) |
+| Work with agents, skills, hooks and plugins | [Agent workflow](docs/tooling/agent-workflow.md) |
+| Review the proposed application layout | [Application anatomy](docs/architecture/README.md) |
+| Design safe media uploads | [Upload security contract](docs/security/uploads.md) |
 | Use the visual identity | [Brand and asset guide](docs/15_README_STRATEGY.md) |
 
 ## Repository map
 
 ```text
-.github/       Workflows, templates, branch rules and visual assets
-.claude/       Shared task, gate and handover commands
-.agents/       Codex entry points for the shared commands
-docs/          Charter, status, design questions and work packages
-  research/    Sanitized findings and evidence manifests
-  handovers/   Independent research, synthesis and build briefs
-  superpowers/ Design records and implementation plans
-scripts/       Repository validation and Project reconciliation
-tests/         Regression checks for the repository tooling
+.github/          Workflows, templates, branch rules and original artwork
+.claude/
+  agents/         Bounded evidence researcher
+  commands/       Eight shared task, gate and handover procedures
+  skills/         Repository-check entry point
+  hooks/          Tested Stop quality check
+  rules/          Scoped research and application guidance
+  settings.json   Actual Claude hook registration
+.codex/
+  agents/         GPT-6 Astra high reviewer definition
+  hooks.json      Codex registration; local hook trust still required
+.agents/skills/   Codex skills for all shared procedures and checks
+docs/
+  architecture/   Proposed application anatomy and trust boundaries
+  security/       Upload threat model and acceptance contracts
+  tooling/        Platform loading, activation and workflow guide
+  decisions/      Architecture decision records
+  research/       Sanitized findings and evidence manifests
+  handovers/      Handover index and research, synthesis, build and review briefs
+    sessions/     One dated record per session handover
+  superpowers/    Design records and implementation plans
+scripts/          Validation, narrow SVG policy and Project reconciliation
+tests/            Foundation, hook and hostile-artwork regressions
 ```
+
+These directories contain working foundation tooling or current documentation. Application folders are a [G2 proposal](docs/architecture/README.md); they will be created with accepted implementation tasks. A plugin directory alone would not install or enable anything.
 
 ## Working together
 
