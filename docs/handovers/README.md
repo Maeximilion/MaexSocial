@@ -6,6 +6,8 @@ A **brief**, `docs/handovers/<lane>.md`, assigns future work to a session or a l
 
 A **session handover**, `docs/handovers/sessions/YYYY-MM-DD-<topic>.md`, records where one session stopped. Save the complete `/handover` block in one new file per handover. Never append another handover to a shared file or overwrite a previous session record. If the date and topic already exist, use a distinct topic suffix such as `-02`.
 
+To resume, use the session link for the active task or branch. If several records fit, compare their UTC stopping times, then verify the work head against the live PR. Filename order only groups dates. For older records without a time, use the task link and Git ancestry rather than guessing which came last.
+
 Before context runs out, stop at a clean checkpoint, write the session handover, then commit and push. [Status](../01_STATUS.md) links directly to the [sessions folder](sessions/); change status only for a gate, work lane or blocker. Only then start an authorized new session. A saved file alone does not mean it has been pushed or that the receiving session has started.
 
 ## Briefs
@@ -29,6 +31,7 @@ Capture `git rev-parse HEAD` before writing the handover and label it as the **w
 
 ## Status
 
+Stopped at (UTC) — <YYYY-MM-DDTHH:MM:SSZ>.
 Actual completed, running, pending and blocked work; checks run and their outcomes.
 Implementation/review — <Codex → Claude review or Claude → GPT-6 Astra review>.
 Actual models/settings and review state — <verified facts or explicitly unverified>.
