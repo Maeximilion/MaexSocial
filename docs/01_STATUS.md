@@ -20,7 +20,7 @@
 | API feasibility, MS-005 | Documented feasibility merged, issue #5 closed. Customer grants and outcomes untested. | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md), [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) |
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
 | Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. Maxi accepted G1 on 2026-11-05. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
-| Design and detailed plan, MS-008–009 | MS-008 planning authorized using Superpowers. MS-009 awaits design acceptance | Goals and gates defined, executable product plan still to be written |
+| Design and detailed plan, MS-008–009 | MS-008 planning authorized using Superpowers. MS-009 awaits design acceptance | [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) and [design options](superpowers/specs/2026-11-05-g2-planning-design.md) |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
@@ -36,8 +36,8 @@ On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximi
 
 ## What's next
 
-1. Use Superpowers in [MS-008](https://github.com/Maeximilion/MaexSocial/issues/8) to plan the first customer workflow from the [accepted research baseline](research/synthesis.md).
-2. At G2, choose the first customer, destination, authority and cost limits. MS-009 requires an approved design before implementation.
+1. Review the [MS-008 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) for the [owner-confirmed GBP text pilot](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692). Require Google-side confirmation or end at export with a visible unconfirmed status.
+2. Resolve account eligibility, architecture, access, upload boundaries and operating limits. MS-009 follows design acceptance.
 
 ## Evidence limits
 
