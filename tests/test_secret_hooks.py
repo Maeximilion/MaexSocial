@@ -1,11 +1,12 @@
 """Real Git/Gitleaks integration; set MAEXSOCIAL_TEST_GITLEAKS to run locally."""
 
+from contextlib import closing
 import os
 from pathlib import Path
 import secrets
 import shutil
 import shlex
-import string
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCANNER = os.environ.get("MAEXSOCIAL_TEST_GITLEAKS") or shutil.which("gitleaks")
+# Fixed synthetic filename so a random scanner allowlist match cannot mask a hook failure.
+SECRET_FILENAME = "api_key=" + "a1B2c3D4e5F6g7H8i9J0"
 
 
 @unittest.skipUnless(SCANNER, "Gitleaks is not installed; set MAEXSOCIAL_TEST_GITLEAKS")
@@ -259,7 +262,7 @@ class SecretHooksTest(unittest.TestCase):
         self.assertNotEqual(self.git("commit", "-qm", "Must be blocked", check=False).returncode, 0)
 
     def test_staged_and_historical_names_are_scanned(self):
-        self.token = "api_key=" + "".join(secrets.SystemRandom().sample(string.ascii_letters + string.digits, 48))
+        self.token = SECRET_FILENAME
         (self.repo / self.token).touch()
         self.git("add", self.token)
         r = self.git("commit", "-qm", "Empty file", check=False)
@@ -283,15 +286,19 @@ class SecretHooksTest(unittest.TestCase):
         self.assert_push_rejected("HEAD")
 
     def test_changed_scan_policy_invalidates_cached_clean_objects(self):
-        key = "api_key=" + "".join(secrets.SystemRandom().sample(string.ascii_letters + string.digits, 48))
-        (self.repo / key).touch()
-        self.git("add", key)
+        (self.repo / SECRET_FILENAME).touch()
+        self.git("add", SECRET_FILENAME)
         ignore = self.repo / ".git/hooks/.gitleaksignore"
         original = ignore.read_text()
         ignore.write_text(original + "\n:generic-api-key:3\n")
         self.git("commit", "-qm", "Allowed under first policy")
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        with closing(sqlite3.connect(ignore.with_name("object-scan-cache.sqlite3"))) as cache:
+            self.assertIsNotNone(cache.execute("SELECT 1 FROM clean WHERE id=?", (tree,)).fetchone())
         ignore.write_text(original)
-        self.assertNotEqual(self.git("hook", "run", "pre-commit", check=False).returncode, 0)
+        result = self.git("hook", "run", "pre-commit", check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("leaks found", result.stderr)
 
     def test_shifted_tar_signature_cannot_hide_plaintext_token(self):
         data = b"\0" * 255 + b"ustar\0" + b"\0" * 260 + b"token=" + self.token.encode()
