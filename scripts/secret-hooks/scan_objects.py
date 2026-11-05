@@ -37,6 +37,14 @@ def digest(path):
         return h.digest()
 
 
+def drain_diagnostics(stream):
+    # Consume concurrently with stdin. Only the presence of output leaves this pipe.
+    has_output = False
+    while stream.read(65536):
+        has_output = True
+    return has_output
+
+
 def check(scanner, git_binary, revisions):
     git_path = Path(git_binary)
     if not git_path.is_absolute():
@@ -90,34 +98,36 @@ def check(scanner, git_binary, revisions):
         if kind not in ("commit", "tag", "blob"):
             raise ValueError("missing Git object")
         # Scan the original bytes first. For BOM-marked text, replay the blob as UTF-8.
-        encoding = None
-        while True:
+        encodings = [None]
+        while encodings:
+            encoding = encodings.pop()
             decoder = codecs.getincrementaldecoder(encoding)(errors="replace") if encoding else None
-            with subprocess.Popen([git_binary, "cat-file", kind, oid], stdout=subprocess.PIPE,
-                                  stderr=subprocess.DEVNULL, env=env) as producer:
+            with ThreadPoolExecutor(max_workers=1) as drain, subprocess.Popen(
+                [git_binary, "cat-file", kind, oid], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env
+            ) as producer:
                 with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                       stderr=subprocess.STDOUT, env=env, cwd=here) as detector:
+                    diagnostics = drain.submit(drain_diagnostics, detector.stdout)
                     try:
                         detector.stdin.write(PREFIX)
                         block = producer.stdout.read(65536)
                         if kind == "blob" and not decoder:
+                            # FF FE 00 00 is also a UTF-16LE BOM followed by a NUL.
+                            if block.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+                                encodings.append("utf-16")
                             if block.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)):
-                                encoding = "utf-32"
-                            elif block.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
-                                encoding = "utf-16"
+                                encodings.append("utf-32")
                         while block:
                             detector.stdin.write(decoder.decode(block).encode() if decoder else block)
                             block = producer.stdout.read(65536)
                         if decoder:
                             detector.stdin.write(decoder.decode(b"", final=True).encode())
                         detector.stdin.close()
-                        if detector.stdout.read() or detector.wait() or producer.wait():
+                        if diagnostics.result() or detector.wait() or producer.wait():
                             raise ValueError("leaks found or scan failed")
                     finally:
                         producer.stdout.close()
                         detector.stdin.close()
-            if decoder or not encoding:
-                break
         return ()
 
     try:
