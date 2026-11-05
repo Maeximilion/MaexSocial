@@ -17,7 +17,9 @@ class FoundationTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         skill = root / ".agents/skills/source-command-anatomy"
         command = ".claude/commands/anatomy.md"
-        self.assertTrue((root / command).is_file())
+        self.assertTrue((root / command).read_text(encoding="utf-8").startswith(
+            "---\ndisable-model-invocation: true\n---\n"
+        ))
         self.assertIn(command, (skill / "SKILL.md").read_text(encoding="utf-8"))
         policy = (skill / "agents/openai.yaml").read_text(encoding="utf-8")
         self.assertRegex(policy, r"(?m)^policy:\n  allow_implicit_invocation: false$")
