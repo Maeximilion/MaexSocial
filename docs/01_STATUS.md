@@ -36,7 +36,7 @@ On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximi
 
 ## What's next
 
-1. Review the [MS-008 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) for the [owner-confirmed GBP text pilot](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692). Require Google-side confirmation or end at export with a visible unconfirmed status.
+1. Review the [MS-008 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) for the [owner-confirmed GBP text pilot](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692). Require Google-side confirmation. Export is the fallback before dispatch; an uncertain submission stays in reconciliation.
 2. Resolve account eligibility, architecture, access, upload boundaries and operating limits. MS-009 follows design acceptance.
 
 ## Evidence limits
