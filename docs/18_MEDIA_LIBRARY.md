@@ -51,6 +51,8 @@ Keep both media providers as candidates; the check does not establish a quality 
 
 ## Contracts to settle before implementation
 
+[MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) expands file validation into the [upload-security contract](security/uploads.md), including initial customer SVG/SVGZ rejection, quarantine, isolated bounded processing, safe delivery and UPLOAD-01–10. These proposed cases supplement MEDIA-01–04; no runtime upload control is implemented yet.
+
 - **Private assets:** enforce tenant access on originals, thumbnails, downloads and derived media. Validate file content/type, size, duration and workspace quota; quarantine invalid or unsafe uploads. Define rights/consent, retention, deletion and treatment of embedded metadata. Keep storage credentials and provider keys server-side. Deleting an asset must account for dependent drafts, scheduled items and retained provenance.
 - **Provider handoff:** disclose the selected processor and purpose. Give only the minimum required input through a scoped, time-limited retrieval mechanism where supported. A public provider upload URL is not a tenant access policy. Verify expiry, deletion and revocation behavior before customer-media use; never forward arbitrary user URLs without retrieval controls.
 - **Media jobs:** reserve the approved generation budget, track the external job identity, verify callback authenticity where supported, and reconcile duplicate callbacks or lost responses. Store successful outputs in authorized durable storage before provider links expire. Cancellation is a requested state until confirmed; it does not prove the provider stopped processing or billing.
