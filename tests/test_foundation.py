@@ -3,11 +3,13 @@
 import unittest
 import subprocess
 from copy import deepcopy
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from scripts.check_repo import local_targets
 from scripts.project_sync import desired_gate, desired_priority, desired_status
-from scripts import project_sync
+from scripts import check_repo, project_sync
 
 
 class FoundationTests(unittest.TestCase):
@@ -55,6 +57,18 @@ class FoundationTests(unittest.TestCase):
     def test_markdown_targets(self):
         text = '[doc](docs/a.md#section) ![img](<assets/a b.svg>) [web](https://example.com) [anchor](#id)\n```md\n[example](missing.md)\n```\n'
         self.assertEqual(list(local_targets(text)), ["docs/a.md", "assets/a b.svg"])
+
+    def test_toml_configuration_syntax_is_checked(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "reviewer.toml"
+            with patch.object(check_repo.subprocess, "check_output", return_value=b"reviewer.toml\0"):
+                config.write_text('name = "reviewer"\nmodel_reasoning_effort = "high"\n', encoding="utf-8")
+                self.assertEqual(check_repo.check(root), [])
+                config.write_text('name = [\n', encoding="utf-8")
+                errors = check_repo.check(root)
+                self.assertEqual(len(errors), 1)
+                self.assertIn("reviewer.toml:", errors[0])
 
     def test_cancelled_work_never_becomes_done(self):
         self.assertIsNone(desired_status({"state": "closed", "state_reason": "not_planned"}))

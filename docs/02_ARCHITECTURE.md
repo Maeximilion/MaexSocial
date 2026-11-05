@@ -6,6 +6,8 @@ Status — TypeScript with strict checking is the chosen application-language ba
 
 ## Candidate responsibilities
 
+The [proposed application anatomy](architecture/README.md) maps these responsibilities to a minimal directory layout and trust-boundary diagram. No application folders or deployment isolation are implemented by that proposal. [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) must settle the [upload/processing contract](security/uploads.md) together with access design.
+
 | Responsibility | Owns | Evidence needed before implementation |
 |---|---|---|
 | Workspace and brand | Tenant boundary, approved business facts, assets and voice | First customer and account model |

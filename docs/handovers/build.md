@@ -12,6 +12,8 @@ Visual direction — Use Maxi's selected [Deep Tech dark palette](../15_README_S
 
 Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–14 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
 
+Upload prerequisite — Include [MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) and [UPLOAD-01–10](../security/uploads.md). The initial proposal rejects customer SVG/SVGZ, requires private quarantine and isolates decoding/transcoding. Review the [proposed code anatomy](../architecture/README.md) and [agent tooling](../tooling/agent-workflow.md); neither a folder layout nor a repository SVG check proves these runtime boundaries.
+
 Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
 
 Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
