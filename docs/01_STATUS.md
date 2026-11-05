@@ -41,6 +41,8 @@ The first web-tool dashboard request failed, but a subsequent unauthenticated HT
 
 ## Decisions and operating state
 
+Maxi selected the exact Deep Tech dark palette on 2026-11-05: Cyan-Electric `#00E5FF`, Warm Coral `#FF5E5B`, Midnight `#0B0F19`, Dark Slate `#161F30` and Off-White `#F8FAFC`. [Issue #38](https://github.com/Maeximilion/MaexSocial/issues/38) aligns the repository artwork and [brand guide](15_README_STRATEGY.md); the future application must use the same color roles.
+
 MaexSocial's name and public repository visibility are confirmed by Maxi. Public research reports are sanitized. Reference-repository conventions are adapted to this project. Code-autopilot and caveman remain disabled. Under Maxi's delegated choice, TypeScript strict is the application-language baseline; [ADR 0001](decisions/0001-application-language.md) records the rationale. Framework, runtime version, provider and deployment choices remain at G2. Software implementation follows independent Claude REA, synthesis and approved design.
 
 Maxi confirmed a public website with customer registration/login and separate platform-administrator access on 2026-11-05. Administrators must see and manage customers; customer workspaces remain isolated. Proposed security controls and fourteen named acceptance cases are recorded for G2, not implemented or runtime-tested.

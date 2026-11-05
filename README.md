@@ -6,8 +6,8 @@
 <p align="center">AI-powered local visibility, social operations and creative production.</p>
 <p align="center">
   <a href="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml"><img src="https://github.com/Maeximilion/MaexSocial/actions/workflows/ci.yml/badge.svg" alt="Foundation CI"></a>
-  <a href="https://github.com/users/Maeximilion/projects/5"><img src="https://img.shields.io/badge/Project-delivery_board-2563EB" alt="Project delivery board"></a>
-  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-B91C1C" alt="Stage G1 discovery"></a>
+  <a href="https://github.com/users/Maeximilion/projects/5/views/2"><img src="https://img.shields.io/badge/Project-delivery_board-161F30?labelColor=0B0F19" alt="Project delivery board"></a>
+  <a href="docs/01_STATUS.md"><img src="https://img.shields.io/badge/Stage-G1_discovery-161F30?labelColor=0B0F19" alt="Stage G1 discovery"></a>
 </p>
 <p align="center">
   <a href="docs/README.md">Documentation</a> ·
