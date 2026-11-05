@@ -101,17 +101,26 @@ class ClaudeReviewTests(unittest.TestCase):
                     self.assertFalse(any("/contents/" in command[2] for command in calls))
                     self.assertIn("Review this change", data["prompt"])
 
-    def test_missing_and_oversized_diff_stay_incomplete_in_public_result(self):
-        for diff, detail in [(subprocess.CalledProcessError(1, "gh api"), "unavailable"),
-                             (b"x" * 60_000 + b"TRUNCATED_TAIL", "cut")]:
-            with self.subTest(detail=detail):
-                data, _ = self.prepare(diff)
-                self.assertIn(detail, data["gaps"])
-                self.assertIn("INCOMPLETE", data["prompt"])
-                self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
-                body = self.post(0, GAPS=data["gaps"], OUTPUT='{"summary":"Partial result","findings":[]}')
-                self.assertIn("Incomplete", body)
-                self.assertIn("Partial result", body)
+    def test_missing_auto_diff_skips_paid_step_and_posts_notice(self):
+        self.assertIn("if: steps.data.outputs.ready == 'true'", WORKFLOW)
+        for diff in [subprocess.CalledProcessError(1, "gh api"), b"", b"  "]:
+            data, _ = self.prepare(diff)
+            self.assertEqual(data["ready"], "false")
+            self.assertFalse(self.output.with_name("claude-input.json").exists())
+            body = self.post(1, GAPS=data["gaps"], HEAD_SHA=data["head_sha"], CLAUDE_OUTCOME="skipped")
+            self.assertIn("no API request sent", body)
+            self.assertIn("Incomplete", body)
+            self.assertIn(data["head_sha"], body)
+
+    def test_clipped_diff_still_gets_an_incomplete_review(self):
+        data, _ = self.prepare(b"x" * 60_000 + b"TRUNCATED_TAIL")
+        self.assertEqual(data["ready"], "true")
+        self.assertIn("cut", data["gaps"])
+        self.assertIn("INCOMPLETE", data["prompt"])
+        self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
+        body = self.post(0, GAPS=data["gaps"], OUTPUT='{"summary":"Partial result","findings":[]}')
+        self.assertIn("Incomplete", body)
+        self.assertIn("Partial result", body)
 
     def test_workflow_mismatch_skips_pr_events_without_attributing_a_change_to_the_pr(self):
         for event, kind in [("pull_request_target", "review"), ("issue_comment", "mention")]:

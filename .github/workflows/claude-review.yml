@@ -88,7 +88,7 @@ jobs:
               return text, False
 
 
-          out = {"workflow_changed": "false", "evidence": "", "head_sha": "", "gaps": ""}
+          out = {"ready": "false", "workflow_changed": "false", "evidence": "", "head_sha": "", "gaps": ""}
           pull = json.loads(api(f"repos/{repo}/pulls/{env['PR']}"))
           head = env.get("HEAD_SHA") or pull["head"]["sha"]
           base = env.get("BASE_SHA") or pull["base"]["sha"]
@@ -161,7 +161,11 @@ jobs:
               prompt = "\n".join(lines)
               if escaped(prompt) + escaped(frames) > prompt_budget:  # unreachable with the limits above; fail visibly, never truncate silently
                   raise SystemExit("prepared input exceeds budget")
-              (Path(env["RUNNER_TEMP"]) / "claude-input.json").write_text(json.dumps([prompt, frames]), "utf-8")
+              if kind == "review" and not diff.strip():
+                  gaps.append("no reviewable diff; no API request sent")
+              else:
+                  (Path(env["RUNNER_TEMP"]) / "claude-input.json").write_text(json.dumps([prompt, frames]), "utf-8")
+                  out["ready"] = "true"
               out.update(head_sha=head, gaps="; ".join(gaps))
           with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
               for key, value in out.items():
@@ -169,7 +173,7 @@ jobs:
                   handle.write(f"{key}<<{delimiter}\n{value}\n{delimiter}\n")
           PY
       - id: claude
-        if: steps.data.outputs.workflow_changed == 'false'
+        if: steps.data.outputs.ready == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python3 -I scripts/claude_messages.py
@@ -201,6 +205,8 @@ jobs:
               body, code = f"Not reviewed: PR data could not be prepared. See {env['RUN_URL']}.", 1
           elif env.get("WORKFLOW_CHANGED") == "true":
               body = f"Skipped, not reviewed: {env['EVIDENCE']}."
+          elif env.get("CLAUDE_OUTCOME") == "skipped":
+              body, code = f"**Incomplete:** Head `{env['HEAD_SHA']}` not reviewed: {env['GAPS']}.", 1
           elif env.get("CLAUDE_OUTCOME") != "success":
               body, code = f"Failed: Claude step: {env.get('FAILURE') or 'unknown'}. See {env['RUN_URL']}.", 1
           else:
