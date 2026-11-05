@@ -27,6 +27,8 @@ Only a standalone `pause` **from the owner** is a coordination control. Quoted e
 
 Only a standalone owner `w` or `weiter` resumes this **paused scope**. Before continuing, verify checkpoints against current chat, Git, PR and operation state. Reconcile unreachable chats and operations already in flight. Send scoped resumes to the affected chats, including instructions for their subagents, then take the next previously authorized action. A resume grants no additional scope, model switch or gate approval.
 
+Include the coordinator chat ID and the triggering human message reference in each control relay. A work chat verifies the authorized coordinator, latest applicable owner command and its own assignment before treating a relay as a control. Send its checkpoint back to that same coordinator under the verified return authorization. If origin, current command or destination cannot be verified, report the specific gap locally and avoid an unverified send or resume. A stale resume never overrides a newer pause.
+
 ## Decide merge eligibility
 
 - Require explicit merge authority, the requested queue order and repository rules. Verify required CI on the current head, mergeability, unresolved threads, applicable owner gates and an independent GPT-6 Astra/high review covering that SHA. Verify actual reviewer settings. Use the owner's current exact-head `@codex review` fallback during the Claude pause (through November 8, 2026). Verify an authentic bot response tied to the SHA separately from the mention. Read both verdicts including top-level comments. Hold the affected PR for any unresolved blocking finding, even with zero inline threads. No new Claude reviews during the pause. Verify current owner policy before any later use.
