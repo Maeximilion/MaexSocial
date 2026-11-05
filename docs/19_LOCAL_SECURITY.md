@@ -111,7 +111,7 @@ set -o pipefail
 export GIT_NO_REPLACE_OBJECTS=1
 scanner=$(git config --path --get maexsocial.gitleaksPath)
 hooks=$(git rev-parse --path-format=absolute --git-common-dir)/hooks
-git_binary=$(type -P git.exe || type -P git)
+case "$OSTYPE" in msys*|cygwin*) git_binary=$(type -P git.exe) ;; *) git_binary=$(type -P git) ;; esac
 # Set oid to the candidate ID first. Keep raw bytes in the pipe.
 python -I -B "$hooks/scan_objects.py" "$scanner" "$git_binary" "$oid"
 # For a commit, also check its decoded message.

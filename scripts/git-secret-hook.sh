@@ -9,7 +9,11 @@ trusted_path() {
     [[ $path == /* && $path != "$(pwd -P)/"* ]] || return 1
     printf '%s\n' "$path"
 }
-git_binary=$(trusted_path git.exe || trusted_path git) || {
+case "$OSTYPE" in
+    msys*|cygwin*) git_name=git.exe ;;
+    *) git_name=git ;;
+esac
+git_binary=$(trusted_path "$git_name") || {
     echo "Secret scan requires Git on a trusted absolute PATH." >&2; exit 1;
 }
 git() { "$git_binary" "$@"; }
