@@ -15,7 +15,7 @@ The first release should name one customer journey, supported channel and operat
 | [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | Repository, Project, templates, workflows, docs and handovers verified on GitHub | — | Done |
 | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | Public SocialEdge product inventory with sources, dates and evidence class | — | In progress |
 | [MS-003](https://github.com/Maeximilion/MaexSocial/issues/3) | G1 | Codex REA report with target identity, reproducible steps, evidence IDs and coverage limits | MS-001 research brief | Done for bounded static scope, runtime gap documented |
-| [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | Planned |
+| [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | In review; read-only authenticated walkthrough done, gaps listed |
 | [MS-005](https://github.com/Maeximilion/MaexSocial/issues/5) | G1 | Official API/MCP feasibility matrix, access requirements and cost assumptions | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | Planned |
 | [MS-006](https://github.com/Maeximilion/MaexSocial/issues/6) | G1 | Search report for the remembered Claude image-to-ad demo, candidate links and confidence | — | Planned |
 | [MS-007](https://github.com/Maeximilion/MaexSocial/issues/7) | G1 | Combined feature matrix, disagreement ledger, gaps and proposed first slice | MS-002–006 | Blocked |
@@ -26,6 +26,7 @@ The first release should name one customer journey, supported channel and operat
 | [MS-012](https://github.com/Maeximilion/MaexSocial/issues/12) | G5 | Bounded autonomous account operation with stop, audit and supervised pilot evidence | MS-010, MS-011 where media is enabled | Blocked |
 | [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) | G2 | Approved public registration/login, customer isolation and separate platform-admin access design | MS-007, coordinated with MS-008 | Blocked |
 | [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) | G2 | Approved upload, processing-isolation and safe-delivery design with executable acceptance mapping | MS-007, coordinated with MS-008 and MS-013 | Blocked |
+| [MS-015](https://github.com/Maeximilion/MaexSocial/issues/49) | Maintenance | [Repository anatomy assessment](superpowers/specs/2026-11-05-repository-anatomy-review.md): verify the reference kit, assess all candidates and separate owner decisions before implementation | Owner-supplied kit; no product-gate change | In progress |
 
 ## Definitions of done
 
