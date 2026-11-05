@@ -28,6 +28,8 @@ The first release should name one customer journey, supported channel and operat
 
 ## Definitions of done
 
+[Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40) records the owner-requested [media library, calendar and optional advertising proposal](18_MEDIA_LIBRARY.md). Its gate/task mapping extends MS-005 and MS-007–013. Completing that documentation task does not complete those work packages, implement the feature or approve G2. Paid distribution remains distinct from generating advertising creative.
+
 MS-001 requires green foundation checks, live repository/project links, issues with milestones and labels, documented automation credential state, and tested handover links. Pending credentials must remain an explicit gap rather than a successful automation claim.
 
 MS-002 records each product/service, audience, inputs, outputs, operator involvement and source. Public marketing claims remain claims. MS-003 and MS-004 distinguish UI observations, static code observations, runtime observations, inference and unknowns. MS-004 records a dated independent checkpoint before comparing the Codex report and manifest. It delivers its own report and evidence manifest, then the claim-ID comparison matrix with confirm/contradict/extend/unverifiable outcomes, dates, scope and unknowns. Both lanes remain preserved. Access-limited reports enumerate missing workflows. G1 stays open until those gaps are resolved or explicitly accepted as scope limits.

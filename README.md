@@ -27,8 +27,9 @@ MaexSocial is being designed to turn approved business facts and product images 
 | --- | --- |
 | **Local visibility** | Maintain business profiles, offers, products and reputation |
 | **Social operations** | Prepare, schedule and publish content through authorized accounts |
-| **Creative production** | Turn approved photos and briefs into images and advertising videos |
+| **Creative production** | Upload customer images/videos to a private media library and turn approved assets and briefs into creative variants |
 | **Bounded autonomy** | Operate within account permissions, brand rules and cost limits |
+| **Optional advertising** | Propose campaigns for a customer-selected audience, with separate budget and activation approval |
 
 ## From business facts to published content
 
@@ -40,6 +41,8 @@ MaexSocial is being designed to turn approved business facts and product images 
 4. **Measure and improve.** Use observed results to plan the next action.
 
 These steps define the product direction. Provider availability, platform restrictions and implementation contracts are research and design decisions.
+
+The requested [media library and calendar](docs/18_MEDIA_LIBRARY.md) connects customer uploads, AI-assisted creation, review and recurring publication. Paid distribution is optional and requires separate customer authority. These capabilities remain planned.
 
 ## Where the project stands
 

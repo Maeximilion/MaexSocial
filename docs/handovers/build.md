@@ -18,6 +18,8 @@ Lessons — Foundation checks establish repository health. Live API capability, 
 
 ## Required plan
 
+Include the requested [customer media library, calendar and optional advertising](../18_MEDIA_LIBRARY.md) in scope selection. Its provider evidence and MEDIA/PLAN/ADS cases are G2 inputs, not completed integrations or authorization to spend. Select one verified provider/channel path first; keep customer upload, generation, organic publication and paid-ad activation authority distinct.
+
 Keep `C:/Users/Maxi/Documents/GitHub/MaexSocial` on clean `main`. Application changes and tests under `tests/` belong in a separate task worktree following [playbooks](../12_CLAUDE_CODE_PLAYBOOKS.md). After merge and regularly, require an empty canonical working tree, then `git fetch --prune origin` and `git pull --ff-only origin main`. Never pull with dirty files.
 
 Use Superpowers brainstorming to settle first customer/channel, user journey, account authority, scope, provider access, cost and deployment choices. Record alternatives and rationale in a product design. Obtain G2 approval. Then use writing-plans to specify files, interfaces, schemas, tests, migration/rollback behavior and independently verifiable tasks.

@@ -20,6 +20,8 @@ Read `docs/research/codex-rea.md`, `docs/research/evidence-codex.json`, the inde
 
 ## Synthesis procedure
 
+Treat the [owner-requested media-library/calendar/advertising proposal](../18_MEDIA_LIBRARY.md) as a separate MaexSocial requirement. Compare its feasibility with official provider evidence without converting the user's description of SocialEdge's library into an independently observed claim. Preserve both REA reports; provider selection and paid operating scope remain G2 decisions.
+
 1. Reuse stable `SE-NNN` claim IDs from Claude's comparison. Add atomic claims with new IDs when necessary. Keep a matrix with exact claim, Codex evidence, independent Claude evidence, result, source dates/scope and unknowns/next check. Results are `confirm`, `contradict`, `extend` or `unverifiable` as defined in [Claude's brief](claude-rea.md).
 2. Check whether conflicts arise from target version, date, account tier or scenario coverage. Resolve a contradiction only with new evidence or a documented scope distinction. Preserve unresolved disagreements.
 3. Map capabilities to official API/MCP feasibility, permissions, app review, human work, costs and restrictions. Separate actual source observations from proposed MaexSocial behavior.

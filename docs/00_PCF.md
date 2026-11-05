@@ -38,4 +38,6 @@ G0 establishes collaboration. G1 compares capabilities and technical feasibility
 
 ## Open decisions
 
+On 2026-11-05 Maxi requested a customer-owned media library feeding AI-assisted creative production, scheduled/recurring social content and optional customer-authorized advertising. [The feature proposal](18_MEDIA_LIBRARY.md) records this direction separately from observed SocialEdge functionality. Providers, first channel, detailed behavior and advertising priority remain G2 decisions.
+
 At G2 decide first customer type and channel, target account ownership, paid service budget, hosting region, retention periods, publication authority and required human escalation. These decisions must be tied to the first release rather than guessed across every possible integration.
