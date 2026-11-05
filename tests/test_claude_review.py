@@ -112,6 +112,29 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertIn("Incomplete", body)
             self.assertIn(data["head_sha"], body)
 
+    def test_binary_sections_are_not_reviewed_as_text(self):
+        binary = b"diff --git a/logo.png b/logo.png\nBinary files a/logo.png and b/logo.png differ\n"
+        patch = b"diff --git a/logo.png b/logo.png\nGIT binary patch\nliteral 3\nOPAQUE\n"
+        text = b"diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+new\n"
+        rename = b"diff --git a/b b/c\nsimilarity index 100%\nrename from b\nrename to c\n"
+        for opaque in [binary, patch]:
+            for tail in [b"", text, rename]:
+                with self.subTest(opaque=opaque, tail=tail):
+                    data, _ = self.prepare(opaque + tail)
+                    self.assertIn("binary file content unavailable", data["gaps"])
+                    self.assertEqual(data["ready"], "true" if tail else "false")
+                    self.assertNotIn("logo.png", self.frames)
+                    if tail:
+                        self.assertIn(tail.decode(), self.frames)
+                        self.assertIn("INCOMPLETE", self.system)
+
+    def test_invalid_diff_bytes_remain_visible_as_a_coverage_gap(self):
+        for bad in [b"\xa3", b"\0"]:
+            data, _ = self.prepare(b"diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+fee=5" + bad + b"\n")
+            self.assertIn("replaced", data["gaps"])
+            self.assertIn("fee=5\ufffd", self.frames)
+            self.assertEqual(data["ready"], "true")
+
     def test_clipped_diff_still_gets_an_incomplete_review(self):
         data, _ = self.prepare(b"x" * 60_000 + b"TRUNCATED_TAIL")
         self.assertEqual(data["ready"], "true")

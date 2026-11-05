@@ -56,7 +56,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           python3 -I - <<'PY'
-          import json, os, secrets, subprocess
+          import json, os, re, secrets, subprocess
           from pathlib import Path
 
           env = os.environ
@@ -115,7 +115,21 @@ jobs:
 
               try:
                   raw = api(f"repos/{repo}/compare/{base}...{head}", "application/vnd.github.diff")
-                  diff = field("diff", raw.decode("utf-8", "ignore"), max_diff)
+                  sections = re.split(rb"(?m)^(?=diff --git )", raw)
+                  visible = [part for part in sections if not re.search(
+                      rb"(?m)^(?:Binary files .+ differ|GIT binary patch)\r?$", part)]
+                  if len(visible) != len(sections):
+                      gaps.append("binary file content unavailable")
+                  raw = b"".join(visible)
+                  try:
+                      decoded = raw.decode("utf-8")
+                  except UnicodeDecodeError:
+                      gaps.append("undecodable diff bytes replaced")
+                      decoded = raw.decode("utf-8", "replace")
+                  if "\0" in decoded:
+                      gaps.append("NUL bytes in diff replaced")
+                      decoded = decoded.replace("\0", "\ufffd")
+                  diff = field("diff", decoded, max_diff)
               except subprocess.CalledProcessError:
                   diff = ""
                   gaps.append("diff unavailable from the GitHub API (too large or failed)")
