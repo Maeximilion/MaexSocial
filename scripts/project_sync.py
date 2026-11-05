@@ -62,15 +62,15 @@ VALUES_QUERY = """query($id:ID!, $after:String) {
 }"""
 
 ADD_ITEM = """mutation($project:ID!, $content:ID!) {
-  addProjectV2ItemById(input:{projectId:$project,contentId:$content}) { item { id } }
+  result: addProjectV2ItemById(input:{projectId:$project,contentId:$content}) { item { id } }
 }"""
 UPDATE_VALUE = """mutation($project:ID!, $item:ID!, $field:ID!, $option:String!) {
-  updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,
-    value:{singleSelectOptionId:$option}}) { projectV2Item { id } }
+  result: updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,
+    value:{singleSelectOptionId:$option}}) { item: projectV2Item { id } }
 }"""
 CLEAR_VALUE = """mutation($project:ID!, $item:ID!, $field:ID!) {
-  clearProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field}) {
-    projectV2Item { id }
+  result: clearProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field}) {
+    item: projectV2Item { id }
   }
 }"""
 
@@ -125,11 +125,14 @@ def project_inventory():
             if not cursor:
                 raise RuntimeError("GitHub returned a missing field-value pagination cursor.")
             field_values.extend(connection_nodes(VALUES_QUERY, item["id"], "fieldValues", after=cursor))
-        item.update(managed_values(field_values))
+        target = (item.get("content") or {}).get("url") or item["id"]
+        item.update(managed_values(field_values, target))
     return [field for field in fields if "name" in field], items
 
 
-def managed_values(values):
+def managed_values(values, target):
+    if any(value is None for value in values):
+        raise RuntimeError(f"Unreadable Project field value for {target}")
     return {
         value["field"]["name"].lower(): value["name"]
         for value in values if (value.get("field") or {}).get("name") in ("Status", "Gate", "Priority")
@@ -146,7 +149,8 @@ def lookup_membership(record):
                 if not item.get("id") or not isinstance(item.get("isArchived"), bool):
                     raise RuntimeError("GitHub returned an incomplete Project item")
                 if not item["isArchived"]:
-                    item.update(managed_values(connection_nodes(VALUES_QUERY, item["id"], "fieldValues")))
+                    values = connection_nodes(VALUES_QUERY, item["id"], "fieldValues")
+                    item.update(managed_values(values, record["html_url"]))
                 return item
     except (RuntimeError, KeyError, TypeError) as error:
         raise RuntimeError(f"Read Project membership for {record['html_url']}: {error}") from error
@@ -155,7 +159,11 @@ def lookup_membership(record):
 
 def mutate(query, action, url, **variables):
     try:
-        return graphql(query, project=PROJECT_ID, **variables)
+        data = graphql(query, project=PROJECT_ID, **variables)
+        item = ((data or {}).get("result") or {}).get("item")
+        if not item or not item.get("id") or ("item" in variables and item["id"] != variables["item"]):
+            raise RuntimeError("GitHub did not confirm the expected Project item")
+        return item
     except RuntimeError as error:
         raise RuntimeError(f"{action} for {url}: {error}") from error
 
@@ -226,7 +234,7 @@ def reconcile():
         if item is None:
             item = lookup_membership(record)
         if item is None:
-            item = mutate(ADD_ITEM, "Add Project item", url, content=record["node_id"])["addProjectV2ItemById"]["item"]
+            item = mutate(ADD_ITEM, "Add Project item", url, content=record["node_id"])
         if item.get("isArchived"):
             continue
         status = desired_status(record, is_pr, active_issue_numbers)
@@ -244,7 +252,7 @@ def reconcile():
                 continue
             option = next((option for option in field.get("options", []) if option["name"].lower() == desired.lower() or (name == "Gate" and option["name"].split()[0] == desired)), None)
             if option is None:
-                raise RuntimeError(f"Project field {name} has no option for {desired}")
+                raise RuntimeError(f"Project field {name} has no option for {desired} on {url}")
             if current != option["name"]:
                 mutate(UPDATE_VALUE, f"Update {name}", url, item=item["id"], field=field["id"], option=option["id"])
     print(f"Reconciled {len(issues)} issues and {len(prs)} pull requests. Iteration assignments preserved.")

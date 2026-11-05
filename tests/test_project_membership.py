@@ -47,6 +47,9 @@ class ProjectMembershipTests(unittest.TestCase):
             {"field": {"name": "Manual choice"}, "name": "Keep"},
         ])}}
 
+    def mutation_result(self, item_id):
+        return {"result": {"item": {"id": item_id}}}
+
     def test_existing_pr_on_second_page_already_done(self):
         self.run_sync([self.memberships([self.membership("other")], "next"),
                        self.memberships([self.membership()]), self.values("Done")])
@@ -54,14 +57,14 @@ class ProjectMembershipTests(unittest.TestCase):
         self.assertEqual(self.writes, [])
 
     def test_existing_issue_updates_its_status_only(self):
-        self.run_sync([self.memberships([self.membership()]), self.values("Todo"), {}], is_pr=False)
+        self.run_sync([self.memberships([self.membership()]), self.values("Todo"), self.mutation_result("existing")], is_pr=False)
         self.assertEqual(self.writes, [(sync.UPDATE_VALUE, {
             "project": sync.PROJECT_ID, "item": "existing", "field": "status", "option": "done",
         })])
 
     def test_new_issue_in_another_project_is_added_to_target(self):
         self.run_sync([self.memberships([self.membership("other")]),
-                       {"addProjectV2ItemById": {"item": {"id": "new"}}}, {}], is_pr=False)
+                       self.mutation_result("new"), self.mutation_result("new")], is_pr=False)
         self.assertEqual(self.writes, [
             (sync.ADD_ITEM, {"project": sync.PROJECT_ID, "content": "content"}),
             (sync.UPDATE_VALUE, {"project": sync.PROJECT_ID, "item": "new", "field": "status", "option": "done"}),
@@ -83,4 +86,19 @@ class ProjectMembershipTests(unittest.TestCase):
     def test_failed_mutation_reports_target_without_retry(self):
         with self.assertRaisesRegex(RuntimeError, r"(?i)update.*Status.*pull/31.*API failure"):
             self.run_sync([self.memberships([self.membership()]), self.values("Todo"), RuntimeError("API failure")])
+        self.assertEqual(len(self.writes), 1)
+
+    def test_unreadable_field_value_stops_before_writing(self):
+        values = {"node": {"id": "existing", "fieldValues": page([None])}}
+        with self.assertRaisesRegex(RuntimeError, r"membership.*pull/31"):
+            self.run_sync([self.memberships([self.membership()]), values])
+        self.assertEqual(self.writes, [])
+
+    def test_unconfirmed_mutation_stops_without_retry(self):
+        for reply in ({"result": {"item": None}}, {"result": None}, self.mutation_result("wrong")):
+            with self.subTest(reply=reply), self.assertRaisesRegex(RuntimeError, r"Update Status.*pull/31"):
+                self.run_sync([self.memberships([self.membership()]), self.values("Todo"), reply])
+            self.assertEqual(len(self.writes), 1)
+        with self.assertRaisesRegex(RuntimeError, r"Add Project item.*pull/31"):
+            self.run_sync([self.memberships([]), {"result": {"item": None}}])
         self.assertEqual(len(self.writes), 1)
