@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fix the silent Claude PR review: drop the subprocess environment scrub, which removed `GH_TOKEN` from the allowed `gh pr` commands.
+- Fix the silent Claude PR review: drop the subprocess environment scrub, which removed `GH_TOKEN` from `gh pr diff/view`; post the summary from a workflow step, remove Claude's `gh pr comment` and deny reads of `/proc`, `.git` and `~/.claude` so review text cannot carry runner secrets.
 - Add an advisory, SHA-pinned Claude Code PR review workflow for same-repository PRs (including drafts and Dependabot) and trusted `@claude` mentions, with edit, commit and push tools denied; it supplements and never replaces the required GPT-6 Astra high review. Dependabot bumps of `actions/checkout` or `claude-code-action` change this workflow file, so the action skips review there (workflow validation) while the job still reports success.
 
 - Add platform-native Claude/Codex skills, bounded agent roles, scoped rules and registered Stop checks; document loading/trust and plugin/MCP boundaries.
