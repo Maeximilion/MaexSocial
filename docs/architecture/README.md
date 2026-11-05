@@ -2,7 +2,9 @@
 
 This is a directory and responsibility proposal for [MS-008](https://github.com/Maeximilion/MaexSocial/issues/8), not a scaffold or accepted deployment architecture. [ADR 0001](../decisions/0001-application-language.md) assigns the languages for the local pilot selected on [#8](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463).
 
-## Small first release
+## Pilot and later components
+
+The local text pilot rejects attachments, media links and uploads before storage or fetching. Its publication worker calls only the deterministic Google fixture. The media library, quarantine, processor and real provider edges below belong to later, separately approved work.
 
 Prefer a modular application with one complete customer journey. Keep public pages, customer screens and the separately installed Windows admin client easy to navigate. A different route alone does not establish an authorization boundary. Background publication needs durable state; hostile media processing needs actual runtime isolation, not merely a different folder.
 
