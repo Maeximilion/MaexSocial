@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Pilot scope and merged queue · 2026-11-05 22:38 UTC (23:38 Europe/Berlin)
+
+All three resumed deliveries merged individually: [#92](https://github.com/Maeximilion/MaexSocial/pull/92), then [#94](https://github.com/Maeximilion/MaexSocial/pull/94) at `a17d84056c7333ac75feb6a3d9270c8c33624c18`, then [#98](https://github.com/Maeximilion/MaexSocial/pull/98) at `43992502562093b6a20c11c23600e19fb0d3a74f`. Canonical main was synchronized with each merge. #92 and #94 work chats are archived; final chat readback, restored files and Git worktree registrations were verified. The sole neutral supplemental check on #94 was reconciled using the two matching [Python analyses](https://github.com/Maeximilion/MaexSocial/issues/93#issuecomment-6671225985). #98 received independent Astra/high and both Codex verdicts; required and additional checks passed. Its work chat is securing the archive handover. No PR is open.
+
+Maxi [accepted the text-only design for #43](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671306956), with attachments, media links and uploads denied to all pilot roles. Require UPLOAD-01–10 for a future media release. #43 closed. Maxi deferred JPEG limits until a concrete image pilot. [#99](https://github.com/Maeximilion/MaexSocial/issues/99) owns the deferred decision and evidence. Its native blockers of G4 (#17) and G5 (#18) were verified separately from the five G1 gaps in #88. This scoped disposition does not accept the whole gate.
+
+[The proposed ADR](https://github.com/Maeximilion/MaexSocial/blob/43992502562093b6a20c11c23600e19fb0d3a74f/docs/decisions/0002-google-text-pilot.md) now has an owner-reviewable revision. #8 and #30 remain open. [#9](https://github.com/Maeximilion/MaexSocial/issues/9#issuecomment-6671246397) has prepared the synthetic test map; its clean pushed revision `15cda306144349e0c9d2f299a6b9014427f3e9ba` incorporates #43. Hold final publication until the design owner supplies the remaining dispositions. No staging, paid hosting or live Google activity is authorized.
+
 ## Gate wave · 2026-11-05 22:29 UTC (23:29 Europe/Berlin)
 
 [PR #92](https://github.com/Maeximilion/MaexSocial/pull/92) merged at `e9083571d6bdc98e6f56b63873baf60220543730`; clean canonical main is synchronized. Its [#43 handover](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671135131), independent restore of 150 worktree/Git files and archive readback of the two complete transcripts were verified. #43 remains open for the media design disposition.
