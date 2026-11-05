@@ -34,7 +34,9 @@ Documentation maintenance only. G1 remains ongoing and G2 product approval remai
 
 ## Open
 
-First, obtain the manual Claude COMMENT review of the current PR #47 head using the latest request and the [reviewer procedure](../review-workflow.md#manual-claude-review-reviewer-side). Verify its SHA, author and published URL, then triage concrete findings. A mention launches no review action in this repository. Keep the PR unmerged while review is pending.
+Continuation note (2026-11-05, after PR #51 merged): first inspect the live PR head and its published reviews. A push or trusted mention now starts hosted review work. Let those jobs finish, then obtain the required local Claude COMMENT review once for the current head and latest request. Use the coordinator for merge order. The steps and prompt below describe the earlier checkpoint.
+
+At the original checkpoint: obtain the manual Claude COMMENT review of the current PR #47 head using the latest request and the [reviewer procedure](../review-workflow.md#manual-claude-review-reviewer-side). Verify its SHA, author and published URL, then triage concrete findings. At that checkpoint the hosted Action had not merged. Keep the PR unmerged while review is pending.
 
 After each later push, rerun affected checks and post a new review request. Once this PR's review is published and findings are handled, resolve the task-number collision and begin the separately scoped cross-model review-policy task on a branch based on this task branch (or updated main after merge). Include the newly merged `CLAUDE.md` platform entry points and `docs/tooling/agent-workflow.md` in its discovery: they also contain Astra-only review instructions.
 

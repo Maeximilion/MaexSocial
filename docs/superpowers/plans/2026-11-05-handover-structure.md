@@ -1,6 +1,6 @@
 # Handover Structure Implementation Plan
 
-**Goal:** Preserve complete session handovers and stable lane briefs before MS-014.
+**Goal:** Preserve complete session handovers and stable lane briefs before the separate review-policy task.
 
 **Architecture:** Markdown-only changes reuse the existing handover command and status index. No new tooling or dependencies.
 
@@ -11,11 +11,11 @@
 ## Scope and verification
 
 - Add `docs/handovers/README.md` with both kinds, five briefs and all required template fields.
-- Add the supplied review brief at `docs/handovers/review-workflow.md`, preserving its manual procedure and replacing its Start message exactly as requested. The external source stays in Documents until this PR merges, as instructed by the owner.
+- Add the supplied review brief at `docs/handovers/review-workflow.md`, preserving its manual procedure and the exact Start text supplied by the owner. Current restart instructions live in the session handover.
 - Update `.claude/commands/handover.md`, `docs/12_CLAUDE_CODE_PLAYBOOKS.md`, `docs/README.md` and the root `README.md` folder map.
-- Record this session in a new dated `docs/handovers/sessions/` file and one linked line in `docs/01_STATUS.md`; keep earlier briefs unchanged.
+- Record this session in a new dated `docs/handovers/sessions/` file and a permanent sessions-folder pointer in `docs/01_STATUS.md`; keep earlier briefs unchanged.
 - Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`. Existing tooling needs no code changes or new mirrored documentation tests.
-- Commit, push and open the requested PR with `Closes #45`. Request Claude review using the supplied procedure; wait for its publication before MS-014. No merge or new agent session is part of this step.
+- Commit, push and open the requested PR with `Closes #45`. Request Claude review using the supplied procedure; wait for its publication before the separate review-policy task. No merge or new agent session is part of this step.
 
 ## Review focus
 
