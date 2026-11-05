@@ -4,7 +4,7 @@ Task IDs are stable across documents, issues, branches and pull requests. Issue 
 
 ## Planning maturity
 
-The product goals, stage sequence, gate outcomes, task dependencies and stage-level acceptance criteria are defined. The foundation is delivered. G1 discovery is underway with one bounded static REA report completed.
+The product goals, stage sequence, gate outcomes, task dependencies and stage-level acceptance criteria are defined. The foundation is delivered. G1 discovery has a bounded [Codex static report](research/codex-rea.md) and an independent [Claude walkthrough](research/claude-rea.md) under review.
 
 MS-008 will turn the research synthesis into an owner-approved product design. MS-009 will specify the first slice's files, contracts, data changes, acceptance tests and rollout. Those deliverables are future work. MS-010–012 currently describe stage objectives and must be decomposed into independently verifiable implementation tasks after the relevant design is approved. Their issue existence does not make them executable specifications.
 
@@ -12,7 +12,7 @@ The first release should name one customer journey, supported channel and operat
 
 | ID | Gate | Task and deliverable | Depends on | State |
 |---|---|---|---|---|
-| [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | Repository, Project, templates, workflows, docs and handovers verified on GitHub | — | Done |
+| [MS-001](https://github.com/Maeximilion/MaexSocial/issues/1) | G0 | [Foundation design](superpowers/specs/2026-11-04-foundation-design.md) delivered in [PR #19](https://github.com/Maeximilion/MaexSocial/pull/19) | — | Done |
 | [MS-002](https://github.com/Maeximilion/MaexSocial/issues/2) | G1 | Public SocialEdge product inventory with sources, dates and evidence class | — | In progress |
 | [MS-003](https://github.com/Maeximilion/MaexSocial/issues/3) | G1 | Codex REA report with target identity, reproducible steps, evidence IDs and coverage limits | MS-001 research brief | Done for bounded static scope, runtime gap documented |
 | [MS-004](https://github.com/Maeximilion/MaexSocial/issues/4) | G1 | Independent Claude Code REA report using the same comparison questions | MS-001 research brief | In review; read-only authenticated walkthrough done, gaps listed |
@@ -26,7 +26,9 @@ The first release should name one customer journey, supported channel and operat
 | [MS-012](https://github.com/Maeximilion/MaexSocial/issues/12) | G5 | Bounded autonomous account operation with stop, audit and supervised pilot evidence | MS-010, MS-011 where media is enabled | Blocked |
 | [MS-013](https://github.com/Maeximilion/MaexSocial/issues/30) | G2 | Approved public registration/login, customer isolation and separate platform-admin access design | MS-007, coordinated with MS-008 | Blocked |
 | [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) | G2 | Approved upload, processing-isolation and safe-delivery design with executable acceptance mapping | MS-007, coordinated with MS-008 and MS-013 | Blocked |
-| [MS-015](https://github.com/Maeximilion/MaexSocial/issues/49) | Maintenance | [Repository anatomy assessment](superpowers/specs/2026-11-05-repository-anatomy-review.md): verify the reference kit, assess all candidates and separate owner decisions before implementation | Owner-supplied kit; no product-gate change | In progress |
+| [MS-015](https://github.com/Maeximilion/MaexSocial/issues/49) | Maintenance | [Repository anatomy assessment](superpowers/specs/2026-11-05-repository-anatomy-review.md): verify the reference kit, assess all candidates and separate owner decisions before implementation | Owner-supplied kit; no product-gate change | Done in [PR #52](https://github.com/Maeximilion/MaexSocial/pull/52) |
+
+[Issue #63](https://github.com/Maeximilion/MaexSocial/issues/63) implements the [approved manual anatomy procedure](superpowers/specs/2026-11-05-reusable-repository-anatomy-design.md) from that assessment.
 
 ## Definitions of done
 
@@ -45,3 +47,5 @@ MS-008 and MS-009 define only the next implementable release in detail. Later ta
 MS-013 resolves the role/action matrix, administrator provisioning, registration/verification, MFA, sessions/recovery and tenant enforcement. Map accepted [ACCESS-01–14 cases](17_ACCESS_SECURITY.md) into MS-009, then verify the relevant release cases before externally accessible customer operation. The initial requirements document does not complete MS-013.
 
 MS-014 resolves allowed formats, numerical limits, quarantine, media-worker authority/isolation, delivery headers, URL retrieval and signed-link revocation. Map [UPLOAD-01–10](security/uploads.md) into MS-009 and the relevant G3/G4 tasks. Foundation [#42](https://github.com/Maeximilion/MaexSocial/issues/42) adds repository-artwork checks and agent tooling only; its completion does not complete MS-014 or prove upload runtime safety.
+
+[Maintenance issue #56](https://github.com/Maeximilion/MaexSocial/issues/56) limits advisory checks to explicit `/start` and `/task`, pauses the recurring automation, enables Code Autopilot/Caveman, and registers complementary Ponytail/Superpowers workflows. This changes development tooling only, not product gates. See [skill roles and activation boundaries](tooling/development-skills.md).

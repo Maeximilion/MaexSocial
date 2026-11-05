@@ -16,7 +16,7 @@ Upload prerequisite — Include [MS-014 / #43](https://github.com/Maeximilion/Ma
 
 Open — Confirm G1 evidence and the actual G2 decision before application scaffolding.
 
-Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code-autopilot and caveman remain disabled. Code-autopilot's GPT/Codex compatibility remains unverified.
+Lessons — Foundation checks establish repository health. Live API capability, content quality and autonomous publication each need their own proof. Code Autopilot and Caveman are explicitly enabled; preserve the [development skill roles and activation limits](../tooling/development-skills.md).
 
 ## Required plan
 
@@ -30,4 +30,4 @@ The first slice must exercise real business flow with synthetic data and authori
 
 ## Start prompt for the build chat
 
-Begin MaexSocial design/build from the current repository state. Read root instructions, docs/01_STATUS.md, docs/research/synthesis.md and the approved product design if present. Work through MS-008 and MS-009 with Superpowers before MS-010. Verify actual G2 approval and available provider access. Implement the approved first slice through normal entry points, run its acceptance checks and obtain gpt-6-astra high review on the current head. Keep code-autopilot and caveman disabled.
+Begin MaexSocial design/build from the current repository state. Read root instructions, docs/01_STATUS.md, docs/research/synthesis.md and the approved product design if present. Work through MS-008 and MS-009 with Superpowers before MS-010. Verify actual G2 approval and available provider access. Implement the approved first slice through normal entry points, run its acceptance checks and obtain gpt-6-astra high review on the current head. Use the enabled Code Autopilot/Caveman skills under the current repository rules.

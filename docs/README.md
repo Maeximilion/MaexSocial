@@ -2,6 +2,11 @@
 
 Start with [status](01_STATUS.md), then the [project charter](00_PCF.md) and [work packages](07_WORKPACKAGES.md). Documents marked provisional contain questions and proposed boundaries for G2, not implemented application behavior.
 
+- **Follow delivery:** [Work packages](07_WORKPACKAGES.md) → [Project operations](16_GITHUB_PROJECT.md) → [session handovers](handovers/README.md).
+- **Contribute a change:** [Contribution guide](../CONTRIBUTING.md) → [PR template](../.github/PULL_REQUEST_TEMPLATE.md) → [evaluation criteria](08_EVALS.md).
+- **Handle security:** [Local security operations](19_LOCAL_SECURITY.md) for repository safeguards, [private reporting policy](../SECURITY.md) for vulnerabilities.
+- **Inspect the repository:** In Codex request [source-command-anatomy](../.agents/skills/source-command-anatomy/SKILL.md). Claude Code uses the same [anatomy procedure](../.claude/commands/anatomy.md) as `/anatomy`. See the [approved design](superpowers/specs/2026-11-05-reusable-repository-anatomy-design.md).
+
 | Document | Purpose |
 |---|---|
 | [00 Project charter](00_PCF.md) | Scope, decisions, gates and acceptance evidence |

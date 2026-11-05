@@ -13,6 +13,17 @@ from scripts import check_repo, project_sync
 
 
 class FoundationTests(unittest.TestCase):
+    def test_manual_anatomy_command_wiring(self):
+        root = Path(__file__).resolve().parents[1]
+        skill = root / ".agents/skills/source-command-anatomy"
+        command = ".claude/commands/anatomy.md"
+        self.assertTrue((root / command).read_text(encoding="utf-8").startswith(
+            "---\ndisable-model-invocation: true\n---\n"
+        ))
+        self.assertIn(command, (skill / "SKILL.md").read_text(encoding="utf-8"))
+        policy = (skill / "agents/openai.yaml").read_text(encoding="utf-8")
+        self.assertRegex(policy, r"(?m)^policy:\n  allow_implicit_invocation: false$")
+
     def test_wrong_project_stops_before_mutation(self):
         with patch.object(project_sync, "gh", return_value={"data": {"node": {"id": "different-project"}}}) as cli:
             with self.assertRaisesRegex(RuntimeError, "MaexSocial Project"):

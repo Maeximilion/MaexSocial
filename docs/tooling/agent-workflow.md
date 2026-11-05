@@ -7,9 +7,9 @@ Checked against official documentation and local CLI capabilities on 2026-11-05:
 | Location | Purpose and loading boundary |
 |---|---|
 | `AGENTS.md` | Shared repository instructions; Codex reads applicable instruction files. Claude imports this file through `@AGENTS.md` in `CLAUDE.md` |
-| `.claude/commands/` | Eight existing manual workflows; canonical source for both platforms |
+| `.claude/commands/` | Manual workflows; canonical source for both platforms |
 | `.claude/skills/` | Claude's repository-check skill; Claude does not automatically discover `.agents/skills/` |
-| `.agents/skills/` | Codex repository-check skill and eight thin wrappers for the shared commands |
+| `.agents/skills/` | Codex repository-check skill and thin wrappers for the shared commands |
 | `.claude/agents/` | Read-only evidence researcher with a limited tool list and inherited Claude model; never an Astra code reviewer |
 | `.codex/agents/` | Reviewer definition selecting GPT-6 Astra high; actual session/model availability must be verified when invoked |
 | `.claude/rules/` | Path-scoped research/application guidance; shared obligations also live in AGENTS-linked documents for Codex |
@@ -19,10 +19,14 @@ Checked against official documentation and local CLI capabilities on 2026-11-05:
 
 Claude memory/skills/rules behavior: [memory and imports](https://code.claude.com/docs/en/memory), [skills](https://code.claude.com/docs/en/skills), [subagents](https://code.claude.com/docs/en/sub-agents). Codex behavior: [instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [skills](https://learn.chatgpt.com/docs/build-skills), [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
+## Repository anatomy
+
+Codex is the primary programmer here. Request [source-command-anatomy](../../.agents/skills/source-command-anatomy/SKILL.md) for a read-only overview or name a reader path, issue or PR. The wrapper resolves the worktree root and uses the [shared procedure](../../.claude/commands/anatomy.md). Claude Code reads that same file as `/anatomy`. In a Claude-first repository, start with its local instructions and map its own sources.
+
 ## Normal task flow
 
-1. Use `/start` in Claude or `source-command-start` in Codex. Read the issue, check branch/dirty state, fetch, then use a task worktree.
-2. Use the available Superpowers planning skills. Keep G1 evidence independent until the defined comparison checkpoint; use the bounded researcher for parallel primary-source research.
+1. Read the issue, check branch/dirty state, fetch, then use a task worktree. Run `/start` or `/task` and their Codex equivalents only when explicitly invoked; they alone trigger the advisory GitHub check.
+2. Select the [development skill roles](development-skills.md): Ponytail for small/medium work and reviews/audits, Superpowers for larger plans and execution, with Code Autopilot and Caveman enabled. Keep G1 evidence independent until the defined comparison checkpoint; delegation still needs its own authority.
 3. Implement only the authorized task. Use `repository-check` or `/eval` for full foundation commands and task-specific checks.
 4. Request a fresh review with actual `gpt-6-astra` and `high` settings, base/head and issue scope. The reviewer is instructed not to edit; its file does not grant a separate sandbox or change inherited permissions. Claude prepares the review handover for Codex instead of substituting a Claude model.
 5. Commit/push, maintain the linked PR/Project, fetch after PR changes and pull clean canonical main after merge. Record tests and limitations in the handover.
@@ -39,7 +43,7 @@ Committing configuration is not proof of activation. Start a new trusted project
 
 ## Plugins, MCP and local state
 
-Do not create `.claude/plugins/` to suggest automatic installation: Claude does not scan it. Add a plugin only for a demonstrated need, with its source/version, capabilities and actual loading method reviewed. The current Codex session exposes Superpowers; the local `claude plugin list --json` check listed only the user-scoped Ponytail installation. That does not establish Superpowers availability in a future Claude session. Code-autopilot and caveman remain disabled. [Plugin loading](https://code.claude.com/docs/en/plugins/loading#plugins-shared-through-a-repository)
+Do not create `.claude/plugins/` to suggest automatic installation: Claude does not scan it. Add a plugin only for a demonstrated need, with its source/version, capabilities and actual loading method reviewed. The owner now explicitly enables Code Autopilot and Caveman and requests project integration of Superpowers and Ponytail. Their roles, native registrations and activation boundaries are documented in [development skills](development-skills.md); the earlier disabled-skill state is superseded. [Plugin loading](https://code.claude.com/docs/en/plugins/loading#plugins-shared-through-a-repository)
 
 REA and media providers are not interchangeable with plugins. A future Claude project MCP definition belongs at root `.mcp.json`; Codex uses its own `mcp_servers` configuration. Use environment credential references, restricted tools and an explicit target/action scope. Inspect actual startup behavior: interactive Claude project approval is not a universal guarantee for print/SDK modes. No speculative MCP server, provider credential or paid integration is configured by this foundation change. [Claude MCP](https://code.claude.com/docs/en/mcp), [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
 

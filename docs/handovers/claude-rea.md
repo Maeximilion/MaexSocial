@@ -4,7 +4,7 @@ Status — G0 is complete. G1 is ongoing. The bounded Codex static report is del
 
 Artifacts — [Issue #4](https://github.com/Maeximilion/MaexSocial/issues/4), repository `Maeximilion/MaexSocial`, canonical checkout `C:/Users/Maxi/Documents/GitHub/MaexSocial`, target `https://app.socialedge.ai/de/dashboard`. Use branch `research/MS-004-claude-rea` in a separate worktree.
 
-Decisions — Establish SocialEdge's observed capabilities as evidence for MaexSocial. Keep evidence, interpretations and MaexSocial design proposals distinct. Code-autopilot and caveman remain disabled. Code-autopilot originated in Claude Code and its GPT/Codex compatibility is unverified.
+Decisions — Establish SocialEdge's observed capabilities as evidence for MaexSocial. Keep evidence, interpretations and MaexSocial design proposals distinct. Code Autopilot and Caveman are explicitly enabled with the documented Codex adaptations; follow [development skill roles](../tooling/development-skills.md).
 
 Gate — G1 requires independent evidence, comparison and accepted coverage limits. Product architecture and implementation planning receive Maxi's approval at G2.
 
@@ -67,4 +67,4 @@ Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `
 
 ## Reusable start prompt
 
-Work on MaexSocial issue #4, MS-004. Read repository instructions and docs/handovers/claude-rea.md from the latest main, then work in a separate task worktree. Plan and conduct your own SocialEdge research with REA before reading Codex's findings. Save a dated independent checkpoint, then compare it with docs/research/codex-rea.md and docs/research/evidence-codex.json using the prescribed claim matrix. Preserve the Codex lane. Produce a sanitized Claude report and evidence manifest, separating observed facts from MaexSocial design proposals. Ask for any missing runtime access/action scope before that scenario. Follow the PR and verification rules, keep code-autopilot/caveman disabled, and deliver research with explicit coverage limits.
+Work on MaexSocial issue #4, MS-004. Read repository instructions and docs/handovers/claude-rea.md from the latest main, then work in a separate task worktree. Plan and conduct your own SocialEdge research with REA before reading Codex's findings. Save a dated independent checkpoint, then compare it with docs/research/codex-rea.md and docs/research/evidence-codex.json using the prescribed claim matrix. Preserve the Codex lane. Produce a sanitized Claude report and evidence manifest, separating observed facts from MaexSocial design proposals. Ask for any missing runtime access/action scope before that scenario. Follow the PR and verification rules, use the enabled Code Autopilot/Caveman skills under the current repository rules, and deliver research with explicit coverage limits.

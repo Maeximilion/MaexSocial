@@ -10,7 +10,7 @@ Gate — G1 closes with reconciled evidence and explicitly accepted coverage lim
 
 Open — Verify actual completion of MS-002–006 before claiming a complete synthesis.
 
-Lessons — Source claims, static observations and runtime behavior establish different facts. Claude contributes its own observations before comparing Codex's report. Code-autopilot and caveman remain disabled, with code-autopilot's GPT/Codex compatibility unverified.
+Lessons — Source claims, static observations and runtime behavior establish different facts. Claude contributes its own observations before comparing Codex's report. Code Autopilot and Caveman are explicitly enabled; follow [development skill roles and activation limits](../tooling/development-skills.md).
 
 ## Working directory and inputs
 
