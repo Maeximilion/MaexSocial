@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## Failed API probe · 2026-11-05 23:33 UTC
+
+[#103](https://github.com/Maeximilion/MaexSocial/pull/103) merged at `b0db9568a6573dc6ab6f570bbcbc90f9fba90ee3`; its work chat was archived after verified handover, restoration and archive readback. The [probe run](https://github.com/Maeximilion/MaexSocial/actions/runs/42129500055) used Opus 5.5 / high but returned no structured result, 0 model usage and an estimated USD 0. The [failure notice](https://github.com/Maeximilion/MaexSocial/pull/60#issuecomment-6672212183) is not review completion. The workflow was disabled again. The owner confirms available credit and the USD 75 monthly cap. The actual failure reason is unknown. [Anthropic's credit FAQ](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans) distinguishes direct API applications from the Claude Code GitHub Action for promotional credit; this does not establish the owner's funding type.
+
+[#104](https://github.com/Maeximilion/MaexSocial/issues/104) owns the narrowly scoped direct Messages API replacement, safe failure reporting and unchanged review publisher. Its work chat was [reserved](https://github.com/Maeximilion/MaexSocial/issues/104#issuecomment-6672270052) against archived #103 and [confirmed](https://github.com/Maeximilion/MaexSocial/issues/104#issuecomment-6672287811). Two product owners (#9, #30) remain paused. Keep the independent Astra/high and Codex fallback until a real, complete Claude result including the known line defect on #60 is verified.
+
 ## API review verification · 2026-11-05 23:15 UTC
 
 Maxi issued the `API` control and confirmed that the Anthropic workspace monthly spend limit is now **USD 75**, adjustable by the owner. GitHub lists the repository Actions secret `ANTHROPIC_API_KEY`. No credential value was read. Main still uses subscription OAuth and the workflow remains disabled. A historical hosted run used Sonnet 5.5; no explicit effort was configured. This is not evidence of API authentication.
