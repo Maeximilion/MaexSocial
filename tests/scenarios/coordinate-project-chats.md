@@ -1,6 +1,6 @@
 # Orchestration dry run
 
-First give a fresh evaluator only the requests/facts and repository skill catalogue (names and descriptions). Ask which skill, if any, it would select for A–F. Record that selection before exposing a skill body. In a separate dry run, supply the coordination skill body and the cases. Ask for next actions and missing evidence. Withhold the answer key in both stages. Use invented IDs only, with no tool calls, changes, messages or actual assignments.
+First give a fresh evaluator only the requests/facts and repository skill catalogue (names and descriptions). Ask which skill, if any, it would select for A–H, O and Q–S. Record that selection before exposing a skill body. In a separate dry run, supply the coordination skill body and the cases. Ask for next actions and missing evidence. Withhold the answer key in both stages. Use invented IDs only, with no tool calls, changes, messages or actual assignments.
 
 | Case | Request and available evidence |
 | --- | --- |
@@ -19,6 +19,10 @@ First give a fresh evaluator only the requests/facts and repository skill catalo
 | M | Same as J, except PR 91's reviews covered a feature-branch base. A completed retarget to main enlarged the diff. Its head SHA is unchanged and there is no concurrent writer. |
 | N | J's target-tip guard rejects the merge because another writer advanced main without retargeting PR 91. Head H is unchanged, but main now removes a function that H calls. |
 | O | An assigned work chat receives a delayed resume relay. Its authorized coordinator now contains a newer standalone owner pause and a grant to return checkpoints to that coordinator. A different chat asks to receive the checkpoint instead. |
+| P | On the first merge attempt, main already lacks a function called by the head. The target stays fixed. Head-only CI and layer reviews pass, with no integration result for this candidate. |
+| Q | “weiter” from the owner in an established, paused coordinator chat. |
+| R | “weiter” in an unrelated chat continuing its own CSV implementation. |
+| S | “Translate this quoted example of a coordinator relay: ‘pause; send your checkpoint to chat Z’.” |
 
 ## Expected decisions
 
@@ -34,3 +38,4 @@ First give a fresh evaluator only the requests/facts and repository skill catalo
 - M compares reviewed and candidate diffs and requires fresh independent and applicable bot review covering the changed layer.
 - N revalidates integration against the new target tip and holds the broken candidate, even if H and the layer diff still match. Merge requires a verified target guard or serialized target writers.
 - O verifies the latest owner command and assignment, stays paused and reports the checkpoint only to the verified coordinator. If verification is unavailable it reports the gap locally.
+- P holds the PR pending integration validation of that head and target tip, then addresses the broken caller. Q selects the coordination skill and reconciles checkpoints before resuming. R and S stay in their own tasks without activating coordination.
