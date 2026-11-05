@@ -332,6 +332,10 @@ class SecretHooksTest(unittest.TestCase):
         token = "gl" + "c_" + secrets.token_hex(10) + "/" + secrets.token_hex(10)
         self.assert_destination_blocked(token)
 
+    def test_push_rejects_padded_secret_before_trailing_ref_components(self):
+        token = "gl" + "c_" + secrets.token_hex(10) + "/" + secrets.token_hex(10) + "="
+        self.assert_destination_blocked(token + "/topic/subtopic")
+
     def assert_destination_blocked(self, token):
         remote = Path(self.temp.name) / "remote.git"
         self.git("init", "--bare", "-q", str(remote))
