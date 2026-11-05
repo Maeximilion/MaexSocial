@@ -26,7 +26,7 @@ FIELDS_QUERY = """query($id:ID!, $after:String) {
 ITEMS_QUERY = """query($id:ID!, $after:String) {
   node(id:$id) { id ... on ProjectV2 {
     items(first:100, after:$after) {
-      nodes { id content { ... on Issue { url } ... on PullRequest { url } }
+      nodes { id isArchived content { ... on Issue { url } ... on PullRequest { url } }
         fieldValues(first:100) {
           nodes { ... on ProjectV2ItemFieldSingleSelectValue {
             name field { ... on ProjectV2SingleSelectField { name } }
@@ -37,6 +37,17 @@ ITEMS_QUERY = """query($id:ID!, $after:String) {
       pageInfo { hasNextPage endCursor }
     }
   } }
+}"""
+
+MEMBERSHIP_QUERY = """query($id:ID!, $after:String) {
+  node(id:$id) { id
+    ... on Issue { projectItems(first:100, after:$after, includeArchived:true) { ...Memberships } }
+    ... on PullRequest { projectItems(first:100, after:$after, includeArchived:true) { ...Memberships } }
+  }
+}
+fragment Memberships on ProjectV2ItemConnection {
+  nodes { id isArchived project { id } }
+  pageInfo { hasNextPage endCursor }
 }"""
 
 VALUES_QUERY = """query($id:ID!, $after:String) {
@@ -90,6 +101,10 @@ def connection_nodes(query, node_id, connection, after=None):
         if not node or node["id"] != node_id or connection not in node:
             raise RuntimeError("The credential cannot read the expected MaexSocial Project connection.")
         page = node[connection]
+        if not isinstance(page, dict) or not isinstance(page.get("nodes"), list) or not isinstance(
+            (page.get("pageInfo") or {}).get("hasNextPage"), bool
+        ):
+            raise RuntimeError(f"GitHub returned an incomplete {connection} page.")
         nodes.extend(page["nodes"])
         if not page["pageInfo"]["hasNextPage"]:
             return nodes
@@ -110,10 +125,39 @@ def project_inventory():
             if not cursor:
                 raise RuntimeError("GitHub returned a missing field-value pagination cursor.")
             field_values.extend(connection_nodes(VALUES_QUERY, item["id"], "fieldValues", after=cursor))
-        for value in field_values:
-            if (value.get("field") or {}).get("name"):
-                item[value["field"]["name"].lower()] = value["name"]
+        item.update(managed_values(field_values))
     return [field for field in fields if "name" in field], items
+
+
+def managed_values(values):
+    return {
+        value["field"]["name"].lower(): value["name"]
+        for value in values if (value.get("field") or {}).get("name") in ("Status", "Gate", "Priority")
+    }
+
+
+def lookup_membership(record):
+    try:
+        memberships = connection_nodes(MEMBERSHIP_QUERY, record["node_id"], "projectItems")
+        for item in memberships:
+            if not item or not (item.get("project") or {}).get("id"):
+                raise RuntimeError("GitHub returned an unreadable Project membership")
+            if item["project"]["id"] == PROJECT_ID:
+                if not item.get("id") or not isinstance(item.get("isArchived"), bool):
+                    raise RuntimeError("GitHub returned an incomplete Project item")
+                if not item["isArchived"]:
+                    item.update(managed_values(connection_nodes(VALUES_QUERY, item["id"], "fieldValues")))
+                return item
+    except (RuntimeError, KeyError, TypeError) as error:
+        raise RuntimeError(f"Read Project membership for {record['html_url']}: {error}") from error
+    return None
+
+
+def mutate(query, action, url, **variables):
+    try:
+        return graphql(query, project=PROJECT_ID, **variables)
+    except RuntimeError as error:
+        raise RuntimeError(f"{action} for {url}: {error}") from error
 
 
 def labels_of(record):
@@ -180,7 +224,11 @@ def reconcile():
         url = record["html_url"]
         item = by_url.get(url)
         if item is None:
-            item = graphql(ADD_ITEM, project=PROJECT_ID, content=record["node_id"])["addProjectV2ItemById"]["item"]
+            item = lookup_membership(record)
+        if item is None:
+            item = mutate(ADD_ITEM, "Add Project item", url, content=record["node_id"])["addProjectV2ItemById"]["item"]
+        if item.get("isArchived"):
+            continue
         status = desired_status(record, is_pr, active_issue_numbers)
         for name, desired in (("Status", status), ("Gate", desired_gate(record)), ("Priority", desired_priority(record))):
             field = by_name.get(name)
@@ -190,7 +238,7 @@ def reconcile():
             # A cancellation must clear a stale Done status after a reopen/close cycle.
             if name == "Status" and desired is None:
                 if current:
-                    graphql(CLEAR_VALUE, project=PROJECT_ID, item=item["id"], field=field["id"])
+                    mutate(CLEAR_VALUE, f"Clear {name}", url, item=item["id"], field=field["id"])
                 continue
             if not desired:
                 continue
@@ -198,7 +246,7 @@ def reconcile():
             if option is None:
                 raise RuntimeError(f"Project field {name} has no option for {desired}")
             if current != option["name"]:
-                graphql(UPDATE_VALUE, project=PROJECT_ID, item=item["id"], field=field["id"], option=option["id"])
+                mutate(UPDATE_VALUE, f"Update {name}", url, item=item["id"], field=field["id"], option=option["id"])
     print(f"Reconciled {len(issues)} issues and {len(prs)} pull requests. Iteration assignments preserved.")
 
 
