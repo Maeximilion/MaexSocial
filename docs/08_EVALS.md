@@ -6,7 +6,7 @@ Foundation CI validates repository artifacts and automation. It does not measure
 
 | Check | Covers | Limit |
 |---|---|---|
-| `foundation` (required) | Markdown links/JSON, Python regression cases and executable Node metadata/maintenance tests | No deployed application or provider behavior |
+| `foundation` (required) | Markdown links, JSON/TOML syntax, narrow repository SVG policy, Python hook/artwork regressions and executable Node metadata/maintenance tests | No deployed application, upload sanitizer or provider behavior |
 | `metadata` (required) | Conventional Commit title and task reference; authenticated same-repository Dependabot PRs may be their own maintenance task | No code correctness claim |
 | CodeQL default setup | Static analysis of Python tooling and GitHub Actions | Findings require triage; not login, isolation or penetration testing |
 | Secret scanning + push protection | Supported secret patterns and supported pushes | Does not detect every credential or replace credential handling |
@@ -14,6 +14,8 @@ Foundation CI validates repository artifacts and automation. It does not measure
 | Maintenance / Project reconciliation | Assignment, task metadata and board status | Green automation does not approve a product gate |
 
 Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`. The metadata tests execute the workflow's actual inline script. They cover trusted bots, humans, fork/deleted repositories, spoofed identity/actor, task links and invalid titles. No extra test framework or package installation is required.
+
+Artwork tests accept the existing originals and reject hostile SVG fixtures without rendering them. Hook tests exercise bounded input, Stop-loop handling, checker failures/timeouts and configured command paths. Direct execution is not proof that a running Claude/Codex session loaded or trusted a hook; verify that separately using the [tooling guide](tooling/agent-workflow.md).
 
 Maintenance tests exercise the actual API-only workflow against controlled GitHub responses, covering inherited metadata, preserved manual choices, dedicated dependency-task reuse and native Development linkage. Hosted verification must additionally establish the workflow token's real API permissions and Project reconciliation after generated changes.
 
@@ -24,6 +26,7 @@ The 2026-11-05 failure on dependency PRs was a missing body task reference, not 
 | Area | Tests and required evidence |
 |---|---|
 | Registration, login, administration | [ACCESS-01–14](17_ACCESS_SECURITY.md): server-side negative authorization, two-tenant isolation, admin privilege/MFA, verification/recovery and session replay tests, plus browser journeys |
+| Upload, processing and delivery | [UPLOAD-01–10](security/uploads.md): disguised/active formats, bounded decoding, quarantine, tenant isolation, delivery headers, processor authority, SSRF and lifecycle/recovery |
 | Core rules | Fast unit tests for authorization policy, publication states, idempotency and budget calculations |
 | API, data and jobs | Integration tests against an isolated test database; tenant tampering, concurrent writes, migrations and worker revocation |
 | Provider boundaries | Contract tests and deterministic failure simulation; timeout, 429/retry, expired credentials and ambiguous publish reconciliation |

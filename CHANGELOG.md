@@ -4,6 +4,8 @@
 
 - Add staged-commit and full-history push secret hooks, shared credential/capture ignore rules and verified local Codex hook/CLI guidance.
 - Require Dependabot P0/P1 and security/quality remediation before ordinary work, with dedicated chats and a local periodic priority check.
+- Add platform-native Claude/Codex skills, bounded agent roles, scoped rules and registered Stop checks; document loading/trust and plugin/MCP boundaries.
+- Guard repository SVG artwork with bounded allowlist validation and hostile-input regressions; record the separate MS-014 customer-upload security contract and proposed application anatomy.
 
 - Adopt Maxi's Deep Tech dark palette across brand artwork and README badges; document accessible color pairings for the future application.
 - Record customer-owned media uploads, AI creative production, calendar/recurrence and separately authorized advertising as G2 inputs, with bounded provider evidence and proposed acceptance cases.

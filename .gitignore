@@ -23,8 +23,9 @@ service_account*.json
 *.pfx
 id_rsa*
 id_ed25519*
-.claude/settings.local.json
-.claude/worktrees/
+**/CLAUDE.local.md
+**/.claude/settings.local.json
+**/.claude/worktrees/
 
 # Authenticated browser state and raw research captures belong in work/
 cookies*.json

@@ -1,10 +1,16 @@
-"""Check committed Markdown links and JSON syntax without external dependencies."""
+"""Check repository links, JSON/TOML syntax and inert SVG artwork without dependencies."""
 
 import json
 import re
 import subprocess
+import tomllib
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+
+if __package__:
+    from .svg_policy import check_svg
+else:
+    from svg_policy import check_svg
 
 
 LINK = re.compile(r"!?\[[^\]]*\]\((<[^>]+>|[^\s)]+)(?:\s+[^)]*)?\)")
@@ -29,12 +35,20 @@ def check(root):
     errors = []
     for name in sorted(set(paths) - {""}):
         path = root / name
+        if path.suffix.lower() in {".svg", ".svgz"}:
+            errors.extend(f"{name}: {error}" for error in check_svg(path))
+            continue
         if not path.is_file():
             errors.append(f"Missing tracked file: {name}")
             continue
         if path.suffix == ".json":
             try:
                 json.loads(path.read_text(encoding="utf-8-sig"))
+            except (ValueError, UnicodeError) as error:
+                errors.append(f"{name}: {error}")
+        if path.suffix.lower() == ".toml":
+            try:
+                tomllib.loads(path.read_text(encoding="utf-8"))
             except (ValueError, UnicodeError) as error:
                 errors.append(f"{name}: {error}")
         if path.suffix.lower() == ".md":
@@ -47,5 +61,5 @@ def check(root):
 
 if __name__ == "__main__":
     failures = check(Path(__file__).resolve().parents[1])
-    print("\n".join(failures) if failures else "Repository links and JSON are valid.")
+    print("\n".join(failures) if failures else "Repository links, JSON/TOML and SVG artwork are valid.")
     raise SystemExit(bool(failures))

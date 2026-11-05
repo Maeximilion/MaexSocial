@@ -21,3 +21,5 @@ Read `CLAUDE.md`, `docs/00_PCF.md`, `docs/01_STATUS.md` and the current issue be
 - When Maxi needs to enter a command or credential interactively, open a visible terminal yourself in the correct project/worktree directory. Prepare the exact command and use masked credential prompts. Do not ask him to locate the folder manually or put a secret in command history.
 
 Follow `docs/09_OPERATIONS_LEGAL.md` for public-source research and publication boundaries. Use `.claude/commands/handover.md` for session transitions.
+
+For agent configuration, read `docs/tooling/agent-workflow.md`. For application design or code, read `docs/02_ARCHITECTURE.md` and `docs/17_ACCESS_SECURITY.md`; for uploads, media processing, storage or URL retrieval also read `docs/security/uploads.md`. These shared requirements apply to both platforms; Claude's scoped rule files are an additional entry point, not Codex rules. Treat repository artwork checks as a narrow CI policy, never as an upload sanitizer.
