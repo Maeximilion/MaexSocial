@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import secrets
 import shutil
+import shlex
 import string
 import subprocess
 import sys
@@ -260,6 +261,10 @@ class SecretHooksTest(unittest.TestCase):
         stub = stub_dir / "python3"
         stub.write_bytes(b"#!/bin/sh\nexit 1\n")
         stub.chmod(0o755)
+        fallback = stub_dir / "python"
+        fallback.write_bytes(("#!/bin/sh\nexec " + shlex.quote(Path(sys.executable).as_posix())
+                              + ' "$@"\n').encode())
+        fallback.chmod(0o755)
         env = dict(os.environ, PATH=str(stub_dir) + os.pathsep + os.environ["PATH"])
         r = subprocess.run(["git", "hook", "run", "pre-commit"], cwd=self.repo, env=env,
                            capture_output=True, text=True)
