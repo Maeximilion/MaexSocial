@@ -26,3 +26,5 @@ Check all local links after relocation, every required restart field, duplicate 
 - Baseline: local links/JSON valid; 9 Python tests and 20 Node.js tests passed.
 - Scope decision: preserve the owner's brief as an assignment snapshot. Its requested MS-014 review task conflicts with existing upload-security issue #43; flag the collision without renaming or editing that issue in this PR.
 - Review follows the owner's explicit manual Claude procedure. No same-family review or automatic reviewer session substitutes for it.
+- Concurrent foundation PR #46 merged while this task was in progress. Incorporated main `b9e08c79415d85779bcac39c739f5d4a8ae9070e`, retaining its expanded folder map and this task's handover entries. Post-merge checks passed: repository validation, 29 Python tests and 20 Node.js tests.
+- Implementation is in draft PR #47. This session record and its one-line status link complete the documentation delivery; independent Claude review remains pending on the PR.
