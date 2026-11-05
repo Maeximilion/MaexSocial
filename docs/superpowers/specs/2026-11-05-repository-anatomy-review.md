@@ -1,6 +1,6 @@
 # MS-015 — Repository anatomy assessment
 
-Status: proposed assessment, 2026-11-05. [Task #49](https://github.com/Maeximilion/MaexSocial/issues/49). Codex authors; Claude independently reviews. This document proposes follow-up work; it does not change review policy, merge settings, hooks, history storage or any product gate. Implementation waits for the published Claude review and the owner decisions below.
+Status: assessment awaiting independent review, 2026-11-05. [Task #49](https://github.com/Maeximilion/MaexSocial/issues/49). Codex authors; Claude independently reviews. This document proposes follow-up work; it does not change review policy, merge settings, hooks, history storage or any product gate. O1 and O2 are accepted below; implementation waits for the published Claude review and triage of its findings.
 
 ## Recommendation and scope
 
@@ -14,7 +14,9 @@ Updated owner instruction received during this assessment (2026-11-05): workflow
 
 Further owner instruction: open normal PRs, not drafts, unless explicitly requested. PR #52 was verified non-draft before this update. Pending checks/review remain explicit limitations and never become merge authorization. From kit step 2 onward, continue authorized dependent work in stacked PRs rather than waiting for a lower PR to merge; the assessment/review and owner-decision prerequisite still applies.
 
-O2 accepted by Maxi on 2026-11-05: **allow merge commits for PR chains**. Squash may remain available for standalone PRs; rebase merging is not requested. This is recorded authority for the later settings/procedure change, not a claim of activation. Live settings were still squash-only during this assessment; implementation remains after the assessment review and remaining owner decision O1.
+O2 accepted by Maxi on 2026-11-05: **allow merge commits for PR chains**. Squash may remain available for standalone PRs; rebase merging is not requested. This is recorded authority for the later settings/procedure change, not a claim of activation. Live settings were still squash-only during this assessment.
+
+O1 accepted by Maxi on 2026-11-05: **use a static session-folder pointer**, replacing the mandatory new status line per session handover. Status is updated for actual gate, work-lane or blocker changes. The separate session records and their provenance/start requirements remain. This supersedes the earlier per-handover-link instruction for the later implementation; existing records are preserved. Both owner decisions are resolved; implementation still waits for the independent assessment review.
 
 ## Evidence and corrections
 
@@ -78,7 +80,7 @@ Line counts used Python `len(subprocess.check_output(['git', 'show', sha + ':' +
 
 | ID / candidate | Assessment | MaexSocial reason and resulting scope |
 |---|---|---|
-| H1: status changes only with state | **Adopt**, subject to resolving the earlier per-handover-link decision (O1). | Keep stage/gates, lane state, next action, blockers, evidence limits and decision/history pointers within roughly 80 lines. That is a readability target, not a line-count CI gate. PR checks/holds/results stay on the PR. Gate evidence remains mandatory. |
+| H1: status changes only with state | **Adopt**, with O1 now accepted by Maxi. | Keep stage/gates, lane state, next action, blockers, evidence limits and decision/history pointers within roughly 80 lines. That is a readability target, not a line-count CI gate. PR checks/holds/results stay on the PR. Gate evidence remains mandatory. |
 | H2: one changelog fragment per PR | **Adapt:** fragments for meaningful user/maintainer behavior; no compulsory fragment for every research correction or handover. | Unique issue-plus-topic names avoid collisions across multiple PRs on one issue. At a gate/release, a focused PR compiles deterministically and removes only the compiled fragments. Require tests for ordering, duplicates, invalid metadata and repeat execution; never erase uncompiled history. Preserve existing changelog content. |
 | H3: union-merged history/changelog | **Reject for the selected design.** | Git documents line preservation with potentially arbitrary ordering, not semantic correctness. Different edits can survive as contradictory records. GitHub conflict checks, Update branch and squash behavior remain untested; no hosted experiment or throwaway branches were created because this recommendation does not rely on union. Revisit only if unique files fail a demonstrated need. [Git merge attributes][git-union] |
 | H4: separate session files, optional status link | **Adopt the separation; adapt H from PR #47 after review.** | Retain its six sections, full work-head SHA, provenance and runnable start. Prefer a static folder pointer over a new shared index line every time (O1). Require unique topic suffixes: separate files alone do not guarantee different paths. Do not overwrite completed records; add a dated correction/successor when needed. |
@@ -184,18 +186,18 @@ This supports the ancestry concern but corrects “a later lower change causes c
 
 ## Owner decisions before implementation
 
-O1 remains open. O2 and the family-review decision are accepted; neither is asked again. A recorded choice and its technical activation remain separate facts.
+O1, O2 and the family-review decision are accepted; none is asked again. Recorded choices and their technical activation remain separate facts.
 
 | ID | Concrete choice | Recommendation and trade-off |
 |---|---|---|
-| O1 — session indexing versus shared-file writes | Keep the earlier rule of one status link per handover, or replace it with a static sessions-folder pointer and state-change-only status edits? | **Replace it.** Preserve PR #47's separate records and requirements; remove mandatory per-session writes only with explicit acceptance because that changes the earlier instruction. GitHub's folder listing plus descriptive unique filenames provides history without another shared log. Accepted gate/lane/blocker changes still update status. |
+| O1 — session indexing, accepted 2026-11-05 | Maxi selected **use a static folder pointer**. | Preserve PR #47's separate records and requirements; remove mandatory per-session status writes in the later implementation. GitHub's folder listing plus descriptive unique filenames provides history without another shared log. Actual gate/lane/blocker changes still update status. Existing historical links and records must be preserved during migration. |
 | O2 — merge method, accepted 2026-11-05 | Maxi selected **allow merge commits for PR chains**. | This supersedes the earlier squash-only recommendation for chains. Preserve optional squash for standalone PRs and keep rebase merging disabled. After the assessment gate, align repository flags, ruleset and ship procedure, then verify a bottom-only `gh stack merge <bottom PR> --merge --yes` under the actual controls. The chosen method still needs current-head checks/review; no setting changed in this assessment. |
 
 No outside-PR policy change is proposed: retain contact-before-contribution and manual triage. If automatic closure is desired later, ask the owner for allowed actors and message before implementation. No union experiment is needed for the recommended design; if union is selected instead, validate conflict detection, Update branch and the actual merge method using a dedicated authorized test, without changing main policy to make a test pass.
 
 ## Delivery sequence and acceptance
 
-1. **This assessment, MS-015/#49:** validate repository facts/links and kit 06, publish/update its normal PR, request manual Claude COMMENT review on the current head and stop. O2 is accepted; implementation waits for the review and O1. Windows extension installation is no longer an open decision: the tool is already installed and tested for linking.
+1. **This assessment, MS-015/#49:** validate repository facts/links and kit 06, publish/update its normal PR, request manual Claude COMMENT review on the current head and stop. O1/O2 are accepted; implementation waits for the review and findings triage. Windows extension installation is no longer an open decision: the tool is already installed and tested for linking.
 2. **Cross-model rules:** next available MS ID, checked at creation. Implement the R coverage list and exact-head manual procedure in a separate PR. Verify real review publication, attribution and later-head follow-up; do not invent findings to manufacture evidence. PR #47 is already a requested first live test, so don't describe a later PR as the first request ever.
 3. **Status/history/handovers:** reuse PR #47's work after review; reconcile its mandatory status line with O1. Add selected fragments/compiler/tests, migrate history without loss and update `/done`/`handover`. No duplicate competing handover implementation.
 4. **Docs:** selected entry-point links/read triggers/spec pointers/decision provenance; no bulk renaming.
@@ -210,7 +212,7 @@ The old external `MaexSocial-handover-review-workflow.md` has been replaced by k
 
 Repository inventory/counts, the listed GitHub observations, the isolated stack-link experiment and four local Git scenarios were performed for this assessment. The PR records actual foundation/unit-test results and the exact tested head. No Voice-Agent application tests, historical 313-merge replay, GitHub union experiment, live stack-merge experiment, personal permission audit, hook activation test or hosted Claude integration test was performed. No merge, setting change, application code or kit steps 2–6 is delivered here.
 
-Resume in Windows PowerShell with `codex -C "C:/Users/Maxi/.codex/worktrees/repository-anatomy-assessment/MaexSocial"`. First message: “Read AGENTS.md, CLAUDE.md, status and the MS-015 assessment including kit 06. Inspect issue #49 and PR #52's latest head and manual Claude review. O2 allows merge commits for PR chains but is not activated; keep steps 2–6 stopped until the review is published and O1 is answered. Preserve PR #47 and MS-014/#43. Windows gh-stack already works; stack #55 was a linking-only experiment closed unmerged. Do not recreate the issue or merge anything.”
+Resume in Windows PowerShell with `codex -C "C:/Users/Maxi/.codex/worktrees/repository-anatomy-assessment/MaexSocial"`. First message: “Read AGENTS.md, CLAUDE.md, status and the MS-015 assessment including kit 06. Inspect issue #49 and PR #52's latest head and manual Claude review. Maxi accepted O1 (static session-folder pointer) and O2 (merge commits for PR chains), neither implemented here. Keep steps 2–6 stopped until the review is published and findings are triaged. Preserve PR #47 and MS-014/#43. Windows gh-stack already works; stack #55 was a linking-only experiment closed unmerged. Do not recreate the issue or merge anything.”
 
 [S]: https://github.com/Maeximilion/MaexSocial/tree/b9e08c79415d85779bcac39c739f5d4a8ae9070e
 [V]: https://github.com/Maeximilion/Maex-Voice-Agent/tree/65ed60fa60ba137c884d05b5119d45ec7979ab53
