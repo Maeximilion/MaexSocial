@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add staged-commit and full-history push secret hooks, shared credential/capture ignore rules and verified local Codex hook/CLI guidance.
+
 - Adopt Maxi's Deep Tech dark palette across brand artwork and README badges; document accessible color pairings for the future application.
 - Record customer-owned media uploads, AI creative production, calendar/recurrence and separately authorized advertising as G2 inputs, with bounded provider evidence and proposed acceptance cases.
 
