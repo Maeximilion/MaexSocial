@@ -25,7 +25,7 @@ claude plugin install ponytail@ponytail --scope project
 claude plugin list --json
 ```
 
-[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). Do not bypass trust or copy versioned plugin caches into Git.
+[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). The declared Ponytail marketplace uses the v5.3.3 tag. The inspected official catalog selected Superpowers commit `bb92a77741419a4ab5f06e711a283343f1ada0c3`. Review plugin sources and executable hooks before updating. Both hosted Claude review jobs pass `--setting-sources user` so project plugin and hook settings apply to local development only.
 
 ## Local Code Autopilot and Caveman
 
