@@ -17,21 +17,34 @@
     ]
   },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
-    "ponytail@ponytail": true
+    "superpowers@maexsocial-reviewed": true,
+    "ponytail@maexsocial-reviewed": true,
+    "superpowers@claude-plugins-official": false,
+    "ponytail@ponytail": false
   },
   "extraKnownMarketplaces": {
-    "claude-plugins-official": {
+    "maexsocial-reviewed": {
       "source": {
-        "source": "github",
-        "repo": "anthropics/claude-plugins-official"
-      }
-    },
-    "ponytail": {
-      "source": {
-        "source": "github",
-        "repo": "DietrichGebert/ponytail",
-        "ref": "v5.3.3"
+        "source": "settings",
+        "name": "maexsocial-reviewed",
+        "plugins": [
+          {
+            "name": "superpowers",
+            "source": {
+              "source": "url",
+              "url": "https://github.com/obra/superpowers.git",
+              "sha": "bb92a77741419a4ab5f06e711a283343f1ada0c3"
+            }
+          },
+          {
+            "name": "ponytail",
+            "source": {
+              "source": "url",
+              "url": "https://github.com/DietrichGebert/ponytail.git",
+              "sha": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846"
+            }
+          }
+        ]
       }
     }
   }

@@ -15,7 +15,7 @@ Use one primary workflow for a task. Code Autopilot supplies execution disciplin
 
 ## Native project integration
 
-Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine. For a fresh Ponytail installation, run these commands from the repository root:
+Codex: `.codex/config.toml` enables the installed `superpowers@openai-curated-remote` and `ponytail@ponytail` packages. The repository `.agents/skills/development-workflow` entrypoint points here. Install the packages through Codex's plugin interface on a new machine. For a fresh Ponytail installation, run these commands from the root of the persistent canonical checkout containing this catalog. Codex saves its absolute path, so the catalog must remain there after task worktrees are removed.
 
 ```text
 codex plugin marketplace add ./docs/tooling/ponytail-marketplace
@@ -24,15 +24,15 @@ codex plugin add ponytail@ponytail --json
 
 The [local catalog](ponytail-marketplace/.agents/plugins/marketplace.json) pins the plugin source to the reviewed 5.3.3 commit `96608e078b2d5ea607c5c3b8b5a54d1c1fba6846`. Before trusting hooks, check that the installed hook definitions and scripts match the `hooks/` directory at that commit. Recheck the source and its hooks when updating the pin. [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Superpowers installation](https://github.com/obra/superpowers#installation).
 
-Claude Code: `.claude/settings.json` declares project enablement and marketplace sources for `superpowers@claude-plugins-official` and `ponytail@ponytail`; `.claude/skills/development-workflow` points here. These use the native plugin loader, not a fake `.claude/plugins` folder. For a new clone, trust the project normally and install the declared plugins:
+Claude Code: `.claude/settings.json` declares project enablement and marketplace sources for `superpowers@maexsocial-reviewed` and `ponytail@maexsocial-reviewed`; `.claude/skills/development-workflow` points here. These use the native plugin loader, not a fake `.claude/plugins` folder. For a new clone, trust the project normally and install the declared plugins:
 
 ```text
-claude plugin install superpowers@claude-plugins-official --scope project
-claude plugin install ponytail@ponytail --scope project
+claude plugin install superpowers@maexsocial-reviewed --scope project
+claude plugin install ponytail@maexsocial-reviewed --scope project
 claude plugin list --json
 ```
 
-[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). The declared Ponytail marketplace uses the v5.3.3 tag. The inspected official catalog selected Superpowers commit `bb92a77741419a4ab5f06e711a283343f1ada0c3`. Review plugin sources and executable hooks before updating. The hosted Claude review job selects user settings and scrubs its subprocess environment. A separate step publishes the validated review against the reviewed head SHA.
+[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). The inline project catalog pins Ponytail to the same commit as Codex and pins Superpowers to reviewed upstream commit `bb92a77741419a4ab5f06e711a283343f1ada0c3`. For an existing installation, use the same project install commands above to select the pinned packages. Project settings disable their earlier marketplace IDs to avoid loading duplicate hooks. Review plugin sources and executable hooks before updating. The hosted Claude review job selects user settings and scrubs its subprocess environment. A separate step publishes the validated review against the reviewed head SHA.
 
 ## Local Code Autopilot and Caveman
 
@@ -50,4 +50,4 @@ Run the GitHub security/quality/Dependabot advisory check only when the user exp
 
 Separate saved configuration, native catalog discovery, script tests and observed model behavior. Existing sessions may retain old instructions; reload the client/session if discovery does not refresh. Do not claim automatic use in every client or a live workflow run from an installation result alone. Backups and targeted rollback are kept in the owner's local change register, outside this public repository.
 
-Observed on 2026-11-05: Codex's native `skills/list` reports one enabled canonical copy each of Code Autopilot and Caveman, disabled synchronized duplicates, the repository workflow entrypoint, Ponytail 5.3.3 and Superpowers 7.0.1 skills. Claude's plugin list reports project-enabled Superpowers 7.0.0 and Ponytail 5.3.3; its user skill junctions resolve to the same canonical sources. Router AST comparison permits only two updated status strings; seven isolated event/state comparisons preserve routing and pause behavior. The optional skill-creator validator could not run because local Python lacks PyYAML; native skill parsing/discovery succeeded. No new model session was launched to claim automatic behavior across all clients.
+Observed on 2026-11-05: Codex's native `skills/list` reports one enabled canonical copy each of Code Autopilot and Caveman, disabled synchronized duplicates, the repository workflow entrypoint, Ponytail 5.3.3 and Superpowers 7.0.1 skills. Before introducing the pinned project catalog, Claude's plugin list reported project-enabled Superpowers 7.0.0 and Ponytail 5.3.3; its user skill junctions resolve to the same canonical sources. Router AST comparison permits only two updated status strings; seven isolated event/state comparisons preserve routing and pause behavior. The optional skill-creator validator could not run because local Python lacks PyYAML; native skill parsing/discovery succeeded. No new model session was launched to claim automatic behavior across all clients.
