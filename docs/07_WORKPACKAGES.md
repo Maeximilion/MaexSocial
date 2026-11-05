@@ -29,7 +29,7 @@ The first release should name one customer journey, supported channel and operat
 
 ## Definitions of done
 
-[Maintenance issue #44](https://github.com/Maeximilion/MaexSocial/issues/44) adds local secret-prevention hooks and verifies native Codex hooks independently of product delivery and G1 acceptance. Installation, test boundaries and rollback are documented in [local security operations](19_LOCAL_SECURITY.md).
+[Maintenance issue #44](https://github.com/Maeximilion/MaexSocial/issues/44) adds local secret-prevention hooks and verifies native Codex hooks independently of product delivery and G1 acceptance. Security/quality and Dependabot P0/P1 checks are advisory only under the revised owner decision: report the need to address findings and continue requested tasks, without automatic remediation chats. Installation, test boundaries and rollback are documented in [local security operations](19_LOCAL_SECURITY.md).
 
 [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40) records the owner-requested [media library, calendar and optional advertising proposal](18_MEDIA_LIBRARY.md). Its gate/task mapping extends MS-005 and MS-007–013. Completing that documentation task does not complete those work packages, implement the feature or approve G2. Paid distribution remains distinct from generating advertising creative.
 
