@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 MODEL = "claude-opus-5-5"
-MAX_REQUEST_BYTES = 100_000
+MAX_REQUEST_BYTES = 150_000
 MAX_TOKENS = 8192
 MAX_RESPONSE_BYTES = 1024 * 1024
 TEXT = {"type": "string"}
@@ -78,16 +78,21 @@ def result_from(message, kind):
     return result
 
 
-def review(system, data, key, kind):
-    if not key or not key.isascii() or not key.isprintable() or key.strip() != key:
-        raise ReviewFailure("credential_missing_or_invalid")
+def request_body(system, data, kind):
+    """Serialize the complete request identically for preflight and transport."""
     fields = RESULT_FIELDS[kind]
     schema = {"type": "object", "additionalProperties": False, "required": list(fields), "properties": fields}
-    body = json.dumps({"model": MODEL, "speed": "standard", "service_tier": "standard_only",
+    return json.dumps({"model": MODEL, "speed": "standard", "service_tier": "standard_only",
                        "max_tokens": MAX_TOKENS, "system": system,
                        "messages": [{"role": "user", "content": data}],
                        "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": schema}}},
                       separators=(",", ":")).encode("ascii")
+
+
+def review(system, data, key, kind):
+    if not key or not key.isascii() or not key.isprintable() or key.strip() != key:
+        raise ReviewFailure("credential_missing_or_invalid")
+    body = request_body(system, data, kind)
     if len(body) > MAX_REQUEST_BYTES:
         raise ReviewFailure("input_budget")
     # HTTPSConnection does not follow redirects, consult proxy environment variables or retry.

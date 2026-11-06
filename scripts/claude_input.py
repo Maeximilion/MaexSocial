@@ -1,6 +1,7 @@
 """Shared Claude input preparation and read-only, pinned-revision preflight."""
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -8,10 +9,15 @@ import secrets
 import subprocess
 from pathlib import Path
 
+# Isolated Python (-I) excludes sibling imports; load only the trusted checkout's client.
+spec = importlib.util.spec_from_file_location("claude_messages", Path(__file__).resolve().with_name("claude_messages.py"))
+client = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(client)
+
 WORKFLOW = ".github/workflows/claude-review.yml"
 PROTECTED = {WORKFLOW, "scripts/claude_messages.py", "scripts/claude_input.py"}
-max_diff, max_body, max_request, max_title, max_name = 50_000, 6_000, 6_000, 1_000, 300
-prompt_budget = 90_000
+max_diff, max_body, max_request, max_title, max_name = 120_000, 6_000, 6_000, 1_000, 300
+prompt_budget = 140_000
 
 
 def api(path, accept=None):
@@ -111,10 +117,16 @@ def build_input(env, pull):
     if gaps:
         lines.append(f"The data is INCOMPLETE ({'; '.join(gaps)}). Review only the available data.")
     prompt = "\n".join(lines)
-    if escaped(prompt) + escaped(frames) > prompt_budget:  # unreachable with the limits above; fail visibly, never truncate silently
-        raise SystemExit("prepared input exceeds budget")
+    prompt_size = escaped(prompt) + escaped(frames)
+    request_size = len(client.request_body(prompt, frames, kind))
+    if prompt_size > prompt_budget:
+        gaps.append(f"prepared input exceeds {prompt_budget} escaped bytes")
+    if request_size > client.MAX_REQUEST_BYTES:
+        gaps.append(f"serialized request exceeds {client.MAX_REQUEST_BYTES} bytes")
     return {"head_sha": head, "base_sha": base, "gaps": "; ".join(gaps),
-            "diff_escaped_bytes": diff_size, "diff_limit": max_diff}, [prompt, frames]
+            "diff_escaped_bytes": diff_size, "diff_limit": max_diff,
+            "prompt_escaped_bytes": prompt_size, "prompt_limit": prompt_budget,
+            "request_bytes": request_size, "request_limit": client.MAX_REQUEST_BYTES}, [prompt, frames]
 
 
 def prepare(env):
@@ -138,7 +150,9 @@ def prepare(env):
     if out["workflow_changed"] == "false":
         details, payload = build_input(dict(env, HEAD_SHA=head, BASE_SHA=base), pull)
         out.update(head_sha=head, base_sha=base, gaps=details["gaps"])
-        if kind == "mention" or not details["gaps"]:
+        if ((kind == "mention" or not details["gaps"])
+                and details["prompt_escaped_bytes"] <= prompt_budget
+                and details["request_bytes"] <= client.MAX_REQUEST_BYTES):
             (Path(env["RUNNER_TEMP"]) / "claude-input.json").write_text(json.dumps(payload), "utf-8")
             out["ready"] = "true"
     return out
