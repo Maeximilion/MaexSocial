@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Protected workflow PR published · 2026-11-06 00:33 UTC
+
+[PR #110](https://github.com/Maeximilion/MaexSocial/pull/110) belongs to #109. Base `7287e0615772b5977b2cbdeb3347adba6695bb0e`, head `cb870a39333d4110fe9ba67059e6d06043e9548f`, hosted merge candidate `bc16fda4aab134e7aaf5daeab2b2bdd2fd6c0916`. The final independent GPT-6 Astra/high review covered all six files; it verified fixes to duplicate JSON keys and the historical diff fixture. The work chat reports 88 passing Python tests with one Windows skip and 20 passing Node tests. The [trusted workflow](https://github.com/Maeximilion/MaexSocial/actions/runs/42137539880) skipped the API step and [reported the skip](https://github.com/Maeximilion/MaexSocial/pull/110#issuecomment-6673295057). No paid API test or bot mention. Wait for hosted code and security verdicts and current candidate integration before any merge. #30/PR #106 and the #9 plan remain in their existing lanes. Start handover at 01:40 Europe/Berlin.
+
 ## Gate-wave evidence · 2026-11-06 00:23 UTC
 
 [Offline analysis of #106](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673074291) found all eight changed files and all 15 hunks in the prepared 49,210-byte input. Two different output failures leave no final Claude verdict. [The bounded #109 assignment](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673103849) removes duplicate model output for automatic reviews, preserves the main comment and inline findings, and distinguishes safe failure reasons. No paid retry or raised limit. A local fix or simulated test is not a completed hosted review.
