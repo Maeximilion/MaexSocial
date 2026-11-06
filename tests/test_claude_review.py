@@ -31,7 +31,7 @@ class ClaudeReviewTests(unittest.TestCase):
 
     def prepare(self, diff=b"fixture diff", *, mismatch=False, files=None, body="</pr-data>", request="", **env):
         pull = {"head": {"sha": "api-head", "ref": "feature"}, "base": {"sha": "api-base", "ref": "main"},
-                "title": "A change", "body": body, "changed_files": 1}
+                "title": "A change", "body": body, "changed_files": len(files) if files is not None else 1}
         event = self.output.with_name("event.json")
         event.write_text(json.dumps({"comment": {"body": request}}, ensure_ascii=False), encoding="utf-8")
         workflow = ".github/workflows/claude-review.yml"
@@ -112,6 +112,16 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertIn("Incomplete", body)
             self.assertIn(data["head_sha"], body)
 
+    def test_mention_can_answer_with_an_explicit_empty_diff_gap(self):
+        data, _ = self.prepare(b"", KIND="mention", request="What does the PR body say?")
+        self.assertEqual(data["ready"], "true")
+        self.assertIn("no reviewable diff", data["gaps"])
+        self.assertIn("INCOMPLETE", self.system)
+        result = {"summary": "The body describes the change.", "findings": [], "overflow": False}
+        body = self.post(0, KIND="mention", GAPS=data["gaps"], OUTPUT=json.dumps(result))
+        for expected in ["Incomplete", "no reviewable diff", result["summary"]]:
+            self.assertIn(expected, body)
+
     def test_binary_sections_are_not_reviewed_as_text(self):
         binary = b"diff --git a/logo.png b/logo.png\nBinary files a/logo.png and b/logo.png differ\n"
         patch = b"diff --git a/logo.png b/logo.png\nGIT binary patch\nliteral 3\nOPAQUE\n"
@@ -141,9 +151,9 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("cut", data["gaps"])
         self.assertIn("INCOMPLETE", data["prompt"])
         self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
-        body = self.post(0, GAPS=data["gaps"], OUTPUT='{"summary":"Partial result","findings":[]}')
+        body = self.post(0, GAPS=data["gaps"], OUTPUT='{"overflow":false,"findings":[]}')
         self.assertIn("Incomplete", body)
-        self.assertIn("Partial result", body)
+        self.assertIn("0 findings", body)
 
     def test_workflow_mismatch_skips_pr_events_without_attributing_a_change_to_the_pr(self):
         for event, kind in [("pull_request_target", "review"), ("issue_comment", "mention")]:
@@ -182,7 +192,7 @@ class ClaudeReviewTests(unittest.TestCase):
     def test_inline_review_targets_the_reviewed_commit_even_when_pr_advances(self):
         data, _ = self.prepare(HEAD_SHA="event-head", BASE_SHA="event-base")
         finding = {"path": "example.py", "line": 2, "side": "RIGHT", "body": "Missing argument"}
-        output = json.dumps({"summary": "One finding", "findings": [finding]})
+        output = json.dumps({"overflow": False, "findings": [finding]})
         for status in [0, 1]:
             with self.subTest(inline_status=status):
                 body = self.post(0, inline_status=status, HEAD_SHA=data["head_sha"], OUTPUT=output)
@@ -190,16 +200,30 @@ class ClaudeReviewTests(unittest.TestCase):
                 self.assertEqual(self.posted_review["event"], "COMMENT")
                 self.assertEqual(self.posted_review["comments"], [finding])
                 self.assertIn("event-head", body)
+                for detail in ["example.py", "line 2", "RIGHT", "Missing argument"]:
+                    self.assertIn(detail, body)
+                self.assertEqual(body.count("Missing argument"), 1)
                 if status:
                     for detail in ["rejected", "example.py", "line 2", "Missing argument"]:
                         self.assertIn(detail, body)
                     self.assertNotIn("diagnostic fixture", body)
 
     def test_post_distinguishes_success_from_empty_and_failed_results(self):
-        body = self.post(0, KIND="mention", OUTPUT='{"summary":"Reviewed fixture","findings":[]}')
+        body = self.post(0, KIND="mention", OUTPUT='{"summary":"Reviewed fixture","overflow":false,"findings":[]}')
         self.assertIn("Claude reply", body)
         self.assertIn("reviewed", body)
         self.assertIn("Reviewed fixture", body)
+        for kind in ("review", "mention"):
+            result = {"findings": [], "overflow": True}
+            if kind == "mention":
+                result["summary"] = "Request answered."
+            body = self.post(0, KIND=kind, OUTPUT=json.dumps(result))
+            self.assertIn("Incomplete", body)
+            self.assertIn("omitted", body)
+        body = self.post(0, OUTPUT='{"findings":[],"overflow":false}')
+        self.assertIn("0 findings", body)
+        self.assertNotIn("Incomplete", body)
+        self.assertIn("Failed", self.post(1, KIND="mention", OUTPUT='{"findings":[],"overflow":false}'))
         for value in ["", "malformed", "[]", "{}", '{"summary":"valid"}',
                       '{"summary":" ","findings":[]}', '{"summary":"valid","findings":{}}']:
             with self.subTest(value=value):
@@ -211,19 +235,40 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("Failed", body)
         self.assertNotIn("Stale success", body)
 
-    def test_60_fixture_through_transport_and_publisher(self):
+    def test_106_historical_diff_fits_without_clipping(self):
+        base = "075f68325d83acc9d6129b48fff792c9d37e1085"
+        head = "4a3e4ca909912e4073d3e1b61e035a7319a47eb0"
+        offline = os.environ | {"GIT_NO_LAZY_FETCH": "1"}
+        root = Path(__file__).resolve().parents[1]
+        for sha in (base, head):
+            probe = subprocess.run(["git", "rev-parse", "--verify", "--quiet", sha + "^{commit}"],
+                                   cwd=root, env=offline, capture_output=True)
+            if probe.returncode == 1:
+                self.skipTest("historical #106 objects unavailable in this checkout")
+            probe.check_returncode()
+        diff = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--no-color", "--abbrev=7",
+                                        "--src-prefix=a/", "--dst-prefix=b/", "-U3", base + "..." + head],
+                                       cwd=root, env=offline)
+        decoded = diff.decode("utf-8")
+        size = len(json.dumps(decoded)) - 2 + 5 * sum(decoded.count(c) for c in "<>&'")
+        self.assertEqual(size, 49_210)
+        paths = re.findall(r"^diff --git a/.+ b/(.+)$", decoded, re.M)
+        self.assertEqual(len(paths), 8)
+        self.assertEqual(len(re.findall(r"^@@ ", decoded, re.M)), 15)
+        data, _ = self.prepare(diff, BASE_SHA=base, HEAD_SHA=head, files=[{"filename": p} for p in paths])
+        self.assertEqual((data["ready"], data["gaps"], data["head_sha"]), ("true", "", head))
+        self.assertTrue(decoded in self.frames, "incomplete historical diff")
+        output = self.transport({"findings": [], "overflow": False})
+        body = self.post(0, HEAD_SHA=head, OUTPUT=json.dumps(output))
+        for expected in [head, "0 findings reported."]:
+            self.assertIn(expected, body)
+        self.assertNotIn("Incomplete", body)
+
+    def transport(self, result):
         from scripts import claude_messages as client
 
-        diff = (Path(__file__).with_name("fixtures") / "pr60.diff").read_bytes()
-        data, _ = self.prepare(diff=diff)
-        self.assertIn("return value % 2 == 1", self.frames)
-        self.assertNotIn("return value % 2 == 1", self.system)
-        self.assertNotIn("return value", self.output.read_text("utf-8"))
-        result = {"summary": "One parity bug.", "findings": [{"path": "tests/fixtures/claude_publication_probe.py",
-                  "line": 6, "side": "RIGHT", "body": "is_even(2) returns False."}]}
-        variation = {"summary": "One\u202fparity bug.", "findings": [result["findings"][0] | {"side": "Right"}]}
         response = {"type": "message", "role": "assistant", "model": client.MODEL, "stop_reason": "end_turn",
-                    "content": [{"type": "thinking", "thinking": "PRIVATE"}, {"type": "text", "text": json.dumps(variation)}],
+                    "content": [{"type": "thinking", "thinking": "PRIVATE"}, {"type": "text", "text": json.dumps(result)}],
                     "usage": {"input_tokens": 17, "output_tokens": 42, "speed": "standard"}}
         with patch.object(client, "HTTPSConnection") as connect:
             reply = connect.return_value.getresponse.return_value
@@ -242,16 +287,29 @@ class ClaudeReviewTests(unittest.TestCase):
             payload = json.loads(body)
             self.assertEqual(set(payload), {"model", "speed", "service_tier", "system", "messages", "max_tokens", "output_config"})
             self.assertEqual(payload["messages"], [{"role": "user", "content": self.frames}])
+            self.assertLessEqual(len(body), client.MAX_REQUEST_BYTES)
             self.assertEqual(payload["model"], "claude-opus-5-5")
             self.assertEqual(payload["speed"], "standard")
             self.assertEqual(payload["service_tier"], "standard_only")
             self.assertEqual(payload["output_config"]["effort"], "high")
             self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
+            self.assertEqual(set(payload["output_config"]["format"]["schema"]["required"]), {"findings", "overflow"})
             self.assertLess(client.MAX_REQUEST_BYTES * 4 + payload["max_tokens"] * 20, 1_000_000)
+        return output
+
+    def test_60_fixture_through_transport_and_publisher(self):
+        diff = (Path(__file__).with_name("fixtures") / "pr60.diff").read_bytes()
+        data, _ = self.prepare(diff=diff)
+        self.assertIn("return value % 2 == 1", self.frames)
+        self.assertNotIn("return value % 2 == 1", self.system)
+        self.assertNotIn("return value", self.output.read_text("utf-8"))
+        finding = {"path": "tests/fixtures/claude_publication_probe.py", "line": 6,
+                   "side": "RIGHT", "body": "is_even(2) returns False."}
+        output = self.transport({"overflow": False, "findings": [finding | {"side": "Right"}]})
         body = self.post(0, inline_status=0, HEAD_SHA=data["head_sha"], OUTPUT=json.dumps(output))
-        self.assertEqual(self.posted_review["comments"], result["findings"])
+        self.assertEqual(self.posted_review["comments"], [finding])
         self.assertEqual(self.posted_review["commit_id"], data["head_sha"])
-        self.assertIn(variation["summary"], body)
+        self.assertIn("is_even(2) returns False.", body)
         self.assertNotIn("PRIVATE", body)
 
     def test_workflow_runs_default_branch_client(self):

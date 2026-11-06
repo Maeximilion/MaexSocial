@@ -16,8 +16,8 @@ FINDING = {"type": "object", "additionalProperties": False,
            "required": ["path", "line", "side", "body"],
            "properties": {"path": TEXT, "line": {"type": "integer"},
                           "side": {"type": "string", "enum": ["LEFT", "RIGHT"]}, "body": TEXT}}
-SCHEMA = {"type": "object", "additionalProperties": False, "required": ["summary", "findings"],
-          "properties": {"summary": TEXT, "findings": {"type": "array", "items": FINDING}}}
+REVIEW_FIELDS = {"findings": {"type": "array", "items": FINDING}, "overflow": {"type": "boolean"}}
+RESULT_FIELDS = {"review": REVIEW_FIELDS, "mention": {**REVIEW_FIELDS, "summary": TEXT}}
 HTTP_ERRORS = {400: "invalid_request", 401: "authentication", 402: "billing", 403: "permission",
                404: "resource_unavailable", 413: "request_size", 429: "rate_or_spend_limit",
                500: "provider_error", 504: "provider_timeout", 529: "overloaded"}
@@ -27,14 +27,15 @@ class ReviewFailure(Exception):
     """Messages are fixed locally; never wrap external error text."""
 
 
-def result_from(message):
+def result_from(message, kind):
     if (not isinstance(message, dict) or message.get("type") != "message"
             or message.get("role") != "assistant" or message.get("model") != MODEL):
         raise ReviewFailure("invalid_envelope")
     stop = message.get("stop_reason")
     if stop != "end_turn":
-        raise ReviewFailure("output_truncated" if stop in ("max_tokens", "model_context_window_exceeded")
-                            else "refused" if stop == "refusal" else "unexpected_stop")
+        known_stops = {"max_tokens": "output_token_limit", "model_context_window_exceeded": "context_window_limit",
+                       "refusal": "refused"}
+        raise ReviewFailure(known_stops.get(stop, "unexpected_stop") if isinstance(stop, str) else "unexpected_stop")
     blocks = message.get("content")
     if (not isinstance(blocks, list) or any(not isinstance(b, dict) or b.get("type") not in
             ("thinking", "redacted_thinking", "text") for b in blocks)):
@@ -45,34 +46,40 @@ def result_from(message):
     try:
         result = json.loads(texts[0])
     except (ValueError, RecursionError):
-        raise ReviewFailure("invalid_schema") from None
+        raise ReviewFailure("invalid_result_json") from None
 
     def bounded(value, limit):
         return (isinstance(value, str) and 0 < len(value) <= limit and value.strip()
                 and all(c.isprintable() or unicodedata.category(c) == "Zs" or c in "\n\t\r" for c in value))
 
-    if (not isinstance(result, dict) or set(result) != {"summary", "findings"}
-            or not bounded(result["summary"], 4000) or not isinstance(result["findings"], list)
-            or len(result["findings"]) > 10):
-        raise ReviewFailure("invalid_schema")
+    if not isinstance(result, dict) or result.keys() != RESULT_FIELDS[kind].keys():
+        raise ReviewFailure("invalid_result_fields")
+    if type(result["overflow"]) is not bool:
+        raise ReviewFailure("invalid_overflow")
+    if kind == "mention" and not bounded(result["summary"], 4000):
+        raise ReviewFailure("invalid_summary")
+    if not isinstance(result["findings"], list) or len(result["findings"]) > 10:
+        raise ReviewFailure("invalid_findings")
     for f in result["findings"]:
         if (not isinstance(f, dict) or set(f) != {"path", "line", "side", "body"}
                 or not bounded(f["path"], 300) or not bounded(f["body"], 1000)
                 or type(f["line"]) is not int or not 1 <= f["line"] <= 2**31 - 1
                 or not isinstance(f["side"], str) or not f["side"].isascii()
                 or f["side"].upper() not in ("LEFT", "RIGHT")):
-            raise ReviewFailure("invalid_schema")
+            raise ReviewFailure("invalid_finding")
         f["side"] = f["side"].upper()
     return result
 
 
-def review(system, data, key):
+def review(system, data, key, kind):
     if not key or not key.isascii() or not key.isprintable() or key.strip() != key:
         raise ReviewFailure("credential_missing_or_invalid")
+    fields = RESULT_FIELDS[kind]
+    schema = {"type": "object", "additionalProperties": False, "required": list(fields), "properties": fields}
     body = json.dumps({"model": MODEL, "speed": "standard", "service_tier": "standard_only",
                        "max_tokens": MAX_TOKENS, "system": system,
                        "messages": [{"role": "user", "content": data}],
-                       "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": SCHEMA}}},
+                       "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": schema}}},
                       separators=(",", ":")).encode("ascii")
     if len(body) > MAX_REQUEST_BYTES:
         raise ReviewFailure("input_budget")
@@ -100,7 +107,7 @@ def review(system, data, key):
         message = json.loads(raw)
     except (ValueError, RecursionError):
         raise ReviewFailure("invalid_response_json") from None
-    result = result_from(message)
+    result = result_from(message, kind)
     if key in json.dumps(result, ensure_ascii=False):
         raise ReviewFailure("unsafe_result")
     usage = message.get("usage")
@@ -116,7 +123,7 @@ def main():
     try:
         folder = Path(os.environ["RUNNER_TEMP"])
         system, data = json.loads((folder / "claude-input.json").read_text("utf-8"))
-        result = review(system, data, os.environ.get("ANTHROPIC_API_KEY", ""))
+        result = review(system, data, os.environ.get("ANTHROPIC_API_KEY", ""), os.environ["KIND"])
         (folder / "claude-result.json").write_text(json.dumps(result), encoding="ascii")
     except ReviewFailure as error:
         detail = str(error)
