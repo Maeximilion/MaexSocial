@@ -1,6 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
 
+export async function withProbeView(db: Client, check: () => Promise<void>): Promise<void> {
+  let created = false;
+  try {
+    await db.query("CREATE MATERIALIZED VIEW pilot.saved AS SELECT 'retained synthetic fixture' AS value");
+    created = true;
+    await check();
+  } finally { if (created) await db.query('DROP MATERIALIZED VIEW pilot.saved'); }
+}
+
 export async function seedTenant(db: Client) {
   const tenant = randomUUID();
   const user = randomUUID();

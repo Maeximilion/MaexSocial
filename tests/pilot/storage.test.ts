@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { seedTenant, occurrence } from './fixtures.js';
+import { seedTenant, occurrence, withProbeView } from './fixtures.js';
 import { migrate } from '../../scripts/pilot-db.js';
 
 // Removing tenant FKs, immutable references or the unique creation key must fail these tests.
@@ -73,6 +73,11 @@ test('tenant references, immutable occurrence IDs and concurrent creation', asyn
     await assert.rejects(app.query('UPDATE pilot.invitations SET consumed_at=NULL WHERE id=$1', [invite]), { code: '23514' });
     await assert.rejects(migrate('down'), /Populated fixture/);
     assert.equal((await app.query('SELECT count(*)::int AS count FROM pilot.occurrences WHERE tenant_id=$1', [a.tenant])).rows[0].count, 3);
+    await owner.query("CREATE MATERIALIZED VIEW pilot.saved AS SELECT 'existing control' AS value");
+    try {
+      await assert.rejects(withProbeView(owner, async () => assert.fail('must not run')), { code: '42P07' });
+      assert.equal((await owner.query('SELECT value FROM pilot.saved')).rows[0].value, 'existing control');
+    } finally { await owner.query('DROP MATERIALIZED VIEW IF EXISTS pilot.saved'); }
     console.log('Tenant A/B references, generated immutable IDs, one durable concurrent occurrence, one attempt and versioned approval verified.');
   } finally { await app.end(); await owner.end(); }
 });
