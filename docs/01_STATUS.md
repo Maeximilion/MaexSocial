@@ -1,9 +1,9 @@
 # Project status
 
 - Status date — 2026-11-06
-- Stage — Bounded G2 accepted; local Task 1 implementation in progress under #114
+- Stage — Bounded G2 accepted; Task 1 merged; Task 2A activation/session prerequisite in progress under #117
 - Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06; #113 merged and annotated gate-g2 verified at `192d0c5`. G3–G5 open. #10/#82 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
-- Product implementation — #113 merged; #114 implements the accepted local environment and storage. Remaining slice tasks and external release are open. See the [fixture commands and evidence](../ops/local/README.md).
+- Product implementation — #113 and Task 1 / #118 merged. #117 owns the activation/session foundation; #123 Employee membership and #124 content approval depend on it. The local identity/email prerequisite is incomplete. See the [Task 2 plan](superpowers/plans/2026-11-06-task-2-deliveries.md), [checkpoint](handovers/sessions/2026-11-06-customer-activation-prerequisite.md) and [fixture commands](../ops/local/README.md). Remaining slice tasks and external release are open.
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
 - Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
@@ -21,7 +21,7 @@
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
 | Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. Maxi accepted G1 on 2026-11-05. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
 | Design and detailed plan, MS-008–009 | Local design and #112 plan accepted by the [owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454); #113 merged and #8/#9 closed | [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md), [local implementation plan](superpowers/plans/2026-11-05-ms-009-local-text-pilot.md) and [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) |
-| First slice, media and autonomy, MS-010–012 | MS-010 Task 1 in [PR #118](https://github.com/Maeximilion/MaexSocial/pull/118); Task 2 / #117 awaits #114. External release, media and autonomy remain gated | [Work packages and planning maturity](07_WORKPACKAGES.md) |
+| First slice, media and autonomy, MS-010–012 | MS-010 Task 1 merged in [PR #118](https://github.com/Maeximilion/MaexSocial/pull/118); Task 2A / #117 prepares activation/session, with #123/#124 queued behind it. Task 3 waits for all three. External release, media and autonomy remain gated | [Work packages](07_WORKPACKAGES.md), [Task 2 delivery plan](superpowers/plans/2026-11-06-task-2-deliveries.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
 | Local secret guards and Codex hooks | Maintenance implementation and verification; merge pending. Security/Dependabot P0/P1 checks are advisory and run only on explicit /start or /task; periodic automation paused. Repository Stop hook also changed to warnings; model-routing pause retained | [Issue #44](https://github.com/Maeximilion/MaexSocial/issues/44), [local security and CLI setup](19_LOCAL_SECURITY.md) |
