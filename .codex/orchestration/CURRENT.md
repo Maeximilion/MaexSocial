@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Bot fallback disabled; plan review coverage repaired · 2026-11-06 08:45 UTC
+
+The owner reaffirmed that the Codex fallback should be off when Claude works, and selected Very high reasoning for the coordinator. Keep that coordinator choice; it does not change per-task routing or the required GPT-6 Astra/high reviewer. Self-mentions and the timed fallback were already inactive. The coordinator now also disabled the **repository-specific automatic Codex code review** in the authenticated Code Review settings for Maeximilion/MaexSocial and verified its switch off. The separate automatic Codex security-review setting remains on with its existing 'every code review' trigger; no change was made to that control, other repositories, required CI, or independent Astra/high. No claim is made that all Codex security activity is disabled.
+
+#112's `c71832cf8e1244a4a7094aa6cb3e3ae7cd5fc254` Claude run was technically successful but [explicitly incomplete](https://github.com/Maeximilion/MaexSocial/pull/112#issuecomment-6680781430) because the escaped diff exceeded 50,000 bytes. It was not a merge receipt. #9 corrected the concrete plan findings and removed redundant wording without changing review budgets or requirements. At `4c943b0e1bafea34e0e7b0cd740de05114c877be` the actual published diff is reported as 49,723 escaped bytes, final independent Astra/high and local foundation tests passed, and a new automatic Claude run is pending. Verify its complete publication before merge.
+
+#15 has a prepared decision packet at `d80aee856f22e1037cb200d891c45d1980eb3691` on `dev-codex/15-g2-decision`, with independent review and foundation checks. It still requires the final merged #112 comparison. Its proposed numerical security/retention/recovery contract and owner G2 acceptance are not approved. Two active work chats remain; no product implementation has started.
+
 ## Role contract merged; G2 gate preparation assigned · 2026-11-06 08:29 UTC
 
 [PR #106](https://github.com/Maeximilion/MaexSocial/pull/106) merged at `2bb081fb4fcafa00730e64d0628bfc4975deccfb`. The checked head `e958d9c260b62c69de1ecd33e28a8d1681b1ecd3` and integration candidate `2255e34b51c18bebd3db08027ecc0dc170c8392a` had current CI, 88 passing Python tests plus one platform skip, 20 Node tests, fresh independent GPT-6 Astra/high and a complete Claude review. The final redundant test-column suggestion was resolved with [explicit existing coverage](https://github.com/Maeximilion/MaexSocial/pull/106#discussion_r4490416987), not silently ignored. Canonical main is clean and synchronized. #30 remains open for the G2 design decision. Its delivery chat is archived and verified after bundle/restoration/hash checks and final transcript capture.
