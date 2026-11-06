@@ -58,7 +58,7 @@ class MessagesFailureTests(unittest.TestCase):
             self.assertEqual(set(schema["required"]), {"findings", "overflow", "summary"})
             self.assertEqual(result["summary"], "See the\u202fchanged rule.")
 
-    def failure(self, connect, expected, key="opaque-fixture", data="data"):
+    def failure(self, connect, expected, key="opaque-fixture", data="data", diagnostic=""):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
             (folder / "claude-input.json").write_text(json.dumps(["system", data]), "utf-8")
@@ -67,9 +67,75 @@ class MessagesFailureTests(unittest.TestCase):
                                          "ANTHROPIC_API_KEY": key, "KIND": "mention"}, clear=True), redirect_stdout(StringIO()) as logs:
                 self.assertEqual(client.main(), 1)
             self.assertEqual(output.read_text("utf-8").strip(), f"failure={expected}")
-            self.assertEqual(logs.getvalue().strip(), f"::error::Claude review failed: {expected}")
+            self.assertEqual(logs.getvalue().strip(), diagnostic + f"::error::Claude review failed: {expected}")
             self.assertFalse((folder / "claude-result.json").exists())
             self.assertLessEqual(connect.return_value.request.call_count, 1)
+
+    def test_incomplete_responses_report_only_validated_usage(self):
+        for stop, category in [("max_tokens", "output_token_limit"),
+                               ("model_context_window_exceeded", "context_window_limit")]:
+            for usage, diagnostic in [
+                ({"input_tokens": 106345, "output_tokens": 8192, "speed": "standard",
+                  "private": "opaque-fixture"}, "input_tokens=106345 output_tokens=8192"),
+                ({"input_tokens": 0, "output_tokens": 0}, "input_tokens=0 output_tokens=0"),
+                (None, "unavailable"), ({}, "unavailable"),
+                ({"input_tokens": 17}, "unavailable"),
+                ({"input_tokens": True, "output_tokens": 8192}, "unavailable"),
+                ({"input_tokens": 17, "output_tokens": -1}, "unavailable"),
+                ({"input_tokens": 17, "output_tokens": 1_000_001}, "unavailable"),
+                ({"input_tokens": 17, "output_tokens": 1.0}, "unavailable"),
+                ({"input_tokens": "::error::opaque-fixture", "output_tokens": 8192}, "unavailable"),
+                ({"input_tokens": 17, "output_tokens": 8192, "speed": "fast"}, "unavailable"),
+            ]:
+                with self.subTest(stop=stop, usage=usage), patch.object(client, "HTTPSConnection") as connect:
+                    response = connect.return_value.getresponse.return_value
+                    response.status, response.length = 200, 0
+                    raw = message() | {"stop_reason": stop, "usage": usage,
+                                       "content": [{"type": "thinking", "thinking": "opaque-fixture"},
+                                                   {"type": "text", "text": "private partial response"}]}
+                    if usage is None:
+                        del raw["usage"]
+                    response.read.return_value = json.dumps(raw).encode()
+                    self.failure(connect, category, diagnostic=f"Usage: {diagnostic}\n")
+                    connect.return_value.request.assert_called_once()
+
+    def test_response_byte_boundary_and_complete_usage(self):
+        for delta in (-1, 0, 1):
+            with self.subTest(delta=delta), patch.object(client, "HTTPSConnection") as connect:
+                response = connect.return_value.getresponse.return_value
+                response.status, response.length = 200, 0
+                raw = json.dumps(message()).encode()
+                response.read.return_value = raw + b" " * (client.MAX_RESPONSE_BYTES + delta - len(raw))
+                if delta == 1:
+                    self.failure(connect, "response_size")
+                else:
+                    with redirect_stdout(StringIO()) as logs:
+                        result = client.review("system", "data", "opaque-fixture", "mention")
+                    self.assertEqual(result, {"summary": "fixture", "findings": [], "overflow": False})
+                    self.assertEqual(logs.getvalue(), "Usage: input_tokens=17 output_tokens=24\n")
+                response.read.assert_called_once_with(client.MAX_RESPONSE_BYTES + 1)
+                connect.return_value.request.assert_called_once()
+
+    def test_missing_or_invalid_usage_cannot_publish_a_complete_result(self):
+        for usage in (None, {}, [], {"input_tokens": 17},
+                      {"input_tokens": 17, "output_tokens": False},
+                      {"input_tokens": 17, "output_tokens": "opaque-fixture"}):
+            with self.subTest(usage=usage), patch.object(client, "HTTPSConnection") as connect:
+                response = connect.return_value.getresponse.return_value
+                response.status, response.length = 200, 0
+                raw = message() | {"usage": usage}
+                if usage is None:
+                    del raw["usage"]
+                response.read.return_value = json.dumps(raw).encode()
+                self.failure(connect, "invalid_usage", diagnostic="Usage: unavailable\n")
+
+    def test_invalid_envelope_never_logs_usage(self):
+        for envelope in ({"type": "error"}, {"role": "user"}, {"model": "opaque-fixture"}):
+            with self.subTest(envelope=envelope), patch.object(client, "HTTPSConnection") as connect:
+                response = connect.return_value.getresponse.return_value
+                response.status, response.length = 200, 0
+                response.read.return_value = json.dumps(message() | envelope).encode()
+                self.failure(connect, "invalid_envelope")
 
     def test_http_errors_never_read_diagnostics_or_follow_redirects(self):
         for status, category in [(301, "http_unknown"), (307, "http_unknown"), (400, "invalid_request"),
@@ -117,7 +183,11 @@ class MessagesFailureTests(unittest.TestCase):
                 response = connect.return_value.getresponse.return_value
                 response.status, response.length = 200, 0
                 response.read.return_value = raw if isinstance(raw, bytes) else json.dumps(raw).encode()
-                self.failure(connect, category)
+                diagnostic = ""
+                if isinstance(raw, dict) and category != "invalid_envelope":
+                    diagnostic = ("Usage: unavailable\n" if category == "invalid_usage"
+                                  else "Usage: input_tokens=17 output_tokens=24\n")
+                self.failure(connect, category, diagnostic=diagnostic)
 
     def test_early_limits_and_transport_failures(self):
         for key, data, category in [("", "data", "credential_missing_or_invalid"),
