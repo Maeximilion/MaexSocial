@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## G2 record review coverage and next admissions · 2026-11-06 09:52 UTC
+
+#113's decision-record head `fdeec8cd844f533738d1012ebb06e9e9f496e882` has green CI, but its [Claude receipt](https://github.com/Maeximilion/MaexSocial/pull/113#issuecomment-6681888704) explicitly reports truncated input. It is not a complete merge receipt. The owner is correcting the Keycloak operations wording, stale architecture passages and repeated explanatory text while preserving the accepted contract and immutable proposal evidence. Recheck final actual input coverage, independent review and candidate after that push. Do not retarget the PR or relabel an incomplete review as complete; the existing workflow has no separate delta-dispatch route.
+
+The transferred release obligations are live: G3/#16 blocked by #10 and #82; G5/#18 by #88, #99, #10 and #82; G4/#17 by #99. Maxi's G2/local implementation approval remains valid. No new product approval is needed.
+
+[Admission #114](https://github.com/Maeximilion/MaexSocial/issues/114#issuecomment-6681884944) is atomically reserved against merged-and-archived #112, with private ledger and native archive readback. It awaits #113's merge and #15's verified archival. One work chat plus that reservation occupy two of the current three slots; no implementation chat has been created. Node/npm, Docker and .NET commands are available and the Docker server responds; this does not validate the future fixture stack.
+
+The newly observed repeat input-truncation problem is tracked independently in [#115](https://github.com/Maeximilion/MaexSocial/issues/115). It asks for reproducible local coverage preflight and avoiding paid automatic analysis of knowingly incomplete input, preserving advisory behavior, reviewer quality, budget and trust boundaries. It is distinct from the resolved #109 output-schema issue. Consider it as useful parallel maintenance after #113, using that delivery's new merge/archive pair; no reservation or chat exists for #115 yet.
+
 ## Owner accepted G2 and local implementation · 2026-11-06 09:35 UTC
 
 Maxi explicitly accepted both presented questions: adopt the proposed local test contracts and accept G2 **with** local synthetic implementation authority. The [dated owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454) binds this to the reviewed #113 packet at `56e345d6c6aca8fa38c902f7958882475c3a0399` and the #112 plan. In particular, the Manager MFA freshness contract is now five minutes. Record design acceptance and execution authority separately; no repeat approval for this scope is needed.
