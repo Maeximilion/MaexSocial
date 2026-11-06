@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## Input fixed; output exhaustion isolated and fallback active · 2026-11-06 11:01 UTC
+
+#118 now targets main `234db0d4e1034ff30420a6d5b7f93171a1f57d31` at head `33e3ee7df5b27217277147e89a6a2fb3b2ba5125`, exact candidate `cf11acfd8d5fe56ef92807e79f1a56d3ad3fb979`. All product/required CI and independent actual Astra/high coverage passed. Root reproduced complete pinned input: 106,345 escaped diff bytes, no gaps, serialized request within 150,000. The ordinary Claude run 42206058276 genuinely executed its API step, then failed with `output_token_limit` ([receipt](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6683180629)). This is a new output-cap failure, not the solved input limit or an API-key failure; exact usage/cost/reasoning allocation are not present in this log.
+
+Under Maxi's explicit conditional fallback instruction, root [requested Codex review](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6683238882) on that exact final head/base. The authentic summary now shows both reviews running for it. Earlier 8ad5489 code/security results are complete but do not cover the final head. Keep 33e3ee7 stable unless an actual finding needs correction. A successful current fallback plus independent Astra/high and all product/required CI may permit the product merge while this one disclosed advisory Claude failure remains; never label the failed check green or claim completed Claude analysis.
+
+Distinct [#121](https://github.com/Maeximilion/MaexSocial/issues/121) owns diagnosis and a bounded output/usage correction. Its [reservation](https://github.com/Maeximilion/MaexSocial/issues/121#issuecomment-6683259827) uses #120's verified merge/archive pair. A fresh named work chat is actually active with verified GPT-6 Astra/high and no Fast override; [admission confirmed](https://github.com/Maeximilion/MaexSocial/issues/121#issuecomment-6683279843), no pending reservation. Two active chats: #114/#118 and #121. #119 stays archived. Root dispositions the exact cost/limit proposal before mutation; no unchanged paid retry, lower effort/model, billing change or raw-response logging.
+
+The #121 dispatch includes today's 12:30 Europe/Berlin pause and original owner reference; receipt acknowledgement still needs readback. #114 already acknowledged it. Root keeps the one-time deadline and will reconcile the actual roster then. #117 remains queued behind #114.
+
 ## Review-tooling chat archived with verified recovery · 2026-11-06 10:53 UTC
 
 The #119 / PR #120 originating chat is natively archived and read back. Independent recovery audit verified all 163 source files (including 13 ignored files), 13 Git metadata files, complete bundle/fsck, no alternates/nested worktrees/links, and a genuinely checked-out clean restore at `84f8cf03f5de2e48032e4d19bda28e548f0caf79`. Root saved the completed full source transcript and verified it byte-for-byte against the actual archived transcript. Original worktree remains clean and preserved. The private admission is archived-after-merge and no reservation is pending. #119 is closed and its Project item reads Done.
