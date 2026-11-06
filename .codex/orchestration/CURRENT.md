@@ -1,5 +1,19 @@
 # Current coordinator handover
 
+## G2 merged and tagged; two fresh work chats active · 2026-11-06 10:10 UTC
+
+[PR #113](https://github.com/Maeximilion/MaexSocial/pull/113) merged at `192d0c5e43b2436801ea210db79674383d0d4112`. Final head `7f594fbe7442433547b07d64041955a596d01edc`, reviewed against `b97e6cfd9f75cb545deef46c7afc2feea7b8361a`, passed integration candidate `e06edd943e1c60f2c9c7eb9893398e4c896d9216`, current CI, actual Astra/high and [complete Claude review](https://github.com/Maeximilion/MaexSocial/pull/113#issuecomment-6682134350). All nine findings were fixed or evidence-dispositioned. The final two comments did not establish lost requirements or conflicting delegated tag authority.
+
+The annotated `gate-g2` tag object `7f526da12475ec84aa341db615a673a65b82a602` was read back and targets that exact main commit. #8, #9, #30 and #15 are closed for the accepted bounded design and their Project items read Done. G2 milestone is closed; its direct open-item list was empty even though its cached counter briefly lagged by one. #10/#82/#88/#99 and their verified release blockers remain open.
+
+The #15 chat is natively archived after independent bundle/checked-out recovery, all 160 files including ignored material, 10 Git metadata files, final completed transcript and archive readback. Original worktree is preserved. Main is clean and synchronized.
+
+Two fresh work chats are now actually active, both with verified GPT-6 Astra/high and no Fast override:
+- [#114](https://github.com/Maeximilion/MaexSocial/issues/114): accepted MS-009 task 1, isolated fixture environment and tenant-safe storage; admission uses #112's verified merge/archive pair. Product implementation is authorized locally with synthetic data. Native parent is #10 and closed prerequisite #15 remains linked.
+- [#115](https://github.com/Maeximilion/MaexSocial/issues/115): independent complete-review-input preflight; admission uses the previously unused #67 pair after an independent full recovery of its surviving 195 files, 73 ignored files, Git metadata, checked-out branch and archived transcript. This verifies today's surviving material, not absence of unknown historic loss.
+
+No admission reservations remain pending. Keep the current large-task cap of three, ordinary hard maximum five. Implement the two disjoint scopes in parallel. The smaller #115 PR must merge before publishing #114's larger PR, then revalidate #114 on actual main; they are not a code stack merely because their deliveries are ordered. Require independent Astra/high, appropriate runtime/CI evidence and honest Claude coverage. #115 may legitimately trigger protected reviewer self-skip; distinguish that from a completed review and do not revive Codex self-mentions or run extra paid probes. Model/effort/budget/trust boundaries remain unchanged.
+
 ## G2 record review coverage and next admissions · 2026-11-06 09:52 UTC
 
 #113's decision-record head `fdeec8cd844f533738d1012ebb06e9e9f496e882` has green CI, but its [Claude receipt](https://github.com/Maeximilion/MaexSocial/pull/113#issuecomment-6681888704) explicitly reports truncated input. It is not a complete merge receipt. The owner is correcting the Keycloak operations wording, stale architecture passages and repeated explanatory text while preserving the accepted contract and immutable proposal evidence. Recheck final actual input coverage, independent review and candidate after that push. Do not retarget the PR or relabel an incomplete review as complete; the existing workflow has no separate delta-dispatch route.
