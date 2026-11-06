@@ -246,8 +246,10 @@ class ClaudeReviewTests(unittest.TestCase):
             if probe.returncode == 1:
                 self.skipTest("historical #106 objects unavailable in this checkout")
             probe.check_returncode()
-        diff = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--no-color", "--abbrev=7",
-                                        "--src-prefix=a/", "--dst-prefix=b/", "-U3", base + "..." + head],
+        diff = subprocess.check_output(["git", "-c", "diff.suppressBlankEmpty=false", "diff", "--no-ext-diff",
+                                        "--no-textconv", "--no-color", "--abbrev=7", "--diff-algorithm=myers",
+                                        "--indent-heuristic", "--inter-hunk-context=0", "--src-prefix=a/",
+                                        "--dst-prefix=b/", "-U3", base + "..." + head],
                                        cwd=root, env=offline)
         decoded = diff.decode("utf-8")
         size = len(json.dumps(decoded)) - 2 + 5 * sum(decoded.count(c) for c in "<>&'")
