@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## Owner deadline and conditional bot fallback · 2026-11-06 10:39 UTC
+
+Maxi now requires **all assigned work to pause today, 2026-11-06 at 12:30 Europe/Berlin (11:30 UTC)**. No PC action is authorized by this scheduling instruction. The current #114/#118 and #119 owners received the dated original-message reference and coordinator destination; delivery is confirmed, acknowledgement and actual paused checkpoints remain separate. They must include active subagents, save recoverable state before the boundary and report exact branch/SHA, dirty/local/pushed state, in-flight operations, evidence, blockers and next owner/action. At the deadline freeze intake, implementation, new pushes, PRs and merges; save the coordinator's latest checkpoint locally until an explicit owner resume. A one-time app heartbeat is set for that boundary, not a repeating work timer.
+
+Maxi also explicitly reauthorized **conditional Codex-bot mentions when Claude review fails**, with the cause identified first and an appropriate Claude retry after correction. This supersedes the unconditional no-fallback rule only for failed-review cases; successful Claude review requires no Codex self-mention. Root serializes a single current-head trigger and will not repeat an unchanged failing paid request. Do not enable global automatic Codex review. The current #118 failure is known incomplete input, not an API-key failure.
+
+The [#119 technical disposition](https://github.com/Maeximilion/MaexSocial/issues/119#issuecomment-6682864492) approves 120,000 escaped diff / 140,000 prepared prompt / 150,000 serialized request bytes, coherent shared serialization and exact boundary tests. Historical transport constraints and mocked actual input support this bounded maintenance change. Model/effort/tier/output/monthly budget remain unchanged; the worker's cost estimate is planning, not a proven billing cap.
+
+#118's owner has identified the separate Linux runtime failure: a capability-dropped uid0 runner cannot read host uid1001's 0700 fixture directory. A host-UID/GID runner fix retains the isolation controls. The first independent Astra/high review also found destructive-down materialized-view coverage and missing actual container-network checks; targeted fixes/tests and final review remain with #114. No merge readiness is claimed.
+
 ## Complete-review envelope correction admitted · 2026-11-06 10:34 UTC
 
 [#118](https://github.com/Maeximilion/MaexSocial/pull/118) is the normal delivery PR for #114. Initial head `2a67df7656c93db55674f842672092633b81535a`, base `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d`. Required foundation/metadata passed; the additional Linux pilot-storage job failed and remains with the product owner. Independent Astra/high review is in progress. Root reproduced the pinned preflight: 90,142 escaped diff bytes exceed 50,000. The [actual workflow result](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6682740988) reports incomplete and no API request sent. This verifies #116's incomplete-input safeguard on an ordinary PR, not a successful Claude analysis.
