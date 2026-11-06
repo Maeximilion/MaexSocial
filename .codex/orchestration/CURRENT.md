@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## Gate-wave evidence · 2026-11-06 00:23 UTC
+
+[Offline analysis of #106](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673074291) found all eight changed files and all 15 hunks in the prepared 49,210-byte input. Two different output failures leave no final Claude verdict. [The bounded #109 assignment](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673103849) removes duplicate model output for automatic reviews, preserves the main comment and inline findings, and distinguishes safe failure reasons. No paid retry or raised limit. A local fix or simulated test is not a completed hosted review.
+
+#30 reports that the isolated new-base candidate `e261998caec624555eb07bd7b510a02b5bd46774` has parents `7287e0615772b5977b2cbdeb3347adba6695bb0e` and `4a3e4ca909912e4073d3e1b61e035a7319a47eb0`, and its effective diff matches the reviewed diff byte for byte. Repository checks, 20 Node tests and 85 Python tests passed, with one documented Windows skip. The hosted PR merge ref still has the old base. Keep #106 open pending review disposition and current hosted integration. #9's plan branch is pushed at `e835b74be28a1d0f6077f3562c079aa82404395c` with revocation and invitation cases aligned. #9 publication still follows #106. Preserve the scheduled 01:40 Berlin pause.
+
 ## Standing rule delivered · 2026-11-06 00:16 UTC
 
 [PR #108](https://github.com/Maeximilion/MaexSocial/pull/108) merged at `7287e0615772b5977b2cbdeb3347adba6695bb0e`. On canonical main, `AGENTS.md` leads to [the standing coordinator rule](https://github.com/Maeximilion/MaexSocial/blob/7287e0615772b5977b2cbdeb3347adba6695bb0e/.codex/orchestration/README.md#L5). It explicitly calls for Superpowers on every orchestration task, including status, pause and resume, with recovery after handover or compaction. #107 is closed; its delivery chat and final transcript were verified in the archive after a tested independent recovery.
