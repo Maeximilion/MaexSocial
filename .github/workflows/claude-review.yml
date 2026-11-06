@@ -133,6 +133,8 @@ jobs:
               except subprocess.CalledProcessError:
                   diff = ""
                   gaps.append("diff unavailable from the GitHub API (too large or failed)")
+              if not diff.strip():
+                  gaps.append("no reviewable diff; no API request sent" if kind == "review" else "no reviewable diff")
               nonce = secrets.token_hex(16)
               meta = "\n".join([
                   f"title: {field('title', pull.get('title'), max_title)}",
@@ -163,21 +165,18 @@ jobs:
                        "You have no file, shell or web access. Return the structured output with `findings`: one entry"
                        " per line-level finding on a line of the framed diff, with `path`, `line` (line number in the"
                        " head version with side RIGHT, or in the base version with side LEFT for a deleted line),"
-                       " `side` and a short Markdown `body`; use [] for none. Report at most ten findings and state"
-                       " explicitly in the summary if additional findings were omitted. A trusted"
-                       f" step publishes them bound to head {head}.",
-                       "Also return `summary`: short Markdown with the number of findings (or none), one line per"
-                       " finding" + (", then your answer to the request." if kind == "mention" else ".")]
-              lines.append("Limit the summary to 4000 characters, each path to 300 and each finding body to 1000.")
+                       " `side` and a short Markdown `body`; use [] for none. Report each finding once, at most ten."
+                       " Set `overflow` to true if additional findings were omitted, false otherwise."
+                       f" A trusted step publishes them bound to head {head}.",
+                       "Limit each path to 300 characters and each finding body to 1000."]
+              if kind == "mention":
+                  lines.append("Answer the collaborator's request in `summary` (up to 4000 characters).")
               if gaps:
-                  lines.append(f"The data is INCOMPLETE ({'; '.join(gaps)}). Say so in the summary; do not claim"
-                               " full coverage.")
+                  lines.append(f"The data is INCOMPLETE ({'; '.join(gaps)}). Review only the available data.")
               prompt = "\n".join(lines)
               if escaped(prompt) + escaped(frames) > prompt_budget:  # unreachable with the limits above; fail visibly, never truncate silently
                   raise SystemExit("prepared input exceeds budget")
-              if kind == "review" and not diff.strip():
-                  gaps.append("no reviewable diff; no API request sent")
-              else:
+              if kind == "mention" or diff.strip():
                   (Path(env["RUNNER_TEMP"]) / "claude-input.json").write_text(json.dumps([prompt, frames]), "utf-8")
                   out["ready"] = "true"
               out.update(head_sha=head, gaps="; ".join(gaps))
@@ -216,40 +215,46 @@ jobs:
           }[env["KIND"]]
           code = 0
           if env.get("DATA_OUTCOME") != "success":
-              body, code = f"Not reviewed: PR data could not be prepared. See {env['RUN_URL']}.", 1
+              body, code = f"**Incomplete:** PR data could not be prepared. See {env['RUN_URL']}.", 1
           elif env.get("WORKFLOW_CHANGED") == "true":
               body = f"Skipped, not reviewed: {env['EVIDENCE']}."
           elif env.get("CLAUDE_OUTCOME") == "skipped":
               body, code = f"**Incomplete:** Head `{env['HEAD_SHA']}` not reviewed: {env['GAPS']}.", 1
           elif env.get("CLAUDE_OUTCOME") != "success":
-              body, code = f"Failed: Claude step: {env.get('FAILURE') or 'unknown'}. See {env['RUN_URL']}.", 1
+              body, code = (f"**Incomplete:** Head `{env['HEAD_SHA']}`. Failed: Claude step: "
+                            f"{env.get('FAILURE') or 'unknown'}. See {env['RUN_URL']}."), 1
           else:
-              max_findings, max_finding_body, max_path, max_summary = 10, 1_000, 300, 4_000
+              mention = env["KIND"] == "mention"
 
               def valid(item):
                   return (isinstance(item, dict)
-                          and isinstance(item.get("path"), str) and 0 < len(item["path"]) <= max_path
-                          and type(item.get("line")) is int and item["line"] >= 1
+                          and isinstance(item.get("path"), str) and 0 < len(item["path"]) <= 300
+                          and type(item.get("line")) is int and 1 <= item["line"] <= 2**31 - 1
                           and item.get("side") in ("RIGHT", "LEFT")
-                          and isinstance(item.get("body"), str) and 0 < len(item["body"].strip()) <= max_finding_body)
+                          and isinstance(item.get("body"), str) and 0 < len(item["body"].strip()) <= 1000)
 
               try:
                   with open(os.path.join(env["RUNNER_TEMP"], "claude-result.json"), encoding="utf-8") as handle:
                       result = json.load(handle)
-                  summary, findings = result["summary"], result["findings"]
+                  findings, overflow = result["findings"], result["overflow"]
+                  summary = result["summary"] if mention else ""
               except (ValueError, KeyError, TypeError, OSError):
-                  summary = findings = None
-              if not (isinstance(summary, str) and summary.strip() and isinstance(findings, list)):
-                  body, code = f"Failed: Claude returned no valid result. See {env['RUN_URL']}.", 1
+                  findings = None
+              if not (isinstance(findings, list) and len(findings) <= 10 and all(valid(f) for f in findings)
+                      and type(overflow) is bool
+                      and (not mention or isinstance(summary, str) and summary.strip() and len(summary) <= 4000)):
+                  body, code = f"**Incomplete:** Head `{env['HEAD_SHA']}`. Failed: invalid result. See {env['RUN_URL']}.", 1
               else:
                   head = env["HEAD_SHA"]
                   gaps = [env["GAPS"]] if env.get("GAPS") else []
+                  if overflow:
+                      gaps.append("additional findings omitted")
                   comments = [{"path": f["path"], "line": f["line"], "side": f["side"], "body": f["body"].strip()}
-                              for f in findings[:max_findings] if valid(f)]
-                  if len(comments) < len(findings):
-                      gaps.append(f"{len(findings) - len(comments)} finding(s) dropped (invalid or over"
-                                  f" {max_findings})")
-                  status = "No inline findings."
+                              for f in findings]
+                  count = len(comments)
+                  overview = "\n".join([f"{count} {'finding' if count == 1 else 'findings'} reported."] +
+                                       [f"- `{c['path']}` line {c['line']} ({c['side']}): {c['body']}" for c in comments])
+                  status = ""
                   if comments:
                       review_path = os.path.join(env["RUNNER_TEMP"], "claude-review.json")
                       with open(review_path, "w", encoding="utf-8") as handle:
@@ -264,13 +269,10 @@ jobs:
                           # GitHub rejects the whole review if one line is outside the diff; keep findings visible.
                           print("::warning::GitHub rejected inline placement")
                           gaps.append("inline placement failed")
-                          status = "\n".join(["GitHub rejected inline placement; findings on `" + head + "`:"]
-                                             + [f"- `{c['path']}` line {c['line']} ({c['side']}): {c['body']}"
-                                                for c in comments])
-                  if len(summary) > max_summary:
-                      gaps.append(f"summary cut to {max_summary} characters")
+                          status = "GitHub rejected inline placement."
                   incomplete = [f"**Incomplete:** {'; '.join(gaps)}."] if gaps else []
-                  body = "\n\n".join([f"Head `{head}`."] + incomplete + [summary.strip()[:max_summary], status])
+                  body = "\n\n".join(part for part in [f"Head `{head}`.", *incomplete, summary.strip(), overview, status]
+                                     if part)
                   env["GAPS"] = "; ".join(gaps)
           path = os.path.join(env["RUNNER_TEMP"], "claude-comment.md")
           with open(path, "w", encoding="utf-8") as handle:
