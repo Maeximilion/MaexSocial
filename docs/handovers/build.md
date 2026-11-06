@@ -10,7 +10,7 @@ Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan,
 
 Visual direction — Use Maxi's selected [Deep Tech dark palette](../15_README_STRATEGY.md): primary `#00E5FF`, accent `#FF5E5B`, base `#0B0F19`, surface `#161F30`, text `#F8FAFC`. Follow its contrast rules, including Midnight text on filled accents. The palette is settled; component layout, interaction states and accessibility tests remain G2/G3 work.
 
-Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–14 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
+Access prerequisite — Include MS-013 and [registration/customer/admin security requirements](../17_ACCESS_SECURITY.md) in G2. Map accepted ACCESS-01–17 cases into the executable plan, alongside [CI/CD and release checks](../08_EVALS.md). A foundation CI pass does not authorize externally accessible customer operation.
 
 Upload prerequisite — Include [MS-014 / #43](https://github.com/Maeximilion/MaexSocial/issues/43) and [UPLOAD-01–10](../security/uploads.md). The initial proposal rejects customer SVG/SVGZ, requires private quarantine and isolates decoding/transcoding. Review the [proposed code anatomy](../architecture/README.md) and [agent tooling](../tooling/agent-workflow.md); neither a folder layout nor a repository SVG check proves these runtime boundaries.
 
