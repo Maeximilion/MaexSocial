@@ -1,12 +1,12 @@
-# Architecture decisions to establish at G2
+# Architecture and accepted local baseline
 
-Status — Maxi chose local-first planning with a synthetic Google adapter, PostgreSQL, Keycloak and a separate signed Windows client. Production deployment and G2 acceptance remain open. [Owner decision](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463)
+Status — Maxi accepted the bounded local design with a synthetic Google adapter, PostgreSQL, Keycloak and a separate signed Windows client on 2026-11-06. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454) separately authorizes local synthetic implementation after the decision-record merge. #10/#82 retain real operating evidence; production deployment remains unauthorized.
 
-[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. Use strict TypeScript for the portal and Node.js API/worker, PostgreSQL SQL for migrations and C#/.NET with WPF for the Windows administrator. Python maintains repository tooling. Product implementation requires G2 acceptance and the MS-009 plan.
+[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. Use strict TypeScript for the portal and Node.js API/worker, PostgreSQL SQL for migrations and C#/.NET with WPF for the Windows administrator. Python maintains repository tooling. Use the accepted MS-009 plan and wait for the decision-record merge and coordinator dispatch.
 
 ## Candidate responsibilities
 
-The [proposed application anatomy](architecture/README.md) maps these responsibilities to a minimal directory layout and trust-boundary diagram. No application folders or deployment isolation are implemented by that proposal. [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) must settle the [upload/processing contract](security/uploads.md) together with access design.
+The [proposed application anatomy](architecture/README.md) maps these responsibilities to a minimal directory layout and trust-boundary diagram. No application folders or deployment isolation are implemented by that proposal. [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) is accepted for text-only scope with media disabled; #99 carries later [upload/processing evidence](security/uploads.md).
 
 | Responsibility | Owns | Evidence needed before implementation |
 |---|---|---|
@@ -34,8 +34,8 @@ The first slice should cover one complete workflow through these responsibilitie
 
 ## G2 decision record
 
-[Proposed ADR 0002](decisions/0002-google-text-pilot.md) compares delivery options for one customer-approved Google text post, prices a Frankfurt pilot and defines the recovery tests for MS-009. Maxi's architecture decision remains open on MS-008.
+[ADR 0002](decisions/0002-google-text-pilot.md) preserves the delivery comparison, historical Frankfurt estimate and recovery requirements. Maxi accepted the local architecture and MS-009 plan in the [G2 decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454); production hosting and costs remain in #10.
 
-MS-008 compares a small application with direct APIs, a workflow-led implementation, and a hybrid where external orchestration is limited to appropriate background work. Record fit to the first slice, failure recovery, operating cost and maintainability. The approved choice determines code directories, frameworks and deployment within the language baseline, revisiting that baseline only if evidence warrants it. API and MCP are transport options whose capabilities and operational support must be proven separately.
+Use the accepted local application boundaries and six-task MS-009 plan. API/MCP capabilities and live provider operation still require their own evidence; local acceptance authorizes neither production deployment nor provider access.
 
-Secure external login, platform-wide customer management, separate customer dashboards, a public website with customer self-registration/login and separate administrator access are confirmed requirements. The owner confirmed the Employee and Manager roles and the separate DEV/Admin authority. Public signup cannot grant Manager or platform privileges. [Access and security](17_ACCESS_SECURITY.md) distinguishes the confirmed invitation, approval, export and hold rules from the proposed G2 controls. No login stack is selected by this document.
+[Access and security](17_ACCESS_SECURITY.md) records the accepted local Keycloak, Employee/Manager and separate Windows DEV/Admin contracts. Public signup cannot grant elevated roles. #82 retains actual device, identity, privacy and recovery proof; #10/#82 block G3/G5 until their carried criteria have evidence.

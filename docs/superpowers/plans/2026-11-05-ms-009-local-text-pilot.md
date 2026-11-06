@@ -1,6 +1,6 @@
 # Local text pilot implementation plan · MS-009
 
-**Goal.** Give #10 a repeatable synthetic demonstration of exact-revision approval for one GBP location, with visible confirmed or uncertain outcome. These future files and commands require separate implementation authorization.
+**Goal.** Give #10 a repeatable synthetic demonstration of exact-revision approval for one GBP location, with visible confirmed or uncertain outcome. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454) accepts this plan and its local contracts, separately authorizing synthetic implementation after the #113 decision-record merge and coordinator dispatch. Manager approval and Employee invitation/removal require MFA proof age at most 5 minutes, matching sensitive DEV/Admin actions. Test exactly 5 minutes and greater ages. All product commands/tests remain unexecuted.
 
 **Architecture.** Plan from the selected strict TypeScript/Node baseline for the portal, API and worker: a modular service with two Express listeners (customer and private management), a separate Node worker and one PostgreSQL application transaction boundary. Keycloak uses a separate database/role and distinct customer and desktop OIDC clients. The enrolled Windows administrator operates from a separate signed application. [ADR 0001](../../decisions/0001-application-language.md) assigns TypeScript to browser/API/worker, SQL to migrations and C#/.NET 10 LTS/WPF to Windows 11. Python remains repository tooling. Cite the ADR and affected runtimes in implementation issues. The only GBP adapter is a deterministic local fake. [Owner's local selection](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463) · [ADR 0002](../../decisions/0002-google-text-pilot.md) · [Access contract](../../17_ACCESS_SECURITY.md) · [Pilot evidence map](2026-11-05-ms-009-pilot-evidence-map.md)
 
@@ -68,7 +68,7 @@
 
 ## Decision evidence and external prerequisites
 
-This plan incorporates the [owner's role and invitation decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744) and [approval and export decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885). Product commands and scenarios remain planned. This PR references #9; final #9/G2 acceptance needs the decisions below.
+This plan incorporates the [owner's role and invitation decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744) and [approval and export decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885). Product commands and scenarios remain planned. The 2026-11-06 owner decision accepts #9/G2 and its local fixture defaults. The table's remaining production decisions are carried in #10 (operating/provider) and #82 (identity/device/privacy/recovery), both native blockers of G3 and G5. The table retains their originating decision owners; its fixture defaults labelled proposals are now accepted locally, and outstanding #8/#30 production decisions belong to #10/#82.
 
 | Owner / issue | Local consequence if changed | Decisions reserved for later |
 |---|---|---|
