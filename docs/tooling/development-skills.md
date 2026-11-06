@@ -58,6 +58,8 @@ Run the GitHub security/quality/Dependabot advisory check only when the user exp
 
 ## Verification boundary
 
+Before updating a PR, the optional [Claude input preflight](claude-input-preflight.md) checks pinned GitHub input using the hosted builder without calling Anthropic. Known gaps skip automatic paid review; protected self-skips remain unreviewed.
+
 Separate saved configuration, native catalog discovery, script tests and observed model behavior. Existing sessions may retain old instructions; reload the client/session if discovery does not refresh. Do not claim automatic use in every client or a live workflow run from an installation result alone. Backups and targeted rollback are kept in the owner's local change register, outside this public repository.
 
 Observed on 2026-11-05: Codex's native `skills/list` reports one enabled canonical copy each of Code Autopilot and Caveman, disabled synchronized duplicates, the repository workflow entrypoint, Ponytail 5.3.3 and Superpowers 7.0.1 skills. Before introducing the pinned project catalog, Claude's plugin list reported project-enabled Superpowers 7.0.0 and Ponytail 5.3.3; its user skill junctions resolve to the same canonical sources. Router AST comparison permits only two updated status strings; seven isolated event/state comparisons preserve routing and pause behavior. The optional skill-creator validator could not run because local Python lacks PyYAML; native skill parsing/discovery succeeded. No new model session was launched to claim automatic behavior across all clients.

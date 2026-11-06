@@ -1,5 +1,6 @@
 """Exercise the workflow's Python steps with a temporary runner and mocked gh."""
 
+import io
 import json
 import os
 import re
@@ -10,9 +11,11 @@ from pathlib import Path
 from textwrap import dedent
 from unittest.mock import patch
 
+from scripts import claude_input
+
 
 WORKFLOW = (Path(__file__).resolve().parents[1] / ".github/workflows/claude-review.yml").read_text("utf-8")
-PREPARE, POST = [
+POST, = [
     dedent(script) for script in re.findall(r"python3 -I - <<'PY'\n(.*?)\n +PY\n", WORKFLOW, re.S)
 ]
 REPO = "example/project"
@@ -57,14 +60,15 @@ class ClaudeReviewTests(unittest.TestCase):
         event_name = "issue_comment" if env.get("KIND") == "mention" else "pull_request_target"
         runner = self.env | {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": event_name} | env
         with patch.dict(os.environ, runner, clear=True), patch("subprocess.run", side_effect=gh_api) as gh:
-            exec(PREPARE, {})
+            self.assertEqual(claude_input.main([]), 0)
         fields = re.findall(r"^(\w+)<<(\w+)\n(.*?)\n\2$", self.output.read_text("utf-8"), re.M | re.S)
         self.system, self.frames = json.loads(input_file.read_text("utf-8")) if input_file.exists() else ("", "")
         return {key: value for key, _, value in fields} | {"prompt": self.system + self.frames}, [call.args[0] for call in gh.call_args_list]
 
     def post(self, expected_code, *, inline_status=None, **env):
         self.output.with_name("claude-result.json").write_text(env.pop("OUTPUT", ""), encoding="utf-8")
-        runner = self.env | {"DATA_OUTCOME": "success", "CLAUDE_OUTCOME": "success", "HEAD_SHA": "reviewed"} | env
+        runner = self.env | {"DATA_OUTCOME": "success", "CLAUDE_OUTCOME": "success",
+                             "HEAD_SHA": "reviewed", "BASE_SHA": "base"} | env
         response = subprocess.CompletedProcess([], inline_status or 0, stderr="diagnostic fixture")
         with (
             patch.dict(os.environ, runner, clear=True),
@@ -108,7 +112,7 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertEqual(data["ready"], "false")
             self.assertFalse(self.output.with_name("claude-input.json").exists())
             body = self.post(1, GAPS=data["gaps"], HEAD_SHA=data["head_sha"], CLAUDE_OUTCOME="skipped")
-            self.assertIn("no API request sent", body)
+            self.assertIn("No API request sent", body)
             self.assertIn("Incomplete", body)
             self.assertIn(data["head_sha"], body)
 
@@ -132,28 +136,74 @@ class ClaudeReviewTests(unittest.TestCase):
                 with self.subTest(opaque=opaque, tail=tail):
                     data, _ = self.prepare(opaque + tail)
                     self.assertIn("binary file content unavailable", data["gaps"])
-                    self.assertEqual(data["ready"], "true" if tail else "false")
-                    self.assertNotIn("logo.png", self.frames)
-                    if tail:
-                        self.assertIn(tail.decode(), self.frames)
-                        self.assertIn("INCOMPLETE", self.system)
+                    self.assertEqual(data["ready"], "false")
+                    self.assertEqual(self.frames, "")
+                    self.assertFalse(self.output.with_name("claude-input.json").exists())
 
     def test_invalid_diff_bytes_remain_visible_as_a_coverage_gap(self):
         for bad in [b"\xa3", b"\0"]:
             data, _ = self.prepare(b"diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+fee=5" + bad + b"\n")
             self.assertIn("replaced", data["gaps"])
-            self.assertIn("fee=5\ufffd", self.frames)
-            self.assertEqual(data["ready"], "true")
+            self.assertEqual(self.frames, "")
+            self.assertEqual(data["ready"], "false")
 
-    def test_clipped_diff_still_gets_an_incomplete_review(self):
-        data, _ = self.prepare(b"x" * 60_000 + b"TRUNCATED_TAIL")
-        self.assertEqual(data["ready"], "true")
-        self.assertIn("cut", data["gaps"])
-        self.assertIn("INCOMPLETE", data["prompt"])
-        self.assertNotIn("TRUNCATED_TAIL", data["prompt"])
-        body = self.post(0, GAPS=data["gaps"], OUTPUT='{"overflow":false,"findings":[]}')
-        self.assertIn("Incomplete", body)
-        self.assertIn("0 findings", body)
+    def test_clipped_input_skips_paid_review_and_publishes_pinned_guidance(self):
+        for diff, body_text in [(b"x" * 60_000 + b"TRUNCATED_TAIL", "body"), (b"diff", "x" * 6001)]:
+            data, _ = self.prepare(diff, body=body_text)
+            self.assertEqual(data["ready"], "false")
+            self.assertIn("cut", data["gaps"])
+            self.assertFalse(self.output.with_name("claude-input.json").exists())
+            # A stale success must not become a reviewed/zero-findings notice.
+            body = self.post(1, GAPS=data["gaps"], HEAD_SHA=data["head_sha"], BASE_SHA=data["base_sha"],
+                             CLAUDE_OUTCOME="skipped", OUTPUT='{"overflow":false,"findings":[]}')
+            for expected in ["Incomplete", "not reviewed", "No API request sent", data["gaps"],
+                             "scripts/claude_input.py", "--base api-base --head api-head"]:
+                self.assertIn(expected, body)
+            self.assertNotIn("0 findings", body)
+
+    def test_exact_escaped_diff_boundaries_match_read_only_preflight(self):
+        base, head = "a" * 40, "b" * 40
+        self.assertEqual(claude_input.escaped('🌐é\\"<>&\''), 46)
+        prefix = 'diff --git a/f b/f\n@@ -0,0 +1 @@\n+🌐é\\"<>&\' '
+        for limit in [49_999, 50_000, 50_001]:
+            diff = (prefix + "x" * (limit - claude_input.escaped(prefix))).encode("utf-8")
+            with self.subTest(limit=limit):
+                data, _ = self.prepare(diff, BASE_SHA=base, HEAD_SHA=head)
+                self.assertEqual(data["ready"], "false" if limit > 50_000 else "true")
+                pull = {"title": "A change", "body": "</pr-data>", "changed_files": 1,
+                        "head": {"ref": "feature"}, "base": {"ref": "main"}}
+                with (patch.object(claude_input, "api", side_effect=[json.dumps(pull).encode(), diff]) as api,
+                      patch("sys.stdout", new_callable=io.StringIO) as stdout,
+                      patch("http.client.HTTPSConnection") as paid):
+                    code = claude_input.main(["--repo", REPO, "--pr", "7", "--base", base, "--head", head])
+                result = json.loads(stdout.getvalue())
+                self.assertEqual(code, int(limit > 50_000))
+                self.assertEqual(result, {"status": "incomplete" if code else "complete", "base_sha": base,
+                                         "head_sha": head, "gaps": data["gaps"], "diff_escaped_bytes": limit,
+                                         "diff_limit": 50_000})
+                api.assert_called_with(f"repos/{REPO}/compare/{base}...{head}", "application/vnd.github.diff")
+                paid.assert_not_called()
+
+    def test_preflight_requires_pinned_revisions_and_reports_unavailable_input(self):
+        with patch.object(claude_input, "api") as api, patch("sys.stderr", new_callable=io.StringIO):
+            with self.assertRaises(SystemExit) as error:
+                claude_input.main(["--repo", REPO, "--pr", "7", "--base", "main", "--head", "HEAD"])
+            self.assertEqual(error.exception.code, 2)
+            api.assert_not_called()
+        pull = {"head": {"ref": "feature"}, "base": {"ref": "main"}}
+        for responses in [[subprocess.CalledProcessError(1, "gh")],
+                          [json.dumps(pull).encode(), subprocess.CalledProcessError(1, "gh")]]:
+            with (patch.object(claude_input, "api", side_effect=responses),
+                  patch("sys.stdout", new_callable=io.StringIO) as stdout):
+                self.assertEqual(claude_input.main(["--repo", REPO, "--pr", "7", "--base", "a" * 40,
+                                                    "--head", "b" * 40]), 1)
+            self.assertIn("incomplete", stdout.getvalue().lower())
+
+    def test_removed_metadata_characters_are_not_silently_complete(self):
+        for body in ["before\0after", "before\ud800after"]:
+            data, _ = self.prepare(body=body)
+            self.assertEqual(data["ready"], "false")
+            self.assertIn("PR body contains unavailable", data["gaps"])
 
     def test_workflow_mismatch_skips_pr_events_without_attributing_a_change_to_the_pr(self):
         for event, kind in [("pull_request_target", "review"), ("issue_comment", "mention")]:
@@ -182,6 +232,8 @@ class ClaudeReviewTests(unittest.TestCase):
     def test_self_skip_all_events_including_script_rename_and_capped_paths(self):
         for kind in ("mention", "review"):
             for files in ([{"filename": "scripts/claude_messages.py"}],
+                          [{"filename": "scripts/claude_input.py"}],
+                          [{"filename": "new.py", "previous_filename": "scripts/claude_input.py"}],
                           [{"filename": "new.py", "previous_filename": ".github/workflows/claude-review.yml"}],
                           [{"filename": "other.py"}] * 300):
                 data, calls = self.prepare(files=files, KIND=kind)
@@ -320,4 +372,5 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("ref: ${{ github.event.repository.default_branch }}", WORKFLOW)
         self.assertEqual(WORKFLOW.count("secrets.ANTHROPIC_API_KEY"), 1)
         self.assertIn("run: python3 -I scripts/claude_messages.py", WORKFLOW)
+        self.assertIn("run: python3 -I scripts/claude_input.py", WORKFLOW)
         self.assertNotIn("id-token: write", WORKFLOW)
