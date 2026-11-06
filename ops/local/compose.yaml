@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994
+    environment:
+      POSTGRES_USER: pilot_owner
+      POSTGRES_DB: pilot_fixture
+      POSTGRES_PASSWORD_FILE: /run/secrets/password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    entrypoint: ["sh", "/fixture/start-postgres.sh"]
+    volumes:
+      - app-data:/var/lib/postgresql/data
+      - ../../work/pilot/owner-password:/run/secrets/password:ro
+      - ../../work/pilot/postgres.crt:/fixture/server.crt:ro
+      - ../../work/pilot/postgres.key:/fixture/server.key:ro
+      - ./start-postgres.sh:/fixture/start-postgres.sh:ro
+      - ./pg_hba.conf:/fixture/pg_hba.conf:ro
+      - ../../work/pilot/init-app.sql:/docker-entrypoint-initdb.d/001-fixture.sql:ro
+    networks: [application]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pilot_owner -d pilot_fixture"]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+    labels:
+      org.maexsocial.fixture: ${FIXTURE_ID:?}
+  identity-db:
+    image: postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994
+    environment:
+      POSTGRES_USER: identity_owner
+      POSTGRES_DB: identity_fixture
+      POSTGRES_PASSWORD_FILE: /run/secrets/password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    entrypoint: ["sh", "/fixture/start-postgres.sh"]
+    volumes:
+      - identity-data:/var/lib/postgresql/data
+      - ../../work/pilot/identity-password:/run/secrets/password:ro
+      - ../../work/pilot/identity-db.crt:/fixture/server.crt:ro
+      - ../../work/pilot/identity-db.key:/fixture/server.key:ro
+      - ./start-postgres.sh:/fixture/start-postgres.sh:ro
+      - ./pg_hba.conf:/fixture/pg_hba.conf:ro
+      - ../../work/pilot/init-identity.sql:/docker-entrypoint-initdb.d/001-fixture.sql:ro
+    networks: [identity]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U identity_owner -d identity_fixture"]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+    labels:
+      org.maexsocial.fixture: ${FIXTURE_ID:?}
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2@sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b
+    command: ["start", "--import-realm"]
+    volumes:
+      - ../../work/pilot/keycloak.conf:/opt/keycloak/conf/keycloak.conf:ro
+      - ../../work/pilot/keycloak.crt:/fixture/server.crt:ro
+      - ../../work/pilot/keycloak.key:/fixture/server.key:ro
+      - ../../work/pilot/identity-db.crt:/fixture/db.crt:ro
+      - ../../work/pilot/mailbox.crt:/fixture/mail.crt:ro
+      - ./keycloak-realm.json:/opt/keycloak/data/import/pilot-realm.json:ro
+    depends_on:
+      identity-db: { condition: service_healthy }
+    networks: [identity]
+    labels:
+      org.maexsocial.fixture: ${FIXTURE_ID:?}
+  mailbox:
+    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    environment:
+      MP_UI_TLS_CERT: /fixture/server.crt
+      MP_UI_TLS_KEY: /fixture/server.key
+      MP_SMTP_TLS_CERT: /fixture/server.crt
+      MP_SMTP_TLS_KEY: /fixture/server.key
+      MP_SMTP_REQUIRE_TLS: "true"
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+      MP_MAX_MESSAGES: "100"
+      MP_MAX_MESSAGE_SIZE: "1"
+      MP_DATABASE: /data/mailpit.db
+      MP_QUIET: "true"
+    volumes:
+      - mail-data:/data
+      - ../../work/pilot/mailbox.crt:/fixture/server.crt:ro
+      - ../../work/pilot/mailbox.key:/fixture/server.key:ro
+    networks: [identity]
+    labels:
+      org.maexsocial.fixture: ${FIXTURE_ID:?}
+  runner:
+    image: node:24.22.2-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
+    profiles: [tools]
+    working_dir: /workspace
+    user: "${FIXTURE_UID:?}:${FIXTURE_GID:?}"
+    environment:
+      PILOT_CONTAINER: "1"
+    volumes:
+      - ../..:/workspace:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [application, identity]
+    labels:
+      org.maexsocial.fixture: ${FIXTURE_ID:?}
+networks:
+  application: { internal: true }
+  identity: { internal: true }
+volumes:
+  app-data:
+  identity-data:
+  mail-data:

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noEmitOnError": true,
+    "rootDir": ".",
+    "outDir": "dist/pilot",
+    "types": ["node"],
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["scripts/pilot-db.ts", "ops/local/**/*.ts", "tests/pilot/**/*.ts", "apps/**/*.ts", "packages/**/*.ts"]
+}
