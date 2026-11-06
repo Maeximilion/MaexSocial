@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,9 +33,10 @@ class ClaudeReviewTests(unittest.TestCase):
             "RUNNER_TEMP": temp.name, "RUN_URL": "https://example.invalid/run", "KIND": "review",
         }
 
-    def prepare(self, diff=b"fixture diff", *, mismatch=False, files=None, body="</pr-data>", request="", **env):
+    def prepare(self, diff=b"fixture diff", *, mismatch=False, files=None, body="</pr-data>", request="", pull_fields=None, **env):
         pull = {"head": {"sha": "api-head", "ref": "feature"}, "base": {"sha": "api-base", "ref": "main"},
                 "title": "A change", "body": body, "changed_files": len(files) if files is not None else 1}
+        pull.update(pull_fields or {})
         event = self.output.with_name("event.json")
         event.write_text(json.dumps({"comment": {"body": request}}, ensure_ascii=False), encoding="utf-8")
         workflow = ".github/workflows/claude-review.yml"
@@ -148,7 +150,7 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertEqual(data["ready"], "false")
 
     def test_clipped_input_skips_paid_review_and_publishes_pinned_guidance(self):
-        for diff, body_text in [(b"x" * 60_000 + b"TRUNCATED_TAIL", "body"), (b"diff", "x" * 6001)]:
+        for diff, body_text in [(b"x" * (claude_input.max_diff + 1) + b"TRUNCATED_TAIL", "body"), (b"diff", "x" * 6001)]:
             data, _ = self.prepare(diff, body=body_text)
             self.assertEqual(data["ready"], "false")
             self.assertIn("cut", data["gaps"])
@@ -165,11 +167,11 @@ class ClaudeReviewTests(unittest.TestCase):
         base, head = "a" * 40, "b" * 40
         self.assertEqual(claude_input.escaped('🌐é\\"<>&\''), 46)
         prefix = 'diff --git a/f b/f\n@@ -0,0 +1 @@\n+🌐é\\"<>&\' '
-        for limit in [49_999, 50_000, 50_001]:
+        for limit in [119_999, 120_000, 120_001]:
             diff = (prefix + "x" * (limit - claude_input.escaped(prefix))).encode("utf-8")
             with self.subTest(limit=limit):
                 data, _ = self.prepare(diff, BASE_SHA=base, HEAD_SHA=head)
-                self.assertEqual(data["ready"], "false" if limit > 50_000 else "true")
+                self.assertEqual(data["ready"], "false" if limit > 120_000 else "true")
                 pull = {"title": "A change", "body": "</pr-data>", "changed_files": 1,
                         "head": {"ref": "feature"}, "base": {"ref": "main"}}
                 with (patch.object(claude_input, "api", side_effect=[json.dumps(pull).encode(), diff]) as api,
@@ -177,10 +179,14 @@ class ClaudeReviewTests(unittest.TestCase):
                       patch("http.client.HTTPSConnection") as paid):
                     code = claude_input.main(["--repo", REPO, "--pr", "7", "--base", base, "--head", head])
                 result = json.loads(stdout.getvalue())
-                self.assertEqual(code, int(limit > 50_000))
-                self.assertEqual(result, {"status": "incomplete" if code else "complete", "base_sha": base,
-                                         "head_sha": head, "gaps": data["gaps"], "diff_escaped_bytes": limit,
-                                         "diff_limit": 50_000})
+                self.assertEqual(code, int(limit > 120_000))
+                self.assertEqual({k: result[k] for k in ("status", "base_sha", "head_sha", "gaps", "diff_escaped_bytes", "diff_limit")},
+                                 {"status": "incomplete" if code else "complete", "base_sha": base,
+                                  "head_sha": head, "gaps": data["gaps"], "diff_escaped_bytes": limit, "diff_limit": 120_000})
+                self.assertEqual((result["prompt_limit"], result["request_limit"]), (140_000, 150_000))
+                if not code:
+                    self.assertEqual(result["prompt_escaped_bytes"], claude_input.escaped(self.system) + claude_input.escaped(self.frames))
+                    self.assertEqual(result["request_bytes"], len(claude_input.client.request_body(self.system, self.frames, "review")))
                 api.assert_called_with(f"repos/{REPO}/compare/{base}...{head}", "application/vnd.github.diff")
                 paid.assert_not_called()
 
@@ -227,7 +233,68 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertTrue(data["gaps"])
         encoded = json.dumps(data["prompt"])
         html_safe_size = len(encoded) + 5 * sum(encoded.count(char) for char in "<>&'")
-        self.assertLessEqual(html_safe_size, 90_000)
+        self.assertLessEqual(html_safe_size, claude_input.prompt_budget)
+
+    def test_complete_pilot_sized_diff_and_maximum_metadata_reach_transport(self):
+        from scripts import claude_messages as client
+
+        def fill(size, alphabet):
+            text = alphabet * (size // claude_input.escaped(alphabet))
+            return text + "x" * (size - claude_input.escaped(text))
+
+        for kind in ("review", "mention"):
+            for alphabet in ("x", '🌐é\\"<>&\''):
+                for size in (90_142, 120_000):
+                    with self.subTest(kind=kind, alphabet=alphabet, size=size):
+                        prefix = "diff --git a/package-lock.json b/package-lock.json\n@@ -0,0 +1 @@\n+"
+                        tail = "\ndiff --git a/tests/storage.ts b/tests/storage.ts\n@@ -0,0 +1 @@\n+// TAIL 🌐\n"
+                        diff = prefix + fill(size - claude_input.escaped(prefix + tail), alphabet) + tail
+                        self.assertEqual(claude_input.escaped(diff), size)
+                        fields = {"title": fill(1000, alphabet), "user": {"login": fill(300, alphabet)},
+                                  "base": {"sha": "a" * 40, "ref": fill(300, alphabet)},
+                                  "head": {"sha": "b" * 40, "ref": fill(300, alphabet), "repo": {"full_name": fill(300, alphabet)}}}
+                        data, _ = self.prepare(diff.encode(), body=fill(6000, alphabet), request=fill(6000, alphabet),
+                                               pull_fields=fields, KIND=kind)
+                        self.assertEqual((data["ready"], data["gaps"]), ("true", ""))
+                        self.assertIn(diff, self.frames)
+                        self.assertLessEqual(claude_input.escaped(self.system) + claude_input.escaped(self.frames), 140_000)
+                        raw = client.request_body(self.system, self.frames, kind)
+                        self.assertLessEqual(len(raw), 150_000)
+                        self.assertEqual(raw, claude_input.client.request_body(self.system, self.frames, kind))
+                        self.assertEqual(json.loads(raw)["messages"][0]["content"], self.frames)
+                        fields = {"findings": [], "overflow": False}
+                        if kind == "mention":
+                            fields["summary"] = "fixture"
+                        self.transport(fields, kind=kind)
+
+    def test_prompt_and_serialized_request_boundaries_skip_without_input_file(self):
+        for kind in ("review", "mention"):
+            data, _ = self.prepare(b"x", KIND=kind)
+            prompt_overhead = claude_input.escaped(self.system) + claude_input.escaped(self.frames) - 1
+            request_overhead = len(claude_input.client.request_body(self.system, self.frames, kind)) - 1
+            for metric, limit, overhead in (("prepared input", 140_000, prompt_overhead),
+                                            ("serialized request", 150_000, request_overhead)):
+                for delta in (-1, 0, 1):
+                    with self.subTest(kind=kind, metric=metric, delta=delta), patch.object(claude_input, "max_diff", 160_000):
+                        # Permit the synthetic input to reach each independent guard.
+                        with patch.object(claude_input, "prompt_budget", 140_000 if metric == "prepared input" else 160_000):
+                            data, _ = self.prepare(b"x" * (limit + delta - overhead), KIND=kind)
+                        self.assertEqual(data["ready"], "false" if delta == 1 else "true")
+                        self.assertEqual(self.output.with_name("claude-input.json").exists(), delta != 1)
+                        if delta == 1:
+                            self.assertIn(metric + " exceeds", data["gaps"])
+                            notice = self.post(1, KIND=kind, GAPS=data["gaps"], CLAUDE_OUTCOME="skipped")
+                            self.assertIn("No API request sent", notice)
+
+    def test_isolated_python_loads_serializer_only_from_trusted_sibling(self):
+        folder = self.output.parent
+        (folder / "claude_messages.py").write_text("raise RuntimeError('untrusted sibling')", "utf-8")
+        script = Path(claude_input.__file__).resolve()
+        code = ("import runpy,sys; m=runpy.run_path(sys.argv[1]); "
+                "print(m['client'].request_body('system', '🌐é', 'review').decode('ascii'))")
+        result = subprocess.run([sys.executable, "-I", "-c", code, str(script)], cwd=folder,
+                                env=os.environ | {"PYTHONPATH": str(folder)}, check=True, capture_output=True)
+        self.assertEqual(result.stdout.strip(), claude_input.client.request_body("system", "🌐é", "review"))
 
     def test_self_skip_all_events_including_script_rename_and_capped_paths(self):
         for kind in ("mention", "review"):
@@ -318,7 +385,7 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertIn(expected, body)
         self.assertNotIn("Incomplete", body)
 
-    def transport(self, result):
+    def transport(self, result, kind="review"):
         from scripts import claude_messages as client
 
         response = {"type": "message", "role": "assistant", "model": client.MODEL, "stop_reason": "end_turn",
@@ -328,13 +395,14 @@ class ClaudeReviewTests(unittest.TestCase):
             reply = connect.return_value.getresponse.return_value
             reply.status, reply.length = 200, 0
             reply.read.return_value = json.dumps(response).encode()
-            with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key"}, clear=True):
+            with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key", "KIND": kind}, clear=True):
                 self.assertEqual(client.main(), 0)
             output = json.loads(self.output.with_name("claude-result.json").read_text("ascii"))
             connect.assert_called_once_with("api.anthropic.com", timeout=180)
             request = connect.return_value.request
             request.assert_called_once()
             method, path, body, headers = request.call_args.args
+            self.assertEqual(body, claude_input.client.request_body(self.system, self.frames, kind))
             self.assertEqual((method, path), ("POST", "/v1/messages"))
             self.assertEqual(headers, {"x-api-key": "fixture-key", "content-type": "application/json",
                                        "anthropic-version": "2023-06-01"})
@@ -347,7 +415,7 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertEqual(payload["service_tier"], "standard_only")
             self.assertEqual(payload["output_config"]["effort"], "high")
             self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
-            self.assertEqual(set(payload["output_config"]["format"]["schema"]["required"]), {"findings", "overflow"})
+            self.assertEqual(set(payload["output_config"]["format"]["schema"]["required"]), set(client.RESULT_FIELDS[kind]))
             self.assertLess(client.MAX_REQUEST_BYTES * 4 + payload["max_tokens"] * 20, 1_000_000)
         return output
 
