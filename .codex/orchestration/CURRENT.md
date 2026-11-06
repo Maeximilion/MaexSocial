@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## Next customer task queued · 2026-11-06 10:31 UTC
+
+[#117](https://github.com/Maeximilion/MaexSocial/issues/117) now records accepted MS-009 task 2: local customer activation, tenant-bound portal, Manager-owned Employee invitations/removal and immutable Manager approval. It has verified task/P1/G3/blocked labels, G3 milestone, assignee and Project Blocked. Native parent #10 lists #114 and #117; #117 is natively blocked by #114.
+
+This is queue preparation, not a new admitted chat or reservation. Wait for #114's reviewed schema/fixture boundary; preserve the sequential accepted plan. #114 remains the only active implementation chat and owns its coherent Task1 delivery. Once the next admission is justified, use an unused verified predecessor merge/archive pair and create a fresh chat. No repeated owner approval is needed for the accepted local synthetic scope.
+
 ## Review preflight merged; local foundation under runtime checks · 2026-11-06 10:26 UTC
 
 [PR #116](https://github.com/Maeximilion/MaexSocial/pull/116) merged at `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d`; final head `3f2ef61017e2e18964fe25a9770075f14a3ce63a`, exact checked candidate `2572acf6d9233d7b095cb375c096e6a62c84fa7a`. Independent actual Astra/high and CI passed. The [protected-path disposition](https://github.com/Maeximilion/MaexSocial/pull/116#issuecomment-6682546662) verified the authentic self-skip and SKIPPED API client step in run 42200744116. This is not a Claude analysis. The owner set model, effort, limits and disabled Codex self-mention fallback are unchanged. Verify the new trusted automatic workflow on the next ordinary eligible PR without an extra paid probe.
