@@ -20,7 +20,7 @@ async function initialize(): Promise<Fixture> {
   await save('fixture.json', JSON.stringify(f));
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
-  await save('compose.env', `FIXTURE_ID=${f.id}\n`);
+  await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
   docker(['pull', postgresImage]);
   for (const name of ['postgres', 'identity-db', 'keycloak', 'mailbox']) {
     docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'openssl', postgresImage,

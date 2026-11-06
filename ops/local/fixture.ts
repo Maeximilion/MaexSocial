@@ -49,7 +49,7 @@ export function safeDiagnostics(text: string): string {
 export function compose(f: Fixture, args: string[]): string {
   return docker(['compose', '--project-name', f.project, '--env-file', 'work/pilot/compose.env',
     '-f', 'ops/local/compose.yaml', ...args], { ...process.env,
-    FIXTURE_ID: f.id });
+    FIXTURE_ID: f.id, FIXTURE_UID: String(process.getuid?.() ?? 0), FIXTURE_GID: String(process.getgid?.() ?? 0) });
 }
 
 export async function databaseConfig(f: Fixture, owner = false): Promise<ClientConfig> {
@@ -59,21 +59,35 @@ export async function databaseConfig(f: Fixture, owner = false): Promise<ClientC
     options: '-c statement_timeout=10000 -c lock_timeout=5000', connectionTimeoutMillis: 5000 };
 }
 
-export function verifyContainers(f: Fixture): void {
-  const ids = compose(f, ['ps', '-q', 'postgres']).split(/\s+/).filter(Boolean);
-  if (ids.length !== 1) throw new Error('Fixture PostgreSQL is not running');
-  const inspected = JSON.parse(docker(['inspect', ids[0]!]))[0];
-  const labels = inspected.Config.Labels;
-  if (labels['org.maexsocial.fixture'] !== f.id || labels['com.docker.compose.project'] !== f.project
-      || Object.values(inspected.NetworkSettings.Ports).some(value => Array.isArray(value) && value.length)) {
-    throw new Error('Fixture container identity mismatch');
-  }
-  for (const network of ['application', 'identity']) {
-    const inspectedNetwork = JSON.parse(docker(['network', 'inspect', `${f.project}_${network}`]))[0];
-    if (!inspectedNetwork.Internal || inspectedNetwork.Labels['com.docker.compose.project'] !== f.project) {
-      throw new Error('Fixture network is not isolated');
+interface ContainerInfo {
+  Config: { Labels: Record<string, string> };
+  NetworkSettings: { Ports: Record<string, unknown>; Networks: Record<string, { NetworkID: string }> };
+}
+interface NetworkInfo { Id: string; Name: string; Internal: boolean; Labels: Record<string, string> }
+export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks: NetworkInfo[]): void {
+  const services = new Map([['postgres', 'application'], ['identity-db', 'identity'], ['keycloak', 'identity'], ['mailbox', 'identity']]);
+  if (containers.length !== services.size || networks.length !== 2) throw new Error('Incomplete fixture topology');
+  for (const container of containers) {
+    const labels = container.Config.Labels;
+    const service = labels['com.docker.compose.service']!;
+    const networkName = services.get(service);
+    const expected = networks.find(n => n.Name === `${f.project}_${networkName}`);
+    const attachments = Object.entries(container.NetworkSettings.Networks);
+    if (!networkName || !expected || expected.Internal !== true || expected.Labels['com.docker.compose.project'] !== f.project
+        || labels['org.maexsocial.fixture'] !== f.id || labels['com.docker.compose.project'] !== f.project
+        || attachments.length !== 1 || attachments[0]![0] !== expected.Name || attachments[0]![1].NetworkID !== expected.Id
+        || Object.values(container.NetworkSettings.Ports).some(value => Array.isArray(value) && value.length)) {
+      throw new Error('Fixture service is not isolated');
     }
+    services.delete(service);
   }
+}
+
+export function verifyContainers(f: Fixture): void {
+  const ids = compose(f, ['ps', '-q']).split(/\s+/).filter(Boolean);
+  if (ids.length !== 4) throw new Error('Fixture services are not running');
+  verifyTopology(f, JSON.parse(docker(['inspect', ...ids])),
+    JSON.parse(docker(['network', 'inspect', `${f.project}_application`, `${f.project}_identity`])));
 }
 
 export async function runIsolated(args: string[]): Promise<string> {

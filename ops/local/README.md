@@ -11,12 +11,13 @@ npm run pilot:up
 npm run pilot:migrate -- up
 npm run pilot:migrate -- down
 npm run pilot:migrate -- up
+node --test dist/pilot/tests/pilot/migration-empty.js
 node --test dist/pilot/tests/pilot/storage.test.js
 npm run pilot:test
 npm run pilot:down
 ```
 
-Run the up/down/up migration drill only before seeding. The runner accepts no database URL or target argument. It verifies the generated manifest, Docker project/label, internal networks and database marker before SQL. Migration down locks all pilot tables and refuses populated tables, unknown database objects or an enabled dispatch control. The one stopped control row is bootstrap metadata. Failed migration transactions roll back. No command deletes volumes.
+Run the up/down/up migration drill and `migration-empty.js` only before seeding. The runner accepts no database URL or target argument. It verifies the generated manifest, every service's Docker project/label, actual internal-only network attachments and database marker before SQL. Migration down locks all pilot tables and refuses populated tables, unknown database objects or an enabled dispatch control. Explicit teardown uses no CASCADE; unknown dependencies or remaining schema objects roll back the whole transaction. The one stopped control row is bootstrap metadata. No command deletes volumes.
 
 `pilot:up` generates a new random namespace, credentials, one-day TLS certificates and an expiring manifest in ignored `work/pilot/`. Database login credentials also expire after one day. It starts separate application PostgreSQL, identity PostgreSQL, Keycloak and a mailbox sink. Both networks are internal with no published ports; a disposable Node runner joins them for readiness, migrations and tests. Package/image downloads occur before runtime. No daemon or host firewall changes, external mail relay, external product request or real credential is needed. `pilot:down` works with an expired manifest and preserves all volumes.
 

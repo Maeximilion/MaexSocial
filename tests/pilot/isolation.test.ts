@@ -3,23 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { test } from 'node:test';
 import { Client } from 'pg';
-import { compose, databaseConfig, docker, loadFixture, runIsolated } from '../../ops/local/fixture.js';
+import { databaseConfig, loadFixture, runIsolated } from '../../ops/local/fixture.js';
 
 test('isolated services require TLS and the app role cannot access identity storage', async () => {
   const f = await loadFixture();
   if (process.env.PILOT_CONTAINER !== '1') {
-    const ids = compose(f, ['ps', '-q']).split(/\s+/).filter(Boolean);
-    assert.equal(ids.length, 4);
-    const containers = JSON.parse(docker(['inspect', ...ids]));
-    for (const container of containers) {
-      assert.equal(container.Config.Labels['org.maexsocial.fixture'], f.id);
-      assert.equal(Object.values(container.NetworkSettings.Ports).some(p => Array.isArray(p) && p.length > 0), false);
-      for (const network of Object.keys(container.NetworkSettings.Networks)) {
-        const info = JSON.parse(docker(['network', 'inspect', network]))[0];
-        assert.equal(info.Internal, true, 'no runtime egress network');
-        assert.equal(info.Labels['com.docker.compose.project'], f.project);
-      }
-    }
     console.log(await runIsolated(['--test', 'dist/pilot/tests/pilot/isolation.test.js']));
     return;
   }

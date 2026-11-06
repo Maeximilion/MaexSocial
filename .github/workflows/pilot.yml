@@ -33,6 +33,7 @@ jobs:
           npm run pilot:migrate -- up
           npm run pilot:migrate -- down
           npm run pilot:migrate -- up
+      - run: node --test dist/pilot/tests/pilot/migration-empty.js
       - run: npm run pilot:test
       - name: Restart without deleting volumes
         run: |
