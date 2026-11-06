@@ -34,7 +34,16 @@ export async function loadFixture(allowExpired = false): Promise<Fixture> {
 
 export function docker(args: string[], env: NodeJS.ProcessEnv = process.env): string {
   try { return execFileSync('docker', args, { encoding: 'utf8', env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 180_000 }).trim(); }
-  catch { throw new Error(`Docker ${args[0]} failed; inspect the isolated fixture locally`); }
+  catch (error) {
+    const failure = error as { stdout?: string; stderr?: string };
+    throw new Error(`Docker ${args[0]} failed: ${safeDiagnostics(`${failure.stdout ?? ''}\n${failure.stderr ?? ''}`)}`);
+  }
+}
+
+export function safeDiagnostics(text: string): string {
+  // This fixture generates only 64-hex credentials; never use this as a general log sanitizer.
+  return text.replace(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC )?PRIVATE KEY-----|$)/g, '[private key]')
+    .replace(/[a-f0-9]{64}/gi, '[fixture secret]').slice(-12000);
 }
 
 export function compose(f: Fixture, args: string[]): string {

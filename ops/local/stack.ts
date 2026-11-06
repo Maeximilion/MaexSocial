@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { compose, docker, loadFixture, runIsolated, type Fixture } from './fixture.js';
+import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixture } from './fixture.js';
 
 const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
@@ -101,4 +101,9 @@ async function main(): Promise<void> {
   console.log(await runIsolated(['dist/pilot/ops/local/stack.js', 'check']));
   console.log('Isolated fixture ready; no host ports or external runtime route.');
 }
-main().catch(() => { console.error('Fixture operation failed. No secrets printed; inspect prerequisites and work/pilot locally.'); process.exitCode = 1; });
+main().catch(async error => {
+  console.error(error instanceof SyntaxError ? 'Invalid fixture manifest.' : safeDiagnostics(String(error)));
+  try { console.error(safeDiagnostics(compose(await loadFixture(true), ['logs', '--no-color', '--tail', '15']))); }
+  catch { console.error('Fixture service diagnostics unavailable.'); }
+  process.exitCode = 1;
+});

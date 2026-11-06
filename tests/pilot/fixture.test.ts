@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { validateFixture } from '../../ops/local/fixture.js';
+import { validateFixture, safeDiagnostics } from '../../ops/local/fixture.js';
 
 test('fixture validation rejects altered target, expired fixture and unknown schema', () => {
   const fixture = { schema: 1, id: 'a'.repeat(32), project: `maex-pilot-${'a'.repeat(32)}`,
@@ -13,4 +13,11 @@ test('fixture validation rejects altered target, expired fixture and unknown sch
     assert.throws(() => validateFixture(value));
   }
   assert.doesNotThrow(() => validateFixture({ ...fixture, expiresAt: 0 }, true));
+});
+
+test('diagnostics preserve failures without printing generated secrets or private keys', () => {
+  const text = `permission denied ${'a'.repeat(64)}\n-----BEGIN PRIVATE KEY-----\ncanary\n-----END PRIVATE KEY-----`;
+  const safe = safeDiagnostics(text);
+  assert.match(safe, /permission denied/);
+  assert.ok(!safe.includes('a'.repeat(64)) && !safe.includes('canary'));
 });
