@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## Pilot plan merged and gate packet advancing · 2026-11-06 09:12 UTC
+
+[PR #112](https://github.com/Maeximilion/MaexSocial/pull/112) merged at `b97e6cfd9f75cb545deef46c7afc2feea7b8361a`. Its final head `c161d2b74d0935a39d94e23eb740989f8e720827` and integration candidate `17e73853d9eea20d1c575c395ae4e55b4ed804ed` against main `2bb081fb4fcafa00730e64d0628bfc4975deccfb` passed current CI and independent GPT-6 Astra/high. The [complete Claude receipt](https://github.com/Maeximilion/MaexSocial/pull/112#issuecomment-6681224663) reports zero findings. All seven threads are resolved. The final teardown wording distinguishes retained isolated synthetic fixtures from sanitized shared evidence.
+
+Canonical main is synchronized and clean. The originating #9 chat is archived with native readback after verification of all 161 saved files, ignored contents, Git metadata, independently checked-out bundle recovery and final completed transcript. The original worktree is preserved. [Issue #9's checkpoint](https://github.com/Maeximilion/MaexSocial/issues/9#issuecomment-6681252389) keeps design acceptance separate from documentation delivery.
+
+#15 is now the sole unarchived work lane. It is authorized to integrate the actual #112 merge, publish its normal G2 proposal PR and obtain current independent Astra/high plus automatic Claude reviews. Owner acceptance, a gate tag and local product implementation are still pending. Prepare the combined bounded G2/local synthetic implementation decision; no separate redundant permission round after an unambiguous owner decision. No external operations or spending are authorized. Do not fill empty lanes with blocked implementation.
+
+Claude API works and the Codex code-review fallback remains off; separate security settings and required checks remain unchanged. The coordinator retains the owner's Very high effort choice.
+
 ## Current review and decision preparation · 2026-11-06 09:00 UTC
 
 #112 remains open at `1c3c20b147b650e0a16b445c561f5c2f221d384c` against main `2bb081fb4fcafa00730e64d0628bfc4975deccfb`. Its [latest Claude run](https://github.com/Maeximilion/MaexSocial/actions/runs/42191307387) is complete, with [one teardown/evidence-retention suggestion](https://github.com/Maeximilion/MaexSocial/pull/112#issuecomment-6681111348) still being assessed by the owner and independent Astra/high. Earlier corrections cover executable task/test ownership, current build/restart prerequisites, global database-unique occurrence IDs and active-tenant authorization, with explicit collision/multi-membership tests. The actual changed diff remains below the trusted 50,000-byte limit; the prior truncated run stays non-acceptance evidence. No merge until the current suggestion is dispositioned and final integration/review are verified.
