@@ -27,6 +27,13 @@ class ReviewFailure(Exception):
     """Messages are fixed locally; never wrap external error text."""
 
 
+def unique_fields(pairs):
+    fields = dict(pairs)
+    if len(fields) != len(pairs):
+        raise ValueError("duplicate JSON field")
+    return fields
+
+
 def result_from(message, kind):
     if (not isinstance(message, dict) or message.get("type") != "message"
             or message.get("role") != "assistant" or message.get("model") != MODEL):
@@ -44,7 +51,7 @@ def result_from(message, kind):
     if len(texts) != 1 or not isinstance(texts[0], str):
         raise ReviewFailure("missing_result")
     try:
-        result = json.loads(texts[0])
+        result = json.loads(texts[0], object_pairs_hook=unique_fields)
     except (ValueError, RecursionError):
         raise ReviewFailure("invalid_result_json") from None
 
@@ -104,7 +111,7 @@ def review(system, data, key, kind):
     finally:
         conn.close()
     try:
-        message = json.loads(raw)
+        message = json.loads(raw, object_pairs_hook=unique_fields)
     except (ValueError, RecursionError):
         raise ReviewFailure("invalid_response_json") from None
     result = result_from(message, kind)

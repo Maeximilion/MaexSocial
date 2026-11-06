@@ -73,6 +73,10 @@ class MessagesFailureTests(unittest.TestCase):
             (message() | {"content": [{"type": "tool_use"}]}, "unexpected_content"),
             (message() | {"content": []}, "missing_result"),
             (message() | {"content": [{"type": "text", "text": "opaque-fixture"}]}, "invalid_result_json"),
+            (message() | {"content": [{"type": "text", "text": '{"summary":"fixture","findings":[],'
+                      '"overflow":true,"overflow":false}'}]}, "invalid_result_json"),
+            (json.dumps(message()).replace('"stop_reason":', '"stop_reason":"max_tokens","stop_reason":').encode(),
+             "invalid_response_json"),
             (message() | {"usage": {"input_tokens": "opaque-fixture", "output_tokens": 0}}, "invalid_usage"),
             (message({"summary": "opaque-fixture", "findings": [], "overflow": False}), "unsafe_result"),
             (message({"summary": "a\u200bb", "findings": [], "overflow": False}), "invalid_summary"),
