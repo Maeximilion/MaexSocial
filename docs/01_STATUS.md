@@ -32,7 +32,7 @@
 | Agent anatomy and repository artwork security | Foundation work tracked in issue #42; runtime hook trust remains local | [Implementation plan](superpowers/plans/2026-11-05-agent-anatomy-and-asset-security.md), [tooling guide](tooling/agent-workflow.md) |
 | Customer upload/processing security, MS-014 | #43 completed for the owner-accepted text-only scope; JPEG limits and later media evidence remain in #99 | [Owner disposition](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671306956), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
 
-On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximilion/MaexSocial/issues/14) as a bounded research baseline. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning. Product design, implementation, external tests, spending and customer operation require separate approval.
+On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximilion/MaexSocial/issues/14) as a bounded research baseline. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning. Product design, implementation, external tests, spending and customer operation each require explicit authorization beyond G1 planning. Design acceptance alone does not authorize implementation. Distinct design and bounded implementation decisions may be presented together and recorded separately in one owner response.
 
 ## What's next
 
