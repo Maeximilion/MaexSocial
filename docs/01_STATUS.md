@@ -1,8 +1,8 @@
 # Project status
 
-- Status date — 2026-11-05
+- Status date — 2026-11-06
 - Stage — G2 design planning
-- Gates — G0 complete, G1 accepted for bounded discovery, G2–G4 open, G5 blocked by [#88](https://github.com/Maeximilion/MaexSocial/issues/88)
+- Gates — G0 complete, G1 accepted for bounded discovery, G2–G4 open; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5, and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
 - Product implementation — pending G2 design approval and the MS-009 executable plan
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
@@ -20,24 +20,24 @@
 | API feasibility, MS-005 | Documented feasibility merged, issue #5 closed. Customer grants and outcomes untested. | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md), [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) |
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
 | Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. Maxi accepted G1 on 2026-11-05. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
-| Design and detailed plan, MS-008–009 | MS-008 planning authorized using Superpowers. MS-009 awaits design acceptance | [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) and [design options](superpowers/specs/2026-11-05-g2-planning-design.md) |
+| Design and detailed plan, MS-008–009 | Local-first component and role decisions recorded; full G2 acceptance pending. MS-009 plan in PR #112 | [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md), [plan PR #112](https://github.com/Maeximilion/MaexSocial/pull/112) and [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
 | Local secret guards and Codex hooks | Maintenance implementation and verification; merge pending. Security/Dependabot P0/P1 checks are advisory and run only on explicit /start or /task; periodic automation paused. Repository Stop hook also changed to warnings; model-routing pause retained | [Issue #44](https://github.com/Maeximilion/MaexSocial/issues/44), [local security and CLI setup](19_LOCAL_SECURITY.md) |
 | Explicit checks and development skills | Local skills enabled and periodic check paused; project plugin integration pending merge | [Issue #56](https://github.com/Maeximilion/MaexSocial/issues/56), [skill roles](tooling/development-skills.md) |
-| Registration, customer and platform-admin access, MS-013 | Confirmed requirements; design and runtime tests pending G2 | [Issue #30](https://github.com/Maeximilion/MaexSocial/issues/30), [access requirements](17_ACCESS_SECURITY.md) |
+| Registration, customer and platform-admin access, MS-013 | Role/invitation/approval/export amendment merged in #106; remaining controls need owner disposition. Runtime untested | [Issue #30](https://github.com/Maeximilion/MaexSocial/issues/30), [ACCESS-01–17](17_ACCESS_SECURITY.md) |
 | PR metadata and Project views | Maintenance delivery | [Issue #32](https://github.com/Maeximilion/MaexSocial/issues/32), [Project operations](16_GITHUB_PROJECT.md) |
 | Customer media library, calendar and optional advertising | Requested direction and G2 proposal; no integration or operating authority implemented | [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40), [workflow, API evidence and proposed acceptance cases](18_MEDIA_LIBRARY.md) |
 | Agent anatomy and repository artwork security | Foundation work tracked in issue #42; runtime hook trust remains local | [Implementation plan](superpowers/plans/2026-11-05-agent-anatomy-and-asset-security.md), [tooling guide](tooling/agent-workflow.md) |
-| Customer upload/processing security, MS-014 | Proposed requirements, pending G2 design and acceptance | [Issue #43](https://github.com/Maeximilion/MaexSocial/issues/43), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
+| Customer upload/processing security, MS-014 | #43 completed for the owner-accepted text-only scope; JPEG limits and later media evidence remain in #99 | [Owner disposition](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671306956), [UPLOAD-01–10 and threat boundaries](security/uploads.md) |
 
 On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximilion/MaexSocial/issues/14) as a bounded research baseline. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/14#issuecomment-6661937363) authorizes G2 planning. Product design, implementation, external tests, spending and customer operation require separate approval.
 
 ## What's next
 
-1. Review the [MS-008 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) for the [owner-confirmed GBP text pilot](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692). Require Google-side confirmation. Export is the fallback before dispatch; an uncertain submission stays in reconciliation.
-2. Resolve account eligibility, architecture, access, upload boundaries and operating limits. MS-009 follows design acceptance.
+1. Complete the #112 delivery and compare its final revision with the [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md). Maxi decides the remaining local contracts and G2 scope; no acceptance or implementation authority is recorded here.
+2. Keep production access, account eligibility, operating ownership, privacy, costs and real recovery evidence at their stated release boundaries. Preserve #88/#99 and record any newly accepted deferral with the required issue and gate links. Export is a pre-dispatch fallback, not verified Google publication.
 
 ## Evidence limits
 

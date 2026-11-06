@@ -1,0 +1,90 @@
+# G2 owner decision packet
+
+**Prepared 2026-11-06; no G2 acceptance recorded.** [Gate #15](https://github.com/Maeximilion/MaexSocial/issues/15) asks Maxi to approve a buildable scope, architecture, access contract and implementation plan. This packet executes package H of the [existing G2 plan](../plans/2026-11-05-g2-work-plan.md); it introduces no product implementation. A documentation merge or successful CI is not the decision.
+
+## Evidence and decision state
+
+The inspected main baseline is `2bb081fb4fcafa00730e64d0628bfc4975deccfb`, including [access amendment #106](https://github.com/Maeximilion/MaexSocial/pull/106). The implementation plan is still under review in [PR #112](https://github.com/Maeximilion/MaexSocial/pull/112), initially inspected at `e5579aa40826e4a194fcd6fff402731a0ac6055b`. Before publishing this packet, replace that provisional plan reference with its actual merged revision and check the final changes. An owner decision must identify the final reviewed packet revision.
+
+| Required deliverable | Evidence | What remains |
+|---|---|---|
+| #8 scope and architecture | [Local-first owner selection](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463), [ADR 0001](../../decisions/0001-application-language.md), [ADR 0002](../../decisions/0002-google-text-pilot.md) | Accept the complete local design and distinguish future operating decisions; #8 is open |
+| #30 access design | [Role/invitation decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744), [approval/export decision](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885), [current ACCESS-01–17 contract](../../17_ACCESS_SECURITY.md), merged #106 | Accept or revise the remaining proposed controls and numerical defaults; #30 is open |
+| #43 media boundary | [Dated owner disposition](https://github.com/Maeximilion/MaexSocial/issues/43#issuecomment-6671306956), [upload contract](../../security/uploads.md), [#99](https://github.com/Maeximilion/MaexSocial/issues/99) | Complete for the text pilot; future JPEG/media evidence remains open in #99 |
+| #9 executable plan | PR #112, six file-level tasks and the synthetic evidence map | Actual merge, final contract comparison and owner acceptance; no product case has run |
+| #15 gate | This packet and the [charter](../../00_PCF.md) | Maxi's dated, revision-bound decision; decision-record merge before any annotated gate tag |
+
+## Already decided: keep this scope
+
+- **Pilot:** one local business, one location, one organic GBP text revision and one occurrence. Plan locally with invented A/B tenants, a local mailbox, deterministic provider and device fixtures, isolated networking and no external egress. A second tenant exists to test isolation. [Pilot assumption](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6662099692) and local-first selection authorize planning, not implementation or live operation.
+- **Components:** strict TypeScript in the customer browser; strict TypeScript/Node for customer/private admin APIs and a separate publication worker; PostgreSQL SQL migrations; upstream Keycloak with separate database/role and customer/admin clients; a separate C#/.NET WPF Windows administrator packaged as signed MSIX. Python stays repository tooling. ADR 0001 records the delegated component selection. Node 24, Express 5, PostgreSQL 17, Keycloak 26.x and .NET 10 are planning candidates; maintained patches/images must be pinned and exercised when implementation is authorized.
+- **Tenant roles:** only an active Manager can approve the exact revision, location, time and occurrence. An active Employee or Manager can export that Manager-approved revision only when required Google access is unavailable before dispatch. DEV/Admin may manage customer organizations and access through the separately enrolled Windows identity, including customer-role grants, promotion/demotion and revocation; it gains no customer content approval/export authority. Manager invitations/removals affect only that tenant's Employees.
+- **Invitations:** email and customer role select the intended grant. A new invitee sets their own password and supplies first and last name; other profile fields are optional. Existing verified identities retain their other memberships and credentials. Revocation removes the tenant grant, not another tenant's access. Public registration never grants Manager or DEV/Admin authority.
+- **Hold and publication:** the [owner-approved Windows hold](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6670980326) targets one occurrence, requires fresh MFA and an audited reason, and wins only before dispatch. Export commits a terminal, mutually exclusive state before releasing text. A possible send with a lost reply remains unknown and reconciles; no blind retry or manual export. Export and fake LIVE never prove a Google-side publication.
+- **Media off:** reject attachments, media links for ingestion, uploads and object references for every role at draft/export/dispatch. Require zero media storage, fetches, jobs or charges plus a working plain-text control. JPEG limits are deferred to #99. Recurrence, paid generation, advertising and autonomous approval are outside this first slice.
+
+## Proposed contracts requiring disposition
+
+These are existing design proposals, not observed security or operating guarantees. The recommended decision is to accept them as local implementation/test contracts; real operating values and custodians remain separately evidenced before exposure. A changed invariant must update #9 before implementation.
+
+| Area | Proposed local contract / value | Consequence and remaining decision |
+|---|---|---|
+| Authority and MFA | Server checks active tenant, membership/grant version, audience, device and action on every protected operation. Manager MFA enrollment and fresh proof precede approval and Employee invitation/removal. DEV/Admin uses phishing-resistant MFA, target and atomic audit; admin proof age at most 5 minutes | Deny on missing/revoked authority or failed audit. #30 must fix a numerical Manager freshness bound before implementing those fixtures; the current text says fresh without a separate age |
+| Challenges and sessions | Invitations and verification 24 h; reset 15 min; single-use hashed tokens, resend invalidates old links. Browser 30 min idle / 8 h absolute; admin 10 min idle / 1 h absolute with 5 min memory-only access token | Controlled-clock boundary tests. Revocation denies the next protected action regardless of token lifetime, including an existing connection |
+| Abuse controls | Login 5/account and 30/source per 15 min; signup/recovery/resend each 3/account and 10/source per hour; both counters cover unknown identities | Generic public responses and shared-source/distributed-attempt tests; tune only against evidence, without permitting enumeration |
+| Data model | Tenant-bound composite references, immutable revisions, versioned Manager approval, stable occurrence, unique attempt, locked hold/export/dispatch and atomic management audit | An edit or approver demotion/revocation invalidates unclaimed authority. Re-promotion alone never revives approval; already claimed work reconciles |
+| Retention and deletion | Own identity/business/draft records purge online within 7 days of authorized deletion; revoke grants immediately and delete vault material within 24 h; minimized own intent/receipt facts 90 days after resolution; restricted audit 90 days; rolling backups 30 days, last copy expires within 30 days of online purge | Unknown attempts remain restricted for named reconciliation. These are proposed durations, not permission for real personal data. Name deletion and incident-hold owners before real use |
+| Google-returned data | On-demand readback; separate returned content from our consent, intent and audit. No long-lived payload logs/backups. Any allowed performance cache is temporary, at most 30 calendar days, including after restore | Establish the permitted project model, field-level retention and identifier/correlation rights before live use. The 90-day own-facts rule does not authorize retaining Google payloads |
+| Recovery and Windows trust | Independent recovery plane and spare administrator authenticator; non-exportable device key; private device-authenticated ingress; trusted MSIX identity/signer and increasing versions; known-good rollback reissued at a higher version | Local fake device/signing tests first. Real hardware, signer custody, update channel and lost-PC drill require #82 evidence and named operators |
+| Restore safety | Isolated app/IdP restore, independent deletion/revocation history covering the backup horizon, rotated stale credentials and quarantine of all historical occurrences | Reopen a historical occurrence only with independent proof neither send nor export claimed it. Missing history or empty provider readback keeps affected access/work held. Measure restore time/data loss; Maxi sets real RPO/RTO before operation |
+
+The [Google policy](https://developers.google.com/my-business/content/policies#content_storage) was checked on 2026-11-06. It restricts cached content and third-party programmatic access and requires specific consent for automated actions. This supports keeping live eligibility and the project model as an explicit prerequisite; it does not establish that this application's future integration is approved.
+
+## Cost and hosting boundary
+
+**Selected now:** local synthetic planning; zero authorized external product spending, no hosting order, no live email/Google/paid-generation/ad route. This does not claim local hardware or operator time is free.
+
+**Historical estimate only:** ADR 0002's 2026-11-05 Frankfurt Lightsail scenario gives USD 45/month for host plus backups and roughly USD 49/month for its listed baseline before tax and variable charges. It excludes domain/DNS, signing, hardware authenticators, request/transfer/logging volume, restore environments and operator time. It is neither a current quote nor a cap; the total is unknown. Frankfurt and one-host outage exposure remain proposed. Before provisioning, Maxi must choose the operator, processor/region, recovery targets, key custody, payer and absolute currency/period cap, with current quotes and terms. No purchase research or provider call is required to decide the isolated local plan.
+
+## Acceptance test plan and evidence levels
+
+Use the final #9 plan, not a second implementation plan. Its sequence is environment/storage, customer portal, Windows management, atomic publication/export, isolated recovery, and end-to-end evidence. Reconcile the final task dependencies after #112 review. Bind every result to fixture, build, command, expected/actual outcome, side-effect count and owner.
+
+| Boundary | Required test evidence before relying on it | Owner / stage |
+|---|---|---|
+| Registration, invitations, roles and tenant separation | ACCESS-01–17, A/B positive and denied controls, direct API calls, credential canaries, explicit activation races, Manager MFA, Employee approval denial/allowed export, last-Manager loss and preserved other-tenant membership | #10 local implementation; #82 repeats applicable controls before external access |
+| Dispatch/hold/export | Duplicate workers, changed revision, revoked approver/provider grant, hold-before/after claim, export-vs-send, crash-before-send and accepted-but-lost reply. Zero or one creates as specified; no second send or leaked manual text | #10 integration; #82 release-critical races |
+| Storage/restore/client | Disposable migration up/down/up, app/IdP separation, device revocation, trusted/tampered update controls, signed higher-version recovery, pre-dispatch/export/deletion/revocation snapshots and incomplete history | #10 synthetic cases; #82 real supported hardware and recovery scope |
+| Disabled capabilities and spend | All-role media denials plus text control; no external transport. Two synthetic 4-unit jobs against 5 units yield one reservation, settle once, retain uncertain cost | #10; later media requires #99 and UPLOAD-01–10 |
+| End-to-end outcome | Portal signup → first Manager granted by DEV/Admin → invite Employee → Manager approval → fake outcome or eligible Employee export; keyboard/UI evidence distinct from API assertions | #10 local result only. G3/#16 still requires separately authorized, uniquely correlated Google-side evidence for actual publication |
+
+Foundation checks validate documentation and automation only. All product commands, migrations, UI journeys, device drills and provider outcomes remain unexecuted by this packet.
+
+### First implementation sequence after authorization
+
+The corrected #9 plan at `c71832c` makes the six acceptance-bearing tasks sequential: **1 environment/storage → 2 customer activation/portal/approval → 3 Windows/private management → 4 dispatch/export → 5 recovery → 6 whole-slice exit**. Task 3 consumes task 2's activation and approval; they are not two independent complete delivery lanes. The initial task is the common foundation. Within a later task, independent source/test work can be assigned only after its shared contracts and exact file ownership are established; no five-way split is established by this plan. Neither lane can claim a passing approval/export/hold integration test before its transitions exist. #112 is still under review; its final merged dependency order controls this handoff. G2 acceptance and explicit implementation authority precede dispatch of any implementation work.
+
+## Gaps, owners and gate obligations
+
+Live dependency readback on 2026-11-06 found **G5/#18 blocked by #88 and #99; G4/#17 blocked by #99**. G2/#15 has no native `blocked_by` entries; its written #8/#9/#30/#43 criteria still apply. The G2 milestone is open. No acceptance-dependent issue has been closed here.
+
+| Gap / status | Existing owner and issue | Closure evidence / relying gate |
+|---|---|---|
+| Complete local design disposition and proposed bounds, including Manager freshness | Maxi, #8/#30/#15 | Dated decision against the final packet and plan revision; update any changed fixture before local implementation / G2 |
+| Final plan delivery and traceability | #9 plan owner, #112 | Actual merged plan, final contract comparison, checks/reviews and exact owner-accepted revision / G2 |
+| Runtime, tenant/access/Windows and recovery proof | #10 implementer and #82 assessment owner; Maxi authorizes scope | Revision-bound positive/negative results, independent recovery and hardware/trust evidence; actual RPO/RTO accepted before real operation / G3 and external exposure |
+| Production operator, processor/region, privacy/deletion targets, custodians and paid envelope | Maxi, existing #8/#30 decisions; #10/#82 provide release evidence | Named responsibilities, dated operating decision, current terms/quotes, capped authorized spend and measured purge/restore. Keep real access/provisioning disabled until satisfied / first external G3 release |
+| Live GBP access, policy-permitted project, correlation/retention and actual result | Maxi with account owner, #8/#10 | Authorized eligible account/location/grant/project, approved field retention and uniquely correlated Google-side result; export remains unconfirmed / G3 publication |
+| Five carried G1 gaps | Maxi, #88 | Each of embedded analytics, Google-side competitor result, write workflows, other tiers and authenticated REA capture needs its own dated evidence and reviewer / G5, earlier only if relied on. Our fake or future product result does not close competitor research |
+| JPEG decision and media safety | Maxi and future #11 owner, #99 | Concrete format/limits decision and revision-bound UPLOAD-01–10 staging evidence before media enablement / G4 and G5 |
+
+No new gap issue is needed for this preparation: the open design questions and later evidence already have owners above. If Maxi formally defers additional G2 criteria, amend the appropriate existing assigned issues with explicit closure criteria and add/verify native blockers to G5 and the earlier relying gate **before recording that bounded acceptance**. Existing #88/#99 links do not cover unrelated operating or identity gaps. Do not silently close #8/#30 or treat local fake evidence as release evidence.
+
+## Minimal owner decision
+
+After #112 merges, present these together, with the final reviewed revision:
+
+1. **Remaining access/defaults:** accept the proposed local security, deletion and recovery contracts above, or identify changes. For Manager approval and Employee management, propose the same 5-minute MFA freshness bound as privileged admin actions; this is an explicit unaccepted proposal, not a prior owner decision. Production values/custodians remain release prerequisites.
+2. **G2 scope and plan:** accept or revise the compiled local synthetic text-pilot design and final #9 plan as the G2 baseline, with the listed external/media/research requirements retained and properly linked to their relying gates. Record implementation authority separately; an answer accepting the design is not permission for live accounts, external tests, deployment or spending.
+
+Until Maxi answers, #8/#30/#9/#15 remain open and G2 untagged. Once the actual decision is recorded, synchronize status, work packages, issues and Project; merge the reviewed decision record; only then may the authorized gate owner create and verify an annotated tag on that exact main commit under the [gate procedure](../../../.claude/commands/gate.md).
