@@ -21,6 +21,30 @@ def message(result=None):
 
 
 class MessagesFailureTests(unittest.TestCase):
+    def test_complete_serialized_request_boundaries(self):
+        for kind in ("review", "mention"):
+            system, prefix = "system 🌐", 'é\\"<>&\''
+            overhead = len(client.request_body(system, prefix, kind))
+            for delta in (-1, 0, 1):
+                data = prefix + "x" * (client.MAX_REQUEST_BYTES + delta - overhead)
+                expected = client.request_body(system, data, kind)
+                self.assertEqual(len(expected), client.MAX_REQUEST_BYTES + delta)
+                with self.subTest(kind=kind, delta=delta), patch.object(client, "HTTPSConnection") as connect:
+                    response = connect.return_value.getresponse.return_value
+                    response.status, response.length = 200, 0
+                    fields = {"findings": [], "overflow": False}
+                    if kind == "mention":
+                        fields["summary"] = "fixture"
+                    response.read.return_value = json.dumps(message(fields)).encode()
+                    if delta == 1:
+                        with self.assertRaisesRegex(client.ReviewFailure, "^input_budget$"):
+                            client.review(system, data, "opaque-fixture", kind)
+                        connect.assert_not_called()
+                    else:
+                        self.assertEqual(client.review(system, data, "opaque-fixture", kind), fields)
+                        connect.return_value.request.assert_called_once()
+                        self.assertEqual(connect.return_value.request.call_args.args[2], expected)
+
     def test_manual_request_keeps_its_answer_in_the_transport_schema(self):
         with patch.object(client, "HTTPSConnection") as connect:
             response = connect.return_value.getresponse.return_value
