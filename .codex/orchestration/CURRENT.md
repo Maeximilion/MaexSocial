@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## Review preflight merged; local foundation under runtime checks · 2026-11-06 10:26 UTC
+
+[PR #116](https://github.com/Maeximilion/MaexSocial/pull/116) merged at `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d`; final head `3f2ef61017e2e18964fe25a9770075f14a3ce63a`, exact checked candidate `2572acf6d9233d7b095cb375c096e6a62c84fa7a`. Independent actual Astra/high and CI passed. The [protected-path disposition](https://github.com/Maeximilion/MaexSocial/pull/116#issuecomment-6682546662) verified the authentic self-skip and SKIPPED API client step in run 42200744116. This is not a Claude analysis. The owner set model, effort, limits and disabled Codex self-mention fallback are unchanged. Verify the new trusted automatic workflow on the next ordinary eligible PR without an extra paid probe.
+
+#115 is closed, Project Done and its stale in-progress label removed. Its completed source chat is natively archived. The final transcript is byte-identical to the actual archived transcript; full file/ignored-file/Git metadata recovery, bundle and checked-out restore were independently verified before archival. The original worktree remains clean at the final head. The private reservation now records archived-after-merge. There are no pending admissions.
+
+[#114](https://github.com/Maeximilion/MaexSocial/issues/114) remains the single active implementation chat. Its smaller-predecessor publication hold is lifted. The worker reports successful local up/down/up and storage isolation/race tests; identity isolation, deletion guards and preserved-data restart checks remain in progress and are not yet final coordinator-verified evidence. It must integrate current main and obtain fresh independent Astra/high plus final candidate checks before merge. The current large-task cap remains three; normal hard cap five.
+
+The requested decomposition assessment found the already implemented environment/migration/fixture contract tightly coupled and corrected together for observed Docker 29 internal-network behavior. Do not split completed files just for chat count. Request the stable schema/fixture boundary to admit the next real task. A potential Claude input-size gap is only an estimate so far: require the actual pinned preflight, retain every required test and review file, and do not silently treat an incomplete size skip as complete or already dispositioned.
+
 ## G2 merged and tagged; two fresh work chats active · 2026-11-06 10:10 UTC
 
 [PR #113](https://github.com/Maeximilion/MaexSocial/pull/113) merged at `192d0c5e43b2436801ea210db79674383d0d4112`. Final head `7f594fbe7442433547b07d64041955a596d01edc`, reviewed against `b97e6cfd9f75cb545deef46c7afc2feea7b8361a`, passed integration candidate `e06edd943e1c60f2c9c7eb9893398e4c896d9216`, current CI, actual Astra/high and [complete Claude review](https://github.com/Maeximilion/MaexSocial/pull/113#issuecomment-6682134350). All nine findings were fixed or evidence-dispositioned. The final two comments did not establish lost requirements or conflicting delegated tag authority.
