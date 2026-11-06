@@ -25,7 +25,7 @@ The 2026-11-05 failure on dependency PRs was a missing body task reference, not 
 
 | Area | Tests and required evidence |
 |---|---|
-| Registration, login, administration | [ACCESS-01–14](17_ACCESS_SECURITY.md): server-side negative authorization, two-tenant isolation, admin privilege/MFA, verification/recovery and session replay tests, plus browser journeys |
+| Registration, login, administration | [ACCESS-01–17](17_ACCESS_SECURITY.md): server-side negative authorization, two-tenant isolation, admin privilege/MFA, verification/recovery and session replay tests, plus browser journeys |
 | Upload, processing and delivery | [UPLOAD-01–10](security/uploads.md): disguised/active formats, bounded decoding, quarantine, tenant isolation, delivery headers, processor authority, SSRF and lifecycle/recovery |
 | Core rules | Fast unit tests for authorization policy, publication states, idempotency and budget calculations |
 | API, data and jobs | Integration tests against an isolated test database; tenant tampering, concurrent writes, migrations and worker revocation |

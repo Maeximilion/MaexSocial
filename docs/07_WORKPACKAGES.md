@@ -44,7 +44,7 @@ MS-005 records official permission and app-review requirements for each proposed
 
 MS-008 and MS-009 define only the next implementable release in detail. Later tasks are stage objectives and must be decomposed after design. MS-010–012 require behavioral tests, provider failure tests, exact-head CI/review and dated acceptance evidence. No task closes solely because its placeholder documentation exists.
 
-MS-013 resolves the role/action matrix, administrator provisioning, registration/verification, MFA, sessions/recovery and tenant enforcement. Map accepted [ACCESS-01–14 cases](17_ACCESS_SECURITY.md) into MS-009, then verify the relevant release cases before externally accessible customer operation. The initial requirements document does not complete MS-013.
+MS-013 resolves the role/action matrix, administrator provisioning, registration/verification, MFA, sessions/recovery and tenant enforcement. Map accepted [ACCESS-01–17 cases](17_ACCESS_SECURITY.md) into MS-009, then verify the relevant release cases before externally accessible customer operation. The initial requirements document does not complete MS-013.
 
 MS-014 resolves allowed formats, numerical limits, quarantine, media-worker authority/isolation, delivery headers, URL retrieval and signed-link revocation. Map [UPLOAD-01–10](security/uploads.md) into MS-009 and the relevant G3/G4 tasks. Foundation [#42](https://github.com/Maeximilion/MaexSocial/issues/42) adds repository-artwork checks and agent tooling only; its completion does not complete MS-014 or prove upload runtime safety.
 
