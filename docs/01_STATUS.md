@@ -3,7 +3,7 @@
 - Status date — 2026-11-06
 - Stage — G2 design planning
 - Gates — G0 complete, G1 accepted for bounded discovery, G2–G4 open; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5, and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
-- Product implementation — pending G2 design approval and the MS-009 executable plan
+- Product implementation — pending G2 design approval and explicit bounded implementation authority; MS-009 plan merged
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
 - Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
@@ -20,7 +20,7 @@
 | API feasibility, MS-005 | Documented feasibility merged, issue #5 closed. Customer grants and outcomes untested. | [Provider operations, permissions, prices and lifecycle](research/platform-api-feasibility.md), [PR #71](https://github.com/Maeximilion/MaexSocial/pull/71) |
 | Video demo, MS-006 | Bounded search merged, issue #6 closed. Original TikTok unidentified, spike unexecuted. | [Four candidates](research/photo-to-ad-demo.md), [PR #70](https://github.com/Maeximilion/MaexSocial/pull/70) |
 | Synthesis, MS-007 | Research synthesis complete within the accepted limits. [PR #73](https://github.com/Maeximilion/MaexSocial/pull/73) merged. Maxi accepted G1 on 2026-11-05. | [Claim matrix, gaps, feasibility and G2 questions](research/synthesis.md) |
-| Design and detailed plan, MS-008–009 | Local-first component and role decisions recorded; full G2 acceptance pending. MS-009 plan in PR #112 | [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md), [plan PR #112](https://github.com/Maeximilion/MaexSocial/pull/112) and [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) |
+| Design and detailed plan, MS-008–009 | Local-first component and role decisions recorded; MS-009 plan merged in #112. Full G2 acceptance pending | [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md), [local implementation plan](superpowers/plans/2026-11-05-ms-009-local-text-pilot.md) and [G2 work plan](superpowers/plans/2026-11-05-g2-work-plan.md) |
 | First slice, media and autonomy, MS-010–012 | Stage objectives defined, blocked on design/planning | [Work packages and planning maturity](07_WORKPACKAGES.md) |
 | Branding and handover refinement | Delivered in this update | [Issue #27](https://github.com/Maeximilion/MaexSocial/issues/27), [brand guide](15_README_STRATEGY.md) and [Claude brief](handovers/claude-rea.md) |
 | PR/security checks | Maintenance delivery, no product-gate change | [Issue #29](https://github.com/Maeximilion/MaexSocial/issues/29), [evaluation strategy](08_EVALS.md) |
@@ -36,7 +36,7 @@ On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximi
 
 ## What's next
 
-1. Complete the #112 delivery and compare its final revision with the [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md). Maxi decides the remaining local contracts and G2 scope; no acceptance or implementation authority is recorded here.
+1. Present the [G2 decision packet](superpowers/specs/2026-11-06-g2-acceptance-packet.md), compared with merged #112. Maxi decides the remaining local contracts and combined G2/local implementation request; no acceptance or implementation authority is recorded here.
 2. Keep production access, account eligibility, operating ownership, privacy, costs and real recovery evidence at their stated release boundaries. Preserve #88/#99 and record any newly accepted deferral with the required issue and gate links. Export is a pre-dispatch fallback, not verified Google publication.
 
 ## Evidence limits
