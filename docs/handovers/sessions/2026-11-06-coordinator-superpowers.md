@@ -2,9 +2,9 @@
 
 ## Status
 
-Checkpoint at 2026-11-06T00:05:48Z. The coordinator prepared the standing rule. Its work head passed the repository check, the Python suite (86 total, 54 passed, 32 skipped) and 20 Node tests. The local plugin inventory reported Superpowers 7.0.1 installed and enabled. The entry skill was readable.
+Checkpoint at 2026-11-06T00:05:48Z. The coordinator wrote the standing rule. The #107 delivery chat verified the rule and published it in PR #108. The work head passed the repository check, the Python suite (86 total, 54 passed, 32 skipped) and 20 Node tests. The local plugin inventory reported Superpowers 7.0.1 installed and enabled. The entry skill was readable.
 
-Implementation/review — Codex → Claude review. For #107 the delivery assignment explicitly requires a fresh GPT-6 Astra high review and the automatic Claude API workflow from [PR #103](https://github.com/Maeximilion/MaexSocial/pull/103). The assignment excludes manual review mentions. Verify both results on the final PR revision.
+Implementation/review — Codex → Claude review. For #107 the delivery assignment explicitly requires a fresh GPT-6 Astra high review and the automatic Claude review through the [direct Messages API verified on #102](https://github.com/Maeximilion/MaexSocial/issues/102#issuecomment-6672762871). The assignment excludes manual review mentions. Verify both results on the final PR revision.
 
 ## Artifacts
 
