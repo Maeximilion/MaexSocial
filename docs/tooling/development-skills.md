@@ -42,7 +42,7 @@ claude plugin install ponytail@maexsocial-reviewed --scope project
 claude plugin list --json
 ```
 
-[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). The [project catalog](plugin-marketplace/.claude-plugin/marketplace.json) pins Ponytail to the same commit as Codex and pins Superpowers to reviewed upstream commit `bb92a77741419a4ab5f06e711a283343f1ada0c3`. For an existing installation, use the same project install commands above to select the pinned packages. Project settings disable their earlier marketplace IDs to avoid loading duplicate hooks. Review plugin sources and executable hooks before updating. The hosted Claude review job selects user settings and scrubs its subprocess environment. A separate step publishes the validated review against the reviewed head SHA.
+[Claude plugin installation and scopes](https://code.claude.com/docs/en/plugins/install). The [project catalog](plugin-marketplace/.claude-plugin/marketplace.json) pins Ponytail to the same commit as Codex and pins Superpowers to reviewed upstream commit `bb92a77741419a4ab5f06e711a283343f1ada0c3`. For an existing installation, use the same project install commands above to select the pinned packages. Project settings disable their earlier marketplace IDs to avoid loading duplicate hooks. Review plugin sources and executable hooks before updating. The hosted Claude review job uses the tool-free Messages API and loads no project settings or plugins. A separate step publishes the validated review against the reviewed head SHA.
 
 ## Local Code Autopilot and Caveman
 
