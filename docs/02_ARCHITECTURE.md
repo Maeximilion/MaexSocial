@@ -1,12 +1,12 @@
-# Architecture decisions to establish at G2
+# Architecture and accepted local baseline
 
-Status — Maxi chose local-first planning with a synthetic Google adapter, PostgreSQL, Keycloak and a separate signed Windows client. Production deployment and G2 acceptance remain open. [Owner decision](https://github.com/Maeximilion/MaexSocial/issues/8#issuecomment-6671380463)
+Status — Maxi accepted the bounded local design with a synthetic Google adapter, PostgreSQL, Keycloak and a separate signed Windows client on 2026-11-06. The [owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454) separately authorizes local synthetic implementation after the decision-record merge. #10/#82 retain real operating evidence; production deployment remains unauthorized.
 
-[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. Use strict TypeScript for the portal and Node.js API/worker, PostgreSQL SQL for migrations and C#/.NET with WPF for the Windows administrator. Python maintains repository tooling. Product implementation requires G2 acceptance and the MS-009 plan.
+[ADR 0001](decisions/0001-application-language.md) records the language decision and trade-offs. Use strict TypeScript for the portal and Node.js API/worker, PostgreSQL SQL for migrations and C#/.NET with WPF for the Windows administrator. Python maintains repository tooling. Use the accepted MS-009 plan and wait for the decision-record merge and coordinator dispatch.
 
 ## Candidate responsibilities
 
-The [proposed application anatomy](architecture/README.md) maps these responsibilities to a minimal directory layout and trust-boundary diagram. No application folders or deployment isolation are implemented by that proposal. [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) must settle the [upload/processing contract](security/uploads.md) together with access design.
+The [proposed application anatomy](architecture/README.md) maps these responsibilities to a minimal directory layout and trust-boundary diagram. No application folders or deployment isolation are implemented by that proposal. [MS-014](https://github.com/Maeximilion/MaexSocial/issues/43) is accepted for text-only scope with media disabled; #99 carries later [upload/processing evidence](security/uploads.md).
 
 | Responsibility | Owns | Evidence needed before implementation |
 |---|---|---|
