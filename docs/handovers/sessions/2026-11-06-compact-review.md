@@ -2,12 +2,12 @@
 
 ## Status
 
-Stopped at 2026-11-06 00:28 UTC for the pre-publication checkpoint. Codex implemented the bounded output change. The independent GPT-6 Astra/high reviewer reproduced a Git configuration dependency in the historical replay. The corrected test reproduced the expected diff with all four conflicting Git settings applied locally. Final-head review and hosted checks belong on the delivery PR.
+Stopped at 2026-11-06 00:29 UTC for the pre-publication checkpoint. The independent GPT-6 Astra/high reviewer reproduced two defects in the initial change. Local Git settings could alter the historical replay, and duplicate JSON keys could replace an overflow or truncation signal. The replay now pins the rendering settings. Both the response envelope and the nested result reject duplicate keys. The two ambiguous-response cases failed before the fix and passed afterward. Final-head review and hosted checks belong on the delivery PR.
 
 ## Artifacts
 
 - Repository and task — [MaexSocial #109](https://github.com/Maeximilion/MaexSocial/issues/109). The [offline diagnosis](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673074291) records the exact #106 base and head and the two historical failures.
-- Branch — `dev-codex/109-compact-review`. Base `7287e0615772b5977b2cbdeb3347adba6695bb0e`. Work head before this record `6cd2513b2c54a8cdcfe70a4fd140676003348749`. PR pending at this checkpoint. Find the delivery and resulting checks on #109.
+- Branch — `dev-codex/109-compact-review`. Base `7287e0615772b5977b2cbdeb3347adba6695bb0e`. Work head before this record `d76d149dc08b4c895a929720e77912d026325722`. PR pending at this checkpoint. Find the delivery and resulting checks on #109.
 - Implementer and reviews — Codex implemented. GPT-6 Astra/high covers the full final diff before publication. The default workflow skips a PR that changes its own workflow or API client. Persist the resulting skip separately from the independent review.
 - Local evidence — the initial implementation passed 19 focused tests, the repository check and 20 Node tests. The historical test recreated 49,210 escaped bytes across eight files and 15 hunks, passed the entire patch to a mocked transport and exercised the publisher with a synthetic zero-finding response.
 
