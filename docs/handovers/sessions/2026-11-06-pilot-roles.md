@@ -2,9 +2,7 @@
 
 ## Status
 
-Stopped at (UTC) — 2026-11-06T00:02:42Z (documentation checkpoint). Codex updated the pilot access contract. On the first PR head, repository checks and all 20 Node tests passed. The Python suite ran 86 tests with one platform skip using the configured Gitleaks executable. After the review corrections, repository validation passed again. The final integration run and both final reviews are pending at this checkpoint.
-
-Implementation/review — Codex → Claude review, with a separate GPT-6 Astra/high reviewer. The first independent review identified stale case lists, pending signup credentials and a revocation race. The [first Claude API review](https://github.com/Maeximilion/MaexSocial/pull/106#issuecomment-6672792242) identified first-Manager provisioning, Manager revocation and the missing direct hold citation. The PR records final dispositions.
+Stopped at (UTC) — 2026-11-06T00:02:42Z (first review checkpoint). On head `6774fd2`, repository checks, 20 Node tests and 85 of 86 Python tests passed (one platform skip). Codex → Claude review plus independent GPT-6 Astra/high. Both identified design gaps. [First Claude report](https://github.com/Maeximilion/MaexSocial/pull/106#issuecomment-6672792242). Final results are recorded on the PR.
 
 ## Artifacts
 
@@ -17,11 +15,11 @@ Implementation/review — Codex → Claude review, with a separate GPT-6 Astra/h
 
 ## Decisions
 
-Only a Manager of the target customer may approve. A Manager or Employee may export the exact approved revision when Google access is unavailable before dispatch. DEV/Admin provisions customer access separately. An audited, targeted pre-dispatch hold requires fresh MFA. [Roles](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744) · [Export](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885) · [Hold](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6670980326)
+Separate Manager approval from customer-side export of that exact revision. DEV/Admin provisions account access. [Roles](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671733744) · [Export](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6671746885) · [Hold](https://github.com/Maeximilion/MaexSocial/issues/30#issuecomment-6670980326)
 
 ## Gate
 
-Keep #30 open for remaining access-design dispositions. The coordinator decides the serial merge. [G2](https://github.com/Maeximilion/MaexSocial/issues/15) requires separate owner acceptance. [MS-009](https://github.com/Maeximilion/MaexSocial/issues/9) owns the executable mapping. All product scenarios remain planned.
+Keep #30 open. Maxi decides [G2](https://github.com/Maeximilion/MaexSocial/issues/15). [MS-009](https://github.com/Maeximilion/MaexSocial/issues/9) owns the executable mapping.
 
 ## Open
 
