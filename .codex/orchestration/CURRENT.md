@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Queue eligibility and visible capacity · 2026-11-06 09:17 UTC
+
+The owner challenged the single active work chat. A live roster and all 14 open issues were reconciled. Only #15 is currently independently actionable: [PR #113](https://github.com/Maeximilion/MaexSocial/pull/113) carries the G2 decision packet. #8/#9/#30 are acceptance inputs already owned by that lane, not three new implementation assignments. #10 requires accepted G2 and implementation authority; #82 additionally needs the testable slice and a declared test scope. #11/#12/#99 require later preceding implementation or a concrete media scope. #88 requires additional authorized evidence/access. #83's documented recovery is complete for known sources and awaits another independent backup or an explicit owner disposition, so repeating the same recovery search is not useful work.
+
+Five remains the ordinary target and hard maximum, with the existing two-to-three-chat rule for a large gate. Neither capacity nor the desire to fill five slots authorizes duplicate work, external access, unapproved product implementation or invented maintenance tasks. Show occupied slots, genuinely eligible work and concrete blockers together in status updates; re-evaluate on each merge, archive, changed dependency or owner decision. No new chat was created merely to fill capacity.
+
+Prioritize the reviewed #113 packet and its two concrete owner decisions. After an unambiguous acceptance including bounded local implementation, record the decision and carried gate blockers, then dispatch actual executable task ownership from the accepted plan. The first common-foundation task is sequential; claim wider parallelism only once contracts and disjoint responsibilities genuinely support it.
+
 ## Pilot plan merged and gate packet advancing · 2026-11-06 09:12 UTC
 
 [PR #112](https://github.com/Maeximilion/MaexSocial/pull/112) merged at `b97e6cfd9f75cb545deef46c7afc2feea7b8361a`. Its final head `c161d2b74d0935a39d94e23eb740989f8e720827` and integration candidate `17e73853d9eea20d1c575c395ae4e55b4ed804ed` against main `2bb081fb4fcafa00730e64d0628bfc4975deccfb` passed current CI and independent GPT-6 Astra/high. The [complete Claude receipt](https://github.com/Maeximilion/MaexSocial/pull/112#issuecomment-6681224663) reports zero findings. All seven threads are resolved. The final teardown wording distinguishes retained isolated synthetic fixtures from sanitized shared evidence.
