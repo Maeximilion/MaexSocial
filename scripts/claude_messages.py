@@ -9,7 +9,7 @@ from pathlib import Path
 
 MODEL = "claude-opus-5-5"
 MAX_REQUEST_BYTES = 150_000
-MAX_TOKENS = 8192
+MAX_TOKENS = 32_768
 MAX_RESPONSE_BYTES = 1024 * 1024
 TEXT = {"type": "string"}
 FINDING = {"type": "object", "additionalProperties": False,
@@ -35,9 +35,6 @@ def unique_fields(pairs):
 
 
 def result_from(message, kind):
-    if (not isinstance(message, dict) or message.get("type") != "message"
-            or message.get("role") != "assistant" or message.get("model") != MODEL):
-        raise ReviewFailure("invalid_envelope")
     stop = message.get("stop_reason")
     if stop != "end_turn":
         known_stops = {"max_tokens": "output_token_limit", "model_context_window_exceeded": "context_window_limit",
@@ -96,7 +93,7 @@ def review(system, data, key, kind):
     if len(body) > MAX_REQUEST_BYTES:
         raise ReviewFailure("input_budget")
     # HTTPSConnection does not follow redirects, consult proxy environment variables or retry.
-    conn = HTTPSConnection("api.anthropic.com", timeout=180)
+    conn = HTTPSConnection("api.anthropic.com", timeout=960)
     try:
         conn.request("POST", "/v1/messages", body, {"x-api-key": key, "anthropic-version": "2023-06-01",
                                                    "content-type": "application/json"})
@@ -119,15 +116,21 @@ def review(system, data, key, kind):
         message = json.loads(raw, object_pairs_hook=unique_fields)
     except (ValueError, RecursionError):
         raise ReviewFailure("invalid_response_json") from None
+    if (not isinstance(message, dict) or message.get("type") != "message"
+            or message.get("role") != "assistant" or message.get("model") != MODEL):
+        raise ReviewFailure("invalid_envelope")
+    usage = message.get("usage")
+    valid_usage = (isinstance(usage, dict) and usage.get("speed", "standard") == "standard"
+                   and all(type(usage.get(k)) is int and 0 <= usage[k] <= 1_000_000
+                           for k in ("input_tokens", "output_tokens")))
+    # Keep token diagnostics even when the provider stops before producing a complete result.
+    print(f"Usage: input_tokens={usage['input_tokens']} output_tokens={usage['output_tokens']}"
+          if valid_usage else "Usage: unavailable")
     result = result_from(message, kind)
     if key in json.dumps(result, ensure_ascii=False):
         raise ReviewFailure("unsafe_result")
-    usage = message.get("usage")
-    if (not isinstance(usage, dict) or usage.get("speed", "standard") != "standard"
-            or any(type(usage.get(k)) is not int or not 0 <= usage[k] <= 1_000_000
-                   for k in ("input_tokens", "output_tokens"))):
+    if not valid_usage:
         raise ReviewFailure("invalid_usage")
-    print(f"Usage: input_tokens={usage['input_tokens']} output_tokens={usage['output_tokens']}")
     return result
 
 
