@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Standing Superpowers preference · 2026-11-06 00:05 UTC
+
+Use the installed Superpowers entry skill for every MaexSocial coordinator orchestration request, including status, assignments, pauses and recovery after handover or compaction. Select the applicable Superpowers workflow alongside the local coordination skill. [Issue #107](https://github.com/Maeximilion/MaexSocial/issues/107) makes this explicit in the standing agreement reached from `AGENTS.md`. The coordinator prepared the wording. Its delivery chat was [reserved](https://github.com/Maeximilion/MaexSocial/issues/107#issuecomment-6672847174) against the verified archived predecessor [#105](https://github.com/Maeximilion/MaexSocial/pull/105) and [confirmed](https://github.com/Maeximilion/MaexSocial/issues/107#issuecomment-6672854027). The #30, #9 and #107 owners occupy the three gate-wave slots. #9 has the local pilot plan pushed on its task branch; await the smaller deliveries before publishing the large planning PR.
+
 ## First automatic review after cutover · 2026-11-06 00:01 UTC
 
 The #30 chat published [PR #106](https://github.com/Maeximilion/MaexSocial/pull/106) against `075f68325d83acc9d6129b48fff792c9d37e1085`. Without a bot mention, its [automatic Claude run](https://github.com/Maeximilion/MaexSocial/actions/runs/42133643120) posted a [summary](https://github.com/Maeximilion/MaexSocial/pull/106#issuecomment-6672792242) and three inline findings for `6774fd20c999f6674cccb185fe47012e56484073`. #30 owns their disposition and any necessary corrections, followed by independent Astra/high and automatic Claude on the final head. Keep this PR open until clean. The #9 work chat acknowledged parallel local planning; wait for #30 to merge before #9 publication. Both chats know the 01:40 Berlin handover cutoff.
