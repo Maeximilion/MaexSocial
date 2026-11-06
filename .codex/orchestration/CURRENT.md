@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Owner resumed; Claude diagnosis deadline · 2026-11-06 08:11 UTC
+
+The owner explicitly resumed orchestration. The overnight shutdown pause is superseded. He then authorized targeted Claude API diagnosis until **10:00 Europe/Berlin (09:00 UTC) today, November 6**. If the corrected route still cannot deliver a valid current-head review by then, disable the advisory Claude workflow and use explicit Codex review mentions alongside independent GPT-6 Astra/high. The workflow was briefly disabled under the first instruction and then re-enabled under the newer decision; its current state is verified active. No limits or required CI rules changed. Existing failed runs remain failed evidence. The once-only 10:00 deadline is scheduled in the coordinator chat.
+
+[#111](https://github.com/Maeximilion/MaexSocial/issues/111) has a fresh investigation owner under the [verified third-slot reservation](https://github.com/Maeximilion/MaexSocial/issues/111#issuecomment-6680298558), following merged #110 and the verified archive of #109. #30 owns #106 and was instructed to integrate current main and push normally once, supplying the controlled automatic review. #111 observes that run and owns any remaining infrastructure defect. #9 continues independent planning and holds its PR until #106 merges. Three work chats occupy the three-slot gate-wave limit. All retain Standard speed; replies to the resume are pending. No product implementation or gate acceptance has been granted. Canonical main remains clean at `2b38dd25f4ff1ee88f29689374e0830def54384b`.
+
+The existing local dashboard was restored and at 09:07 Berlin agreed with GitHub: one open PR, #106, assigned to #30; its refresh interval is 600 seconds. Prior pause checkpoints are published in this update for recoverability.
+
 ## Shutdown pause confirmed · 2026-11-06 00:40 UTC
 
 The 01:40 Europe/Berlin cutoff for the owner's announced 02:00 shutdown was enforced. Intake, PRs, pushes, reviews and merges are paused until an explicit owner resume. Both assigned chats received the relay and independently confirmed the stop; two confirmed, zero pending. No running work or reviewer subagents. No machine power action. Main is clean at `2b38dd25f4ff1ee88f29689374e0830def54384b`. This pause checkpoint is retained locally; publish it only after explicit resume.
