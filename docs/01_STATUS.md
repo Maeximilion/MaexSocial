@@ -1,9 +1,9 @@
 # Project status
 
 - Status date — 2026-11-06
-- Stage — Bounded G2 accepted; decision-record merge and local implementation dispatch pending
-- Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06 with merge/tag closeout pending; G3–G5 open. #10/#82 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
-- Product implementation — explicitly authorized for the accepted local synthetic plan after the #113 decision-record merge; not started by this record
+- Stage — Bounded G2 accepted; local Task 1 implementation in progress under #114
+- Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06; #113 merged and annotated gate-g2 verified at `192d0c5`. G3–G5 open. #10/#82 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
+- Product implementation — #113 merged; #114 implements the accepted local environment and storage. Remaining slice tasks and external release are open. See the [fixture commands and evidence](../ops/local/README.md).
 - Repository — https://github.com/Maeximilion/MaexSocial
 - Project — https://github.com/users/Maeximilion/projects/5
 - Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
@@ -36,7 +36,7 @@ On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximi
 
 ## What's next
 
-1. Merge the reviewed [G2 decision record](superpowers/specs/2026-11-06-g2-acceptance-packet.md) in #113. The coordinator then closes the bounded design/gate issues, creates and verifies the annotated tag on that exact main commit and dispatches the accepted local sequence. Maxi already accepted the local contracts, G2 and local start separately in the [dated decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454).
+1. Deliver and review [Task 1 / #114](https://github.com/Maeximilion/MaexSocial/issues/114), then continue the accepted sequence under #10. Local storage checks do not complete the remaining portal, management, dispatch, recovery or journey tasks. Maxi already accepted the local contracts, G2 and local start separately in the [dated decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454).
 2. Keep production access, account eligibility, operating ownership, privacy, costs and real recovery evidence at their stated release boundaries. #10/#82 now carry the accepted deferrals and verifiably block G3 and G5; preserve the independent #88/#99 obligations. Export is a pre-dispatch fallback, not verified Google publication.
 
 ## Evidence limits

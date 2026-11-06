@@ -1,0 +1,19 @@
+{
+  "name": "maexsocial-local-pilot",
+  "version": "0.0.0",
+  "private": true,
+  "engines": { "node": ">=24.22.2 <25" },
+  "scripts": {
+    "pilot:build": "tsc -p tsconfig.pilot.json",
+    "pilot:up": "node dist/pilot/ops/local/stack.js up",
+    "pilot:down": "node dist/pilot/ops/local/stack.js down",
+    "pilot:migrate": "node dist/pilot/scripts/pilot-db.js",
+    "pilot:test": "node --test dist/pilot/tests/pilot/*.test.js"
+  },
+  "dependencies": { "pg": "8.23.1" },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2"
+  }
+}

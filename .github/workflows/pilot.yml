@@ -1,0 +1,43 @@
+name: Local pilot storage
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pilot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pilot-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.2'
+          cache: npm
+      - run: npm ci
+      - run: npm run pilot:build
+      - run: npm run pilot:up
+      - name: Empty disposable fixture migration drill
+        run: |
+          npm run pilot:migrate -- up
+          npm run pilot:migrate -- down
+          npm run pilot:migrate -- up
+      - run: npm run pilot:test
+      - name: Restart without deleting volumes
+        run: |
+          npm run pilot:down
+          npm run pilot:up
+          npm run pilot:test
+      - if: always()
+        run: npm run pilot:down

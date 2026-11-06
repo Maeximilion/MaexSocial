@@ -1,0 +1,37 @@
+{
+  "realm": "pilot",
+  "enabled": true,
+  "sslRequired": "all",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "verifyEmail": true,
+  "smtpServer": {
+    "host": "mailbox",
+    "port": "1025",
+    "from": "pilot@example.invalid",
+    "starttls": "true",
+    "auth": "false"
+  },
+  "clients": [
+    {
+      "clientId": "pilot-customer",
+      "enabled": false,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "attributes": { "pkce.code.challenge.method": "S256" },
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
+      "clientId": "pilot-desktop",
+      "enabled": false,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "attributes": { "pkce.code.challenge.method": "S256" },
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ]
+}
