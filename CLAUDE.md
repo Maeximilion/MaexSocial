@@ -2,7 +2,7 @@
 
 # MaexSocial
 
-AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is accepted within its recorded limits. Bounded G2 design and local synthetic implementation are accepted in the [owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454); dispatch follows the decision-record merge. External operation remains unauthorized. Product capabilities in the roadmap are planned capabilities.
+AI-assisted local visibility, social account operations and creative production. The repository foundation is complete and G1 discovery is accepted within its recorded limits. G2 design planning is authorized. Product capabilities in the roadmap are planned capabilities.
 
 ## Start
 

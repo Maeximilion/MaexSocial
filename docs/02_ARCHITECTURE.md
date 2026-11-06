@@ -34,8 +34,8 @@ The first slice should cover one complete workflow through these responsibilitie
 
 ## G2 decision record
 
-[Proposed ADR 0002](decisions/0002-google-text-pilot.md) compares delivery options for one customer-approved Google text post, prices a Frankfurt pilot and defines the recovery tests for MS-009. Maxi's architecture decision remains open on MS-008.
+[ADR 0002](decisions/0002-google-text-pilot.md) preserves the delivery comparison, historical Frankfurt estimate and recovery requirements. Maxi accepted the local architecture and MS-009 plan in the [G2 decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454); production hosting and costs remain in #10.
 
-MS-008 compares a small application with direct APIs, a workflow-led implementation, and a hybrid where external orchestration is limited to appropriate background work. Record fit to the first slice, failure recovery, operating cost and maintainability. The approved choice determines code directories, frameworks and deployment within the language baseline, revisiting that baseline only if evidence warrants it. API and MCP are transport options whose capabilities and operational support must be proven separately.
+Use the accepted local application boundaries and six-task MS-009 plan. API/MCP capabilities and live provider operation still require their own evidence; local acceptance authorizes neither production deployment nor provider access.
 
-Secure external login, platform-wide customer management, separate customer dashboards, a public website with customer self-registration/login and separate administrator access are confirmed requirements. The owner confirmed the Employee and Manager roles and the separate DEV/Admin authority. Public signup cannot grant Manager or platform privileges. [Access and security](17_ACCESS_SECURITY.md) distinguishes the confirmed invitation, approval, export and hold rules from the proposed G2 controls. No login stack is selected by this document.
+[Access and security](17_ACCESS_SECURITY.md) records the accepted local Keycloak, Employee/Manager and separate Windows DEV/Admin contracts. Public signup cannot grant elevated roles. #82 retains actual device, identity, privacy and recovery proof; #10/#82 block G3/G5 until their carried criteria have evidence.

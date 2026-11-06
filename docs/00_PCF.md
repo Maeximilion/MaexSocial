@@ -34,8 +34,6 @@ On 2026-11-05 Maxi accepted the six G1 research deliverables within their docume
 
 Passing a gate requires dated evidence and a decision recorded in [status](01_STATUS.md). A completed issue or a green documentation build does not prove a product gate. Apply the [gate procedure](../.claude/commands/gate.md) to carry explicitly deferred evidence forward. G5 requires closure of all carried gaps before acceptance and tagging.
 
-On 2026-11-06 Maxi [accepted bounded G2](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454): the local synthetic text-pilot design, security/deletion/recovery contracts and merged #112 plan. The same response separately authorizes local implementation after the decision record in #113 merges. [#10](https://github.com/Maeximilion/MaexSocial/issues/10) carries real operating/provider prerequisites and [#82](https://github.com/Maeximilion/MaexSocial/issues/82) carries identity/device/privacy/recovery evidence; both verifiably block G3 and G5. #88/#99 remain independent. No real accounts, external testing, customer operation, deployment or external product spending is authorized. Gate tagging and issue closeout follow the decision-record merge.
-
 ## Scope and sequence
 
 G0 establishes collaboration. G1 compares capabilities and technical feasibility. G2 chooses the smallest full workflow that tests the product proposition. G3 builds that workflow. G4 adds media creation. G5 expands operating authority based on measured reliability. Independent G1 tasks may run in parallel. Their reports must identify the same target and observation date.
