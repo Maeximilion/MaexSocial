@@ -29,11 +29,11 @@ The pilot has two customer roles, Employee and Manager. DEV/Admin uses a separat
 
 | Resource / operation | Visitor or unverified | Employee | Manager | DEV/Admin | Service |
 |---|---|---|---|---|---|
-| Public site, signup, login and recovery | Public entry only | Own identity | Own identity | Separate admin entry | IdP handles identity only |
+| Public site, signup, login and recovery | Own signup creates one workspace after email verification | Own identity | Own identity | Separate admin entry | IdP handles identity only |
 | Workspace facts, drafts and results | Deny | Read/edit own tenant drafts and read its results | Same, plus manage workspace settings | Deny content access | Worker reads exact approved revision |
 | Approve a post | Deny | Deny | Own active tenant, exact revision, authorized location and occurrence | Deny | Worker may dispatch only that intent |
 | Export approved text when required Google access is unavailable before dispatch | Deny | Exact Manager-approved revision in own active tenant | Same | Deny | Backend commits terminal export before releasing text |
-| Create a customer organization or create/approve customer user access | Deny | Deny | Employee invitations only, as below | Select target organization, email and customer role (Employee or Manager) with fresh MFA and an audited reason | Audit targeted grant |
+| Administrative customer creation or user provisioning | Deny | Deny | Employee invitations only, as below | Select target organization, email and customer role (Employee or Manager) with fresh MFA and an audited reason | Audit targeted grant |
 | Promote an active Employee to Manager, demote or revoke a Manager | Deny | Deny | Deny | Target customer and membership, fresh MFA and audit | Invalidate the changed grant immediately |
 | Invite or remove an Employee | Deny | Deny | Own tenant only, Employee role only | Target Employee membership, fresh MFA and audit | Recheck issuer and target on every mutation |
 | Manage provider connection | Deny | Deny | Own tenant with verified account-owner grant | Deny | Backend stores grant reference and worker uses least scoped credential |

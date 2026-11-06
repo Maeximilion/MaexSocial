@@ -38,7 +38,7 @@ The browser may call public registration, verification and customer-scoped route
 |---|---|---|
 | Anonymous | Register, verify and recover | Uniform public responses, bounded attempts, single-use expiring verification bound to identity |
 | Employee | Read/edit own tenant drafts and export exact Manager-approved text if Google access is missing before dispatch | Check active tenant membership, current approval and exclusive terminal export claim |
-| Manager | Same customer rights, plus approve exact revision for a location and occurrence, invite/remove own Employees | Verify current tenant role and target. Edits invalidate approval. Employee management cannot grant Manager authority |
+| Manager | Same customer rights, plus approve exact revision for a location and occurrence, invite/remove own Employees | Verify role, target, MFA enrollment and fresh MFA under the proposed policy. Edits invalidate approval. Employee management cannot grant Manager authority |
 | DEV/Admin on enrolled PC | Create/manage customers, provision or approve customer access by tenant, email and role, suspend or hold one occurrence | Fresh MFA, explicit target and audited reason/outcome. Deny customer post approval and export |
 | Worker | Claim one approved occurrence | Check current membership/policy, active tenant, grant, stop and funds at dispatch. Treat client or job identifiers as untrusted |
 
