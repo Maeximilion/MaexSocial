@@ -1,5 +1,15 @@
 # Current coordinator handover
 
+## Complete-review envelope correction admitted · 2026-11-06 10:34 UTC
+
+[#118](https://github.com/Maeximilion/MaexSocial/pull/118) is the normal delivery PR for #114. Initial head `2a67df7656c93db55674f842672092633b81535a`, base `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d`. Required foundation/metadata passed; the additional Linux pilot-storage job failed and remains with the product owner. Independent Astra/high review is in progress. Root reproduced the pinned preflight: 90,142 escaped diff bytes exceed 50,000. The [actual workflow result](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6682740988) reports incomplete and no API request sent. This verifies #116's incomplete-input safeguard on an ordinary PR, not a successful Claude analysis.
+
+Distinct maintenance [#119](https://github.com/Maeximilion/MaexSocial/issues/119) now owns a complete bounded review-input envelope. Its [reservation](https://github.com/Maeximilion/MaexSocial/issues/119#issuecomment-6682789245) uses #116's verified merge/archive pair; native fresh-chat creation and actual GPT-6 Astra/high with no Fast override were verified, and [admission is confirmed](https://github.com/Maeximilion/MaexSocial/issues/119#issuecomment-6682806895). No reservation is pending. Two work chats run: product #114/#118 and independent review tooling #119, within the large-task cap of three.
+
+#119 must first report a measured coherent diff/prompt/request proposal with current official provider cost/context evidence. Root dispositions the technical maintenance envelope before implementation. Keep Opus 5.5/high/standard, output cap, one tool-free request, trust boundaries, explicit incomplete outcomes and the owner-reported USD75 workspace monthly limit. Do not trim required review content, manufacture extra product PRs, trigger paid probes or reactivate Codex self-mentions. Merge #119's verified delivery first, then revalidate #118 against actual main and obtain complete current review coverage.
+
+#117 remains queued and natively blocked by #114; no work chat exists for it. The unused verified #113 merge/archive pair remains available for a justified future admission.
+
 ## Next customer task queued · 2026-11-06 10:31 UTC
 
 [#117](https://github.com/Maeximilion/MaexSocial/issues/117) now records accepted MS-009 task 2: local customer activation, tenant-bound portal, Manager-owned Employee invitations/removal and immutable Manager approval. It has verified task/P1/G3/blocked labels, G3 milestone, assignee and Project Blocked. Native parent #10 lists #114 and #117; #117 is natively blocked by #114.
