@@ -25,10 +25,10 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
   const plaintext = createHttpServer(app);
   const listen = async (listener: typeof server | typeof plaintext) => { await new Promise<void>(r => listener.listen(0, '127.0.0.1', r)); const address = listener.address(); assert.ok(address && typeof address !== 'string'); return address.port; };
   const port = await listen(server), plainPort = await listen(plaintext);
-  const send = async (path: string, method = 'GET', body?: Record<string, string>, cookie = `__Host-session=${token}; __Host-csrf=${csrf}`, origin = 'https://customer:8443') => new Promise<{ status: number; text: string; cookies: string[]; csp: string | undefined }>((resolve, reject) => {
+  const send = async (path: string, method = 'GET', body?: Record<string, string>, cookie = `__Host-session=${token}; __Host-csrf=${csrf}`, origin = 'https://customer:8443') => new Promise<{ status: number; text: string; cookies: string[]; csp: string | undefined; location: string | undefined }>((resolve, reject) => {
     const req = request({ hostname: '127.0.0.1', servername: 'customer', port, path, method, ca, rejectUnauthorized: true,
       headers: { host: 'customer:8443', origin, cookie, 'content-type': 'application/x-www-form-urlencoded' } }, res => {
-      let text = ''; res.setEncoding('utf8'); res.on('data', chunk => text += chunk); res.on('end', () => resolve({ status: res.statusCode!, text, cookies: res.headers['set-cookie'] ?? [], csp: res.headers['content-security-policy'] as string | undefined }));
+      let text = ''; res.setEncoding('utf8'); res.on('data', chunk => text += chunk); res.on('end', () => resolve({ status: res.statusCode!, text, cookies: res.headers['set-cookie'] ?? [], csp: res.headers['content-security-policy'] as string | undefined, location: res.headers.location }));
     }); req.on('error', reject); if (body) req.write(new URLSearchParams(body).toString()); req.end();
   });
   try {
@@ -40,6 +40,7 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
       VALUES($1,$2,$3,1,$4,1,$5,1,'customer',$6,$6,$7)`, [tokenHash(token), tokenHash(csrf), identity, tenant, membership, now, new Date(now.getTime() + 28_800_000)]);
     const page = await send('/customer'); assert.equal(page.status, 200); assert.match(page.text, /&lt;script&gt;/); assert.ok(!page.text.includes('<script>') && !page.text.includes('Unrelated B canary'));
     assert.match(page.text, /<main id="main"/); assert.match(page.csp!, /frame-ancestors 'none'/);
+    assert.match(page.csp!, /form-action 'self';/); assert.ok(!page.csp!.includes('keycloak'));
     assert.equal((await send('/customer', 'GET', undefined, '')).status, 403);
     assert.equal((await send('/customer', 'GET', undefined, `__Host-session=${token}; __Host-session=${token}; __Host-csrf=${csrf}`)).status, 403);
     identityUnavailable = true;
@@ -69,7 +70,8 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
     const rotatedCookie = switched.cookies.map(c => c.split(';')[0]).join('; ');
     const rotatedCsrf = switched.cookies.find(c => c.startsWith('__Host-csrf='))!.split(';')[0]!.slice('__Host-csrf='.length);
     assert.equal((await send('/customer', 'GET', undefined, rotatedCookie)).status, 200);
-    assert.equal((await send('/customer/logout', 'POST', { csrf: rotatedCsrf }, rotatedCookie)).status, 303);
+    const loggedOut = await send('/customer/logout', 'POST', { csrf: rotatedCsrf }, rotatedCookie);
+    assert.equal(loggedOut.status, 303); assert.equal(loggedOut.location, '/'); assert.equal(loggedOut.cookies.length, 2);
     assert.equal((await send('/customer', 'GET', undefined, rotatedCookie)).status, 403);
     const signedOut = await send('/', 'GET', undefined, '');
     assert.equal(signedOut.status, 200); assert.match(signedOut.text, /You are signed out/);
