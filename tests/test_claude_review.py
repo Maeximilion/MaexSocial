@@ -354,6 +354,34 @@ class ClaudeReviewTests(unittest.TestCase):
         self.assertIn("Failed", body)
         self.assertNotIn("Stale success", body)
 
+    def test_provider_stops_cannot_publish_a_clean_verdict(self):
+        from scripts import claude_messages as client
+
+        clean = {"findings": [], "overflow": False}
+        for stop, category in [("max_tokens", "output_token_limit"),
+                               ("model_context_window_exceeded", "context_window_limit")]:
+            with self.subTest(stop=stop), patch.object(client, "HTTPSConnection") as connect:
+                self.prepare()
+                result_file = self.output.with_name("claude-result.json")
+                result_file.unlink(missing_ok=True)
+                response = connect.return_value.getresponse.return_value
+                response.status, response.length = 200, 0
+                response.read.return_value = json.dumps({
+                    "type": "message", "role": "assistant", "model": client.MODEL, "stop_reason": stop,
+                    "content": [{"type": "text", "text": json.dumps(clean)}],
+                    "usage": {"input_tokens": 17, "output_tokens": 32_768},
+                }).encode()
+                with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key"}, clear=True), \
+                        patch("sys.stdout", new_callable=io.StringIO):
+                    self.assertEqual(client.main(), 1)
+                self.assertFalse(result_file.exists())
+                self.assertIn(f"failure={category}", self.output.read_text("utf-8"))
+                connect.return_value.request.assert_called_once()
+                notice = self.post(1, CLAUDE_OUTCOME="failure", FAILURE=category, OUTPUT=json.dumps(clean))
+                for expected in ("Incomplete", "reviewed", category):
+                    self.assertIn(expected, notice)
+                self.assertNotIn("0 findings", notice)
+
     def test_106_historical_diff_fits_without_clipping(self):
         base = "075f68325d83acc9d6129b48fff792c9d37e1085"
         head = "4a3e4ca909912e4073d3e1b61e035a7319a47eb0"
@@ -398,7 +426,7 @@ class ClaudeReviewTests(unittest.TestCase):
             with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key", "KIND": kind}, clear=True):
                 self.assertEqual(client.main(), 0)
             output = json.loads(self.output.with_name("claude-result.json").read_text("ascii"))
-            connect.assert_called_once_with("api.anthropic.com", timeout=180)
+            connect.assert_called_once_with("api.anthropic.com", timeout=960)
             request = connect.return_value.request
             request.assert_called_once()
             method, path, body, headers = request.call_args.args
@@ -416,7 +444,7 @@ class ClaudeReviewTests(unittest.TestCase):
             self.assertEqual(payload["output_config"]["effort"], "high")
             self.assertEqual(payload["output_config"]["format"]["type"], "json_schema")
             self.assertEqual(set(payload["output_config"]["format"]["schema"]["required"]), set(client.RESULT_FIELDS[kind]))
-            self.assertLess(client.MAX_REQUEST_BYTES * 4 + payload["max_tokens"] * 20, 1_000_000)
+            self.assertEqual(payload["max_tokens"], 32_768)
         return output
 
     def test_60_fixture_through_transport_and_publisher(self):
