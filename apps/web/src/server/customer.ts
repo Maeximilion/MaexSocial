@@ -4,6 +4,7 @@ import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
+import { editDraft, renderDraft, renderDrafts } from '../routes/content.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -17,6 +18,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     if (!request.secure || request.headers.host !== 'customer:8443') { response.status(400).type('text').send('HTTPS required.'); return; }
     next();
   });
+  app.post('/customer/drafts/:draftId', express.urlencoded({ extended: false, limit: '20kb', parameterLimit: 3 }));
   app.use(express.urlencoded({ extended: false, limit: '2kb', parameterLimit: 4 }));
   app.get('/', (_request, response) => { response.type('html').send(renderSignedOut()); });
   async function transaction<T>(work: (db: Client) => Promise<T>): Promise<T> {
@@ -47,6 +49,21 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     response.cookie('__Host-csrf', result.csrf, { ...cookieOptions, expires: result.expires });
     response.redirect(303, '/customer');
   });
+  app.get('/customer/drafts', async (request, response) => {
+    const binding = customerRequest(request);
+    const page = await transaction(async db => renderDrafts(db, await requireCustomerRequest(db, binding, () => new Date(), inspect)));
+    response.type('html').send(page);
+  });
+  app.get('/customer/drafts/:draftId', async (request, response) => {
+    const binding = customerRequest(request);
+    const page = await transaction(async db => renderDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.draftId, binding.csrf));
+    response.type('html').send(page);
+  });
+  app.post('/customer/drafts/:draftId', async (request, response) => {
+    const binding = customerRequest(request, ['text', 'revisionId', 'csrf']);
+    await transaction(async db => editDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.draftId, request.body.revisionId, request.body.text));
+    response.redirect(303, `/customer/drafts/${request.params.draftId}`);
+  });
   app.post('/customer/logout', async (request, response) => {
     const binding = customerRequest(request, ['csrf']); const { token } = binding;
     await transaction(async db => {
@@ -60,6 +77,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.use((_request, response) => { response.status(404).type('text').send('Not found.'); });
   app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    if (error.message === 'Revision conflict') { response.status(409).type('text').send('This draft changed. Reload the draft before editing again. Your text was not saved.'); return; }
     const status = error.message === 'Denied' ? 403 : error.message === 'Invalid request' || 'type' in error ? 400 : 503;
     response.status(status).type('text').send(status === 503 ? 'Temporarily unavailable. Please try again.' : 'Request could not be completed.');
   });

@@ -10,6 +10,8 @@
 
 ## Current work
 
+November 17 bounded delivery: [#140](https://github.com/Maeximilion/MaexSocial/issues/140) adds existing own-tenant text editing for Employee and Manager, immutable revisions, explicit stale-edit conflicts and atomic removal of affected unclaimed approval eligibility. It consumes A1's protected request boundary with synthetic test sessions. [The domain contract](superpowers/plans/2026-11-06-task-2-deliveries.md#existing-text-editing-140) preserves claimed/history records. #124 stays open for its remaining approval flow; real auth/MFA #131, integrated Task 2 and all product gates remain open. This delivery has no dependency on #139's private OIDC component.
+
 | Work | State | Evidence |
 |---|---|---|
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
