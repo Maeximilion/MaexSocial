@@ -71,6 +71,9 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
     assert.equal((await send('/customer', 'GET', undefined, rotatedCookie)).status, 200);
     assert.equal((await send('/customer/logout', 'POST', { csrf: rotatedCsrf }, rotatedCookie)).status, 303);
     assert.equal((await send('/customer', 'GET', undefined, rotatedCookie)).status, 403);
+    const signedOut = await send('/', 'GET', undefined, '');
+    assert.equal(signedOut.status, 200); assert.match(signedOut.text, /You are signed out/);
+    assert.deepEqual(signedOut.cookies, []);
     const beforePlain = connections;
     const plain = await fetch(`http://127.0.0.1:${plainPort}/customer`, { headers: { cookie: rotatedCookie, 'x-forwarded-proto': 'https' } });
     assert.equal(plain.status, 400); assert.equal(connections, beforePlain);

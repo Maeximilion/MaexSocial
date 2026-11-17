@@ -3,7 +3,7 @@ import type { Client } from 'pg';
 import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
-import { renderPortal } from '../routes/portal.js';
+import { renderPortal, renderSignedOut } from '../routes/portal.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -18,6 +18,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     next();
   });
   app.use(express.urlencoded({ extended: false, limit: '2kb', parameterLimit: 4 }));
+  app.get('/', (_request, response) => { response.type('html').send(renderSignedOut()); });
   async function transaction<T>(work: (db: Client) => Promise<T>): Promise<T> {
     const db = await connect();
     try { await db.query('BEGIN'); const value = await work(db); await db.query('COMMIT'); return value; }

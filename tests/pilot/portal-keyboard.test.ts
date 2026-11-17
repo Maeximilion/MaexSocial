@@ -50,6 +50,10 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     assert.notEqual((await context.cookies()).find(cookie => cookie.name === '__Host-session')!.value, token);
     assert.ok(requests.every(host => host === 'customer'), 'No IdP or external request belongs to this dashboard-only test');
     await page.screenshot({ path: '/artifacts/dashboard.png', fullPage: true });
+    await page.getByRole('button', { name: 'Sign out' }).focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.title === 'Signed out · MaexSocial', undefined, { timeout: 5000 });
+    assert.equal(await page.getByRole('heading', { name: 'You are signed out' }).count(), 1);
+    assert.ok(!(await context.cookies()).some(cookie => ['__Host-session', '__Host-csrf'].includes(cookie.name)));
     await context.close();
   } finally { await db.end(); await browser?.close(); server.closeAllConnections(); await new Promise<void>(r => server.close(() => r())); }
 });

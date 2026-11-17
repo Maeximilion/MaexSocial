@@ -72,7 +72,9 @@ test('transactional current authority, synthetic current factor and exact sessio
     try {
       const resetPid = (await resetting.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
       const protectedPid = (await db.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
-      await db.query('BEGIN'); await requireCustomer(db, token, now, async () => status);
+      await db.query('BEGIN'); await lockIdentities(db, [identity]);
+      await db.query('SELECT id FROM pilot.tenants WHERE id=$1 FOR UPDATE', [tenant]);
+      await requireCustomer(db, token, now, async () => status);
       await resetting.query('BEGIN'); const resetLock = lockIdentities(resetting, [identity]);
       await blocked(resetPid);
       await db.query("UPDATE pilot.tenants SET name='Allowed before identity invalidation',version=version+1 WHERE id=$1", [tenant]);

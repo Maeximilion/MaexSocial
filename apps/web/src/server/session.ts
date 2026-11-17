@@ -17,7 +17,8 @@ export async function requireCustomer(db: Client, token: string, now: Date, insp
   const located = (await db.query('SELECT id,identity_id,tenant_id,membership_id FROM pilot.sessions WHERE token_hash=$1 AND audience=$2', [tokenHash(token), 'customer'])).rows[0];
   if (!located) denied();
   await lockIdentities(db, [located.identity_id]);
-  await db.query('SELECT id FROM pilot.tenants WHERE id=$1 FOR UPDATE', [located.tenant_id]);
+  // Share tenant reads; tenant writers must acquire FOR UPDATE in lock order before this call.
+  await db.query('SELECT id FROM pilot.tenants WHERE id=$1 FOR SHARE', [located.tenant_id]);
   await db.query('SELECT id FROM pilot.memberships WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [located.tenant_id, located.membership_id]);
   const session = (await db.query('SELECT * FROM pilot.sessions WHERE id=$1 FOR UPDATE', [located.id])).rows[0];
   if (!session || session.identity_id !== located.identity_id || session.tenant_id !== located.tenant_id

@@ -2,6 +2,12 @@ import type { CustomerContext } from '../../../../packages/contracts/pilot.js';
 
 const html = (value: string): string => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 
+export function renderSignedOut(): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signed out · MaexSocial</title><style>body{background:#0B0F19;color:#F8FAFC;font:1rem/1.6 system-ui;margin:0}main{max-width:69rem;margin:4rem auto;padding:1.5rem}h1{color:#00E5FF}</style></head>
+<body><main><h1>You are signed out</h1><p>You can close this window.</p></main></body></html>`;
+}
+
 export function renderPortal(context: CustomerContext, tenants: { id: string; name: string }[], csrf: string): string {
   const current = tenants.find(tenant => tenant.id === context.tenantId);
   if (!current) throw new Error('Denied');
