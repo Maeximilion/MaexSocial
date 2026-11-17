@@ -15,6 +15,8 @@ MaexSocial will manage local visibility and social media through AI and supporte
 - Initial Code Autopilot/Caveman deactivation was superseded by the owner on 2026-11-05: both are enabled with local Codex adaptations. [Development skill roles](tooling/development-skills.md) define Ponytail for small/medium work and reviews/audits, and Superpowers for larger plans.
 - Maxi requires the canonical local folder to remain on clean `main`, with regular `fetch --prune` and `pull --ff-only` after merges. Changes belong in separate worktrees. Never pull a dirty checkout.
 
+Review-policy update, 2026-11-17 — Maxi selected Claude API reviews for MaexSocial PRs, superseding the Astra review decision above for this repository. The [canonical policy](tooling/agent-workflow.md#pr-review-policy) requires actual API execution and authentic complete current-head/base evidence; it grants no new spending, merge or product authority.
+
 ## Gates
 
 Language update, 2026-11-05 — Maxi delegated technology selection. [ADR 0001](decisions/0001-application-language.md) chooses TypeScript with strict checking as the application baseline, with Node.js API/orchestration as the direction. Framework, authentication, database, deployment and provider decisions remain part of G2. This updates the initial language deferral above without approving the full product design.

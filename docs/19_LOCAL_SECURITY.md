@@ -129,7 +129,7 @@ The preceding bounded audit found no confirmed secret leak in the inspected hist
 
 ## Native Codex hooks and terminal
 
-Codex CLI 0.166.0-alpha.6 is installed and logged in through ChatGPT on the inspected machine. This app-bundled executable reports an incomplete local package when started with the daemon; `codex --no-daemon` successfully starts its terminal interface. Work in a task worktree; for a fresh isolated session use `codex --no-daemon --worktree -C <canonical-checkout>`. For a review select `gpt-6-astra` and reasoning `high`; these are separate settings.
+Codex CLI 0.166.0-alpha.6 is installed and logged in through ChatGPT on the inspected machine. This app-bundled executable reports an incomplete local package when started with the daemon; `codex --no-daemon` successfully starts its terminal interface. Work in a task worktree; for a fresh isolated session use `codex --no-daemon --worktree -C <canonical-checkout>`. For current PR review routing, follow the [Claude API policy](tooling/agent-workflow.md#pr-review-policy); this terminal inventory does not authorize a separate Codex review.
 
 The CLI app-server `hooks/list` inspection reports the user's model-router hooks for SessionStart, UserPromptSubmit and PreToolUse as enabled and trusted. The Ponytail session and prompt hooks are also enabled/trusted. Legacy Claude-specific title/sync hooks remain disabled. These existing definitions and model settings were unchanged. The router supplies guidance and a pause guard; it does not switch the running model itself. Six synthetic router checks passed using isolated state, not a real session's pending work.
 

@@ -24,7 +24,7 @@ For MS-004, establish and freeze Claude's own findings before reading the Codex 
 
 ## Finish and review
 
-Run checks appropriate to the actual changes. The PR states the problem, result, real test outcomes, remaining limits and linked issue. Get code review with `gpt-6-astra`, reasoning `high`, and verify the actual setting. Resolve concrete findings and repeat checks affected by fixes. Follow root repository merge rules. A later push invalidates any claim that an earlier review covered the exact current head.
+Run checks appropriate to the actual changes. The PR states the problem, result, real test outcomes, remaining limits and linked issue. Verify actual API execution and complete current-head/base evidence under the [Claude API review policy](tooling/agent-workflow.md#pr-review-policy). Resolve concrete findings and repeat checks affected by fixes. Follow root repository merge rules. A later push invalidates any claim that an earlier review covered the exact current head.
 
 ## Gate
 

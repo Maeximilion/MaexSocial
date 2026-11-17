@@ -1,6 +1,8 @@
 # Handover 2026-11-05 — MS-014, independent cross-model review
 
-This is a forward-looking brief, preserved from the owner's assignment. Session stopping points belong in separate records under `sessions/`, reachable through the permanent folder link in [status](../01_STATUS.md).
+Superseded on 2026-11-17 for current PR work by the [Claude API review policy](../tooling/agent-workflow.md#pr-review-policy), recorded in [#125](https://github.com/Maeximilion/MaexSocial/issues/125). The entire assignment below, including its execution note, manual mentions, reviewer direction and Start text, is historical evidence, not an active procedure.
+
+This was a forward-looking brief, preserved from the owner's assignment. Session stopping points belong in separate records under `sessions/`, reachable through the permanent folder link in [status](../01_STATUS.md).
 
 Current execution note (2026-11-05): use the permanent sessions-folder pointer and start the required local Claude review after the existing hosted jobs finish. For personal skills, follow the current owner instructions in the receiving session. The historical skill settings below describe the original assignment. The assignment and Start text below are historical; check [MS-015 / #49](https://github.com/Maeximilion/MaexSocial/issues/49) for later decisions.
 
