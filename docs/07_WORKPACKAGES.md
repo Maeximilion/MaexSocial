@@ -6,6 +6,8 @@ Task 2 update, 2026-11-17: [A1 / #135](https://github.com/Maeximilion/MaexSocial
 
 ## Planning maturity
 
+Bounded Task 2A2 component [#139 / PR #142](https://github.com/Maeximilion/MaexSocial/pull/142) delivers unmounted ordinary OIDC verification and a separate durable, browser-bound attempt store. [Protocol/database and real browser checks](../ops/local/README.md#private-oidc-verification-139) establish verified issuer/subject and one-use consumption, without application session/admission authority, MFA freshness or lifecycle completion. #131 retains those obligations and timed cleanup before public use; Task 2 and all product gates remain open.
+
 Bounded Task 2C component [#140](https://github.com/Maeximilion/MaexSocial/issues/140) delivers protected editing of existing text drafts only. It appends revisions and invalidates affected unclaimed eligibility without granting approval or changing claimed payloads. [Contract and checks](superpowers/plans/2026-11-06-task-2-deliveries.md#existing-text-editing-140) are separate from #124's remaining behavior and #131's real identity/MFA evidence. Root owns merge/integration; no product gate is completed.
 
 The product goals, stage sequence, gate outcomes, task dependencies and stage-level acceptance criteria are defined. The foundation is delivered. G1 discovery has a bounded [Codex static report](research/codex-rea.md) and an independent [Claude walkthrough](research/claude-rea.md) on main. The [bounded synthesis](research/synthesis.md) records the five accepted limits and the evidence needed if later decisions rely on them.

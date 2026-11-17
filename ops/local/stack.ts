@@ -38,6 +38,18 @@ async function initialize(): Promise<Fixture> {
     { id: '13600000-0000-4000-8000-000000000002', username: 'status-disabled', enabled: false,
       email: 'status-disabled@example.invalid', emailVerified: true, requiredActions: [] }
   ];
+  // Only the first import of a fresh isolated fixture creates these test credentials.
+  const oidcSecret = secret(), oidcPassword = secret();
+  await save('oidc-secret', oidcSecret); await save('oidc-password', oidcPassword);
+  realm.clients.push({ clientId: 'pilot-oidc-test', secret: oidcSecret, enabled: true, publicClient: false,
+    clientAuthenticatorType: 'client-secret', standardFlowEnabled: true, serviceAccountsEnabled: false,
+    directAccessGrantsEnabled: false, implicitFlowEnabled: false, fullScopeAllowed: false,
+    defaultClientScopes: [], optionalClientScopes: [],
+    attributes: { 'pkce.code.challenge.method': 'S256', 'id.token.signed.response.alg': 'RS256', 'use.refresh.tokens': 'false' },
+    redirectUris: ['https://customer:8443/oidc/callback'], webOrigins: [] });
+  realm.users.push({ id: '13900000-0000-4000-8000-000000000001', username: 'oidc-user', enabled: true,
+    email: 'oidc-user@example.invalid', emailVerified: true, firstName: 'Invented', lastName: 'User', requiredActions: [],
+    credentials: [{ type: 'password', value: oidcPassword, temporary: false }] });
   await save('keycloak-realm.json', JSON.stringify(realm));
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
