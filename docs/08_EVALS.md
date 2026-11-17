@@ -15,6 +15,8 @@ Foundation CI validates repository artifacts and automation. It does not measure
 
 Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `node --test tests/*.test.cjs`. The metadata tests execute the workflow's actual inline script. They cover trusted bots, humans, fork/deleted repositories, spoofed identity/actor, task links and invalid titles. No extra test framework or package installation is required.
 
+The [protected Claude route](tooling/claude-protected-review.md) adds offline trust, exact-revision, lifecycle, completeness and publication regressions. Its bootstrap uses the unchanged ordinary API reviewer; the first later genuine protected PR must establish live manual-route execution. Offline success is not provider evidence or merge approval.
+
 Artwork tests accept the existing originals and reject hostile SVG fixtures without rendering them. Hook tests exercise bounded input, Stop-loop handling, checker failures/timeouts and configured command paths. Direct execution is not proof that a running Claude/Codex session loaded or trusted a hook; verify that separately using the [tooling guide](tooling/agent-workflow.md).
 
 Maintenance tests exercise the actual API-only workflow against controlled GitHub responses, covering inherited metadata, preserved manual choices, dedicated dependency-task reuse and native Development linkage. Hosted verification must additionally establish the workflow token's real API permissions and Project reconciliation after generated changes.

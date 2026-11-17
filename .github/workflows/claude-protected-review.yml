@@ -1,0 +1,75 @@
+name: Claude protected review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Open same-repository protected PR number (coordinator authorized)
+        required: true
+        type: string
+      expected_head:
+        description: Exact PR head SHA
+        required: true
+        type: string
+      expected_base:
+        description: Exact PR base tip SHA
+        required: true
+        type: string
+      expected_target:
+        description: Exact PR target branch name
+        required: true
+        type: string
+      trusted_sha:
+        description: Exact independently reviewed current default-branch SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  protected-review:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: claude-protected-${{ inputs.pr }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      KIND: review
+      PR: ${{ inputs.pr }}
+      HEAD_SHA: ${{ inputs.expected_head }}
+      BASE_SHA: ${{ inputs.expected_base }}
+      TARGET_REF: ${{ inputs.expected_target }}
+      TRUSTED_SHA: ${{ inputs.trusted_sha }}
+    steps:
+      - id: trusted
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prepare exact protected PR
+        id: data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKOUT_SHA: ${{ steps.trusted.outputs.commit }}
+        run: python3 -I scripts/claude_protected_review.py prepare
+      - name: Claude API
+        id: claude
+        if: steps.data.outputs.ready == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 -I scripts/claude_messages.py
+      - name: Publish exact result
+        if: ${{ !cancelled() && steps.trusted.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKOUT_SHA: ${{ steps.trusted.outputs.commit }}
+          DATA_OUTCOME: ${{ steps.data.outcome }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+        run: python3 -I scripts/claude_protected_review.py publish
