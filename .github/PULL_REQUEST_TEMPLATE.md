@@ -20,4 +20,4 @@ Link the task, relevant gate and sanitized evidence.
 - [ ] Checks passed and limitations are recorded
 - [ ] Status, work packages and Project reflect the actual state
 - [ ] Public content is free of secrets and personal data
-- [ ] Review used GPT-6 Astra with reasoning high
+- [ ] Claude API step executed and an authentic complete review covers the current head/base; run and result linked per the [review policy](../docs/tooling/agent-workflow.md#pr-review-policy)

@@ -4,7 +4,7 @@ Status — Future session. The [research synthesis](../research/synthesis.md) is
 
 Artifacts — Repository `Maeximilion/MaexSocial`, [synthesis handover](synthesis.md), [charter](../00_PCF.md), [architecture questions](../02_ARCHITECTURE.md), [work packages](../07_WORKPACKAGES.md). Create a task branch after checking current main and open work.
 
-Decisions — Reuse the established repository process and [TypeScript strict language baseline](../decisions/0001-application-language.md). Choose frameworks, runtime validation, storage and deployment from the first approved slice. Existing Python maintenance tooling stays. All code reviews use `gpt-6-astra` with reasoning `high`, verified in the actual review session.
+Decisions — Reuse the established repository process and [TypeScript strict language baseline](../decisions/0001-application-language.md). Choose frameworks, runtime validation, storage and deployment from the first approved slice. Existing Python maintenance tooling stays. Current PR review routing follows the [Claude API policy](../tooling/agent-workflow.md#pr-review-policy) (owner update, 2026-11-17).
 
 Gate — MS-008 approves design, MS-009 supplies a concrete implementation plan, MS-010 implements and proves G3.
 
@@ -30,4 +30,4 @@ The first slice must exercise real business flow with synthetic data and authori
 
 ## Start prompt for the build chat
 
-Begin MaexSocial design/build from the current repository state. Read root instructions, docs/01_STATUS.md, docs/research/synthesis.md and the approved product design if present. Work through MS-008 and MS-009 with Superpowers before MS-010. Verify actual G2 approval and available provider access. Implement the approved first slice through normal entry points, run its acceptance checks and obtain gpt-6-astra high review on the current head. Use the enabled Code Autopilot/Caveman skills under the current repository rules.
+Begin MaexSocial design/build from the current repository state. Read root instructions, docs/01_STATUS.md, docs/research/synthesis.md and the approved product design if present. Work through MS-008 and MS-009 with Superpowers before MS-010. Verify actual G2 approval and available provider access. Implement the approved first slice through normal entry points, run its acceptance checks and verify complete Claude API review evidence for the current head/base under the repository review policy. Use the enabled Code Autopilot/Caveman skills under the current repository rules.

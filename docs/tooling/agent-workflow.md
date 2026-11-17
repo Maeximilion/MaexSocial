@@ -12,8 +12,8 @@ See the [role comparison and public research handover example](agent-evidence.md
 | `.claude/commands/` | Manual workflows; canonical source for both platforms |
 | `.claude/skills/` | Claude's repository-check skill; Claude does not automatically discover `.agents/skills/` |
 | `.agents/skills/` | Codex repository-check skill and thin wrappers for the shared commands |
-| `.claude/agents/` | Read-only evidence researcher with a limited tool list and inherited Claude model; never an Astra code reviewer |
-| `.codex/agents/` | Reviewer definition selecting GPT-6 Astra high; actual session/model availability must be verified when invoked |
+| `.claude/agents/` | Read-only evidence researcher with a limited tool list and inherited Claude model; not the PR reviewer |
+| `.codex/agents/` | Legacy reviewer definition; retained configuration does not authorize its use for MaexSocial PR reviews |
 | `.claude/rules/` | Path-scoped research/application guidance; shared obligations also live in AGENTS-linked documents for Codex |
 | `.claude/hooks/` | Shared Stop-check script; a directory alone does not activate it |
 | `.claude/settings.json` | Claude registration using direct executable/arguments; no permission bypass or global settings changes |
@@ -30,8 +30,18 @@ Codex is the primary programmer here. Request [source-command-anatomy](../../.ag
 1. Read the issue, check branch/dirty state, fetch, then use a task worktree. Run `/start` or `/task` and their Codex equivalents only when explicitly invoked; they alone trigger the advisory GitHub check.
 2. Select the [development skill roles](development-skills.md): Ponytail for small/medium work and reviews/audits, Superpowers for larger plans and execution, with Code Autopilot and Caveman enabled. Keep G1 evidence independent until the defined comparison checkpoint; delegation still needs its own authority.
 3. Implement only the authorized task. Use `repository-check` or `/eval` for full foundation commands and task-specific checks.
-4. Request a fresh review with actual `gpt-6-astra` and `high` settings, base/head and issue scope. The reviewer is instructed not to edit; its file does not grant a separate sandbox or change inherited permissions. Claude prepares the review handover for Codex instead of substituting a Claude model.
+4. Let the existing automatic Claude API workflow review the PR and verify the [required evidence](#pr-review-policy). Resolve confirmed findings in the same PR; report review gaps to the authorized coordinator.
 5. Commit/push, maintain the linked PR/Project, fetch after PR changes and pull clean canonical main after merge. Record tests and limitations in the handover.
+
+## PR review policy
+
+Owner decision, 2026-11-17 ([#125](https://github.com/Maeximilion/MaexSocial/issues/125)): MaexSocial PRs use the existing Claude Messages API workflow. This supersedes earlier mandatory Astra reviews, manual cross-model review instructions and Codex-bot fallback permissions for these PRs. Do not mention the Codex bot, start a separate Codex review round or silently substitute another reviewer. Historical reports and retained reviewer configuration are evidence of earlier operation, not current review authority. The workflow's advisory name and legacy supplementary comment do not define the current PR review gate.
+
+- Keep `claude-opus-5-5`, effort `high`, speed `standard` and `service_tier=standard_only`, all current input/output/workspace limits, tool-free operation and trust/secret protections unchanged. Use the existing automatic workflow on real PR changes; do not create paid diagnostic probes or duplicate triggers.
+- A review counts only after the API step actually executes and an authentic complete result is published. Link the Actions run and result; record head SHA, base ref/tip, merge base and reviewed diff. Verify the publisher and result against that run, not just a copied label or green job. Skipped, protected self-skipped, cancelled, failed, truncated or incomplete runs remain unreviewed.
+- Compare coverage with the current head/base and integration candidate before merge. A changed head requires fresh coverage; a retarget, base change or restack requires rechecking the actual diff even when the head is unchanged. Read inline findings, review summaries and top-level comments. Required CI, trust/secret checks, unresolved blocking findings and applicable product gates remain effective.
+- Diagnose a failed or incomplete review from its actual safe evidence before a corrected retry. Do not repeat an identical paid request. Fix confirmed findings with targeted checks in the same PR; reject incorrect findings with evidence. Resolve threads only after a verified fix or evidence-backed rejection. Each further loop needs new evidence; after at most three attempts with the same failure signature, report cause, evidence and a recommended different approach to the coordinator while continuing independent authorized work.
+- A protected reviewer self-skip is a review gap for the coordinator, never a substitute review or permission to bypass protection. Hold merge eligibility until the gap is explicitly resolved under applicable authority. Post-merge verification on the next real eligible PR can establish reviewer behavior, but does not retroactively review the protected PR. Do not rerun a closed PR for a receipt.
 
 ## Stop hook
 
