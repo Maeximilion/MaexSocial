@@ -1,0 +1,63 @@
+# Task 2 customer access and content delivery plan
+
+Use `superpowers:executing-plans` for the assigned issue. Root accepted A1/A2/B/C on November 17; every original requirement remains. Authority: [accepted Task 2](2026-11-05-ms-009-local-text-pilot.md#2-customer-registration-portal-and-immutable-approval), [evidence map](2026-11-05-ms-009-pilot-evidence-map.md), [access contract](../../17_ACCESS_SECURITY.md), [owner acceptance](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454).
+
+## Constraints and ownership
+
+Only invented A/B customers in isolated fixtures; no real accounts, external runtime mail/provider calls, deployment, product spend or G3 acceptance. Retain strict TypeScript/Node 24.22.2/npm 11.19.1, PostgreSQL 17.11, Keycloak 26.8.2 and Express 5.3.0. No architecture fork or router framework. The November 17 resume supersedes the November 6 pause, without a new deadline. Root owns technical disposition, coordinator records, admission and merges; one normal PR per assigned chat, attached immediately. Claude API supplies complete current-head/base review, without a Codex substitute. Read-only full-input preflight precedes publication; never omit code/lockfile/tests to fit.
+
+| Delivery | Responsibility |
+| --- | --- |
+| A1 / [#117](https://github.com/Maeximilion/MaexSocial/issues/117) | Synthetic session/current-authority/tenant/CSRF contract and own dashboard; `server/customer.ts`, `request.ts`, `session.ts`, `routes/portal.ts`, `packages/contracts/pilot.ts`, minimum migration, fixture and tests. No public login/issuance or real identity proof. |
+| A2 / [#131](https://github.com/Maeximilion/MaexSocial/issues/131) | Real auth/lifecycle/MFA/recovery, authenticated provider adapter, completion provenance, durable fencing/retry and integrated logout/throttling. Blocks integrated G3/G5 and real invitation completion. |
+| B / [#123](https://github.com/Maeximilion/MaexSocial/issues/123) | `routes/employees.ts`, invitation/removal/acceptance tests and minimum invitation migration; consumes A1 and A2. |
+| C / [#124](https://github.com/Maeximilion/MaexSocial/issues/124) | `routes/content.ts`, facts/drafts/approval/occurrence tests and minimum facts storage; consumes A1 and A2. |
+
+Root decides A1 contract readiness before B/C dispatch; A1 merge never satisfies real auth prerequisites. B/C add explicit mounts in `customer.ts`, coordinating shared file changes. Preserve Task 1 storage helpers/privileges; no competing session system. Task 2 needs **A1+A2+B+C and integrated evidence**; Task 3 still waits. Private management, export, dispatch and full recovery remain Tasks 3-6. Manager alone approves; Employee/Manager export belongs to Task 4; DEV/Admin cannot approve customer content.
+
+## A1 shared contract and evidence
+
+The caller owns BEGIN/COMMIT/ROLLBACK and the connection. `customerRequest(request, fields?)` parses HTTPS/host-only opaque cookies and rejects duplicates/malformed values; writes supply the complete field list including `csrf`, enforcing POST, exact Origin, matching proof and string-only/known fields. `requireCustomerRequest(db, binding, clock, inspect)` checks current authority and stored CSRF inside that transaction. Domain queries use returned tenant/role/subject, never request claims.
+
+`requireCustomer` checks customer audience, revocation, verified identity, active tenant/membership and all three current versions. Enforce 30-minute idle/eight-hour absolute limits, rejecting future times. Supply a server clock function, evaluated immediately before time checks, after authority/session locks and awaited identity inspection; rotation uses that same locked timestamp for validation and storage. Tests may supply a controlled clock. Never capture a request timestamp before waiting on locks. `InspectIdentity` is mandatory server authority: matching subject, current enabled/verified state, no pending actions, current credential ID/type for synthetic MFA enrollment. **Only isolated tests supply it here; A2 must prove real IdP/MFA provenance.** `requireManagerMfa(context, clock)` reads the server clock at its decision and requires Manager, enrollment and proof age <=5 minutes (exactly five allowed, future/stale denied).
+
+Lock **all identity IDs sorted -> all tenant IDs sorted -> memberships by tenant/id -> sessions -> domain objects**. Cross-user callers collect the complete set first and use `lockIdentities`; switching locks source/destination sets. Revalidate preliminary bindings/versions under locks; changed sets deny/restart rather than acquire an earlier lock out of order. Mutations and authority invalidation obey this protocol; middleware outside the transaction is insufficient.
+
+Ordinary authority reads take `FOR SHARE` on the tenant, allowing different identities to read concurrently while blocking suspension/version updates until commit. A transaction that writes tenant rows must acquire `FOR UPDATE` on its complete tenant set in order before calling the shared authority check; never upgrade competing shared reader locks. Switching already takes its ordered tenant set exclusively.
+
+`rotateCustomerSession` validates both memberships, revokes old token and rotates token/CSRF while preserving original absolute deadline. HTTP callers check `requireBoundCsrf` under these locks and roll back the entire rotation on rejection. Local logout revokes only the app session, even with provider inspection unavailable; no IdP logout claim. The dashboard preserves same-origin referrer policy for browser POST Origin.
+
+Migration 002 adds only session CSRF hash, tenant version and synthetic factor ID; missing binding denies. Removed experimental lifecycle/completion/browser-flow/throttle schema and unused dependencies are recoverable from pushed `02784466b2f74ff1dbedbcdcec26a51f823aec4a` and private archive, not stable contracts. Preserve old populated investigative fixtures and initialize a fresh namespace; never upgrade them implicitly or weaken destructive-migration guards.
+
+Implemented/local evidence: current versions/expiry, synthetic MFA age/factor removal, demotion/reactivation, shared identity locks; both protected-write/AppDB-invalidation orders (reset-side AppDB model only); switch/removal both orders with observed blocking PIDs, session/membership effects and independent A control. HTTPS tests reject public auth/fixture issuance, query tokens, foreign Origin/CSRF, unknown fields and forged stored binding with rollback. Real isolated keyboard dashboard switching uses only seeded sessions; no IdP/external request. Fresh up/down/up, unknown-object rollback, strict build, targeted/full pilot tests pass. Exact revisions, foundation/CI/API review and recovery are recorded in the delivery handover/PR. Synthetic subchecks do not close whole ACCESS journeys.
+
+## A2 retained acceptance
+
+- Real browser OIDC: validate signature, issuer, customer audience, expiry, code/state/nonce/PKCE and exact redirect. Tokens stay server-side, Secure/HttpOnly/SameSite host-only session cookies. Realm clients stay disabled until proven; no direct grants or fixture login.
+- Activation/invitation 24 hours, reset 15 minutes; GET never consumes. Explicit single-use redemption, including concurrency; deny expired/revoked/replaced/wrong recipient/purpose/tenant/role and domain/role injection. Require first/last names; optional fields may be absent. Public verification creates exactly one workspace/Employee after proof, never earlier.
+- Retire attacker preregistration password/factors/sessions/challenges before first activation. Existing verified identities retain profile/password/MFA/all other memberships; duplicate verified signup yields generic guidance only. Invitation adds only authorized membership, never resets credentials or reactivates/replaces an existing role.
+- Persist completion only after proven IdP lifecycle; bind identity/email/purpose and originating challenge/invitation, distinguish new/unverified from verified identity, consume once with the domain transaction. Identity adapter grants no tenant/role. Freeze concrete proof contract only after evidence.
+- Durable IdP/AppDB crash/retry and generation/fencing: interruptions before/after operations remain denied/retry-safe; PostgreSQL does not atomically commit provider credentials. The [blocked in-flight credential test](https://github.com/Maeximilion/MaexSocial/issues/117#issuecomment-6950555219) must not be repeated, rephrased or delegated. Root owns safe design/verification disposition before completion.
+- Real MFA enrollment/step-up/removal/recovery; restored enrollment before sensitive actions, authentic proof <=5 minutes. Timestamp/client `amr` alone is insufficient. Integrated login/logout/reset/elevation rotates/revokes appropriate app/provider authority.
+- Durable independent account/source throttles: login 5/30 per 15 minutes; signup/recovery/resend 3/10 per hour each, counting unknown accounts with equivalent public responses. No credentials in AppDB/logs.
+- Accessible public/signup/login/recovery shell, actual isolated identity-to-dashboard journeys, positive/negative controls, no private-management authority, TLS/plaintext denials, safe errors/logs. Repeat A1 with real authority; test crash/retry/migrations/full relevant suites and current CI/API review.
+
+## B acceptance and implementation contract
+
+- Test then implement Manager-only Employee invitation/removal, read-only invite view and explicit acceptance. Inputs: invitation email only; removal membership ID. Resolve active tenant server-side. Reject Employee, DEV/Admin customer use, missing/stale/future/un-enrolled MFA, cross-tenant targets, Manager removal/promotion and submitted tenant/role overrides; require proof <=5 minutes.
+- Hashed token, 24-hour identity/purpose binding, resend invalidation, displayed tenant/role and no GET mutation. Serialize acceptance with issuer revocation/demotion and tenant suspension in both orders. Exactly one redemption; expired/revoked/replaced/wrong-purpose/recipient grants nothing.
+- Consume A2 proof: new/unverified users choose credential/required names after mailbox proof and preregistration cleanup; verified users authenticate as intended identity, preserve all fields/factors/memberships and add only invited membership. No credential reset or role replacement/reactivation.
+- Removal advances membership version, cancels affected tenant invitations and invalidates derived authority. Next old A cookie fails (including export); independent B session still works. Verify mutation counts/canaries and positive controls after denials.
+- Compile/restart, run `employees.test.ts` and A1/A2 regressions; own normal PR/current CI/API review. Coordinate shared contract changes with root.
+
+## C acceptance and implementation contract
+
+- Test then implement facts/content view, Employee/Manager plain-text draft editing, Manager-only immutable approval and occurrence read. Preserve accepted facts authority; no invented write rights. Reuse revisions/locations/occurrences/approvals. A1 transaction + A2 current enrolled MFA <=5 minutes; Employee/DEV/Admin/wrong tenant/stale/missing/recovered-unenrolled/unauthorized location yields zero approval/job/disclosure.
+- Snapshot exact revision/location/timezone/local display and UTC due instant. Validate consistency including ambiguous/nonexistent DST. Server generates occurrence ID; retries retain occurrence/creation key.
+- Duplicate approval converges on one intent. Reapproval after grant invalidation binds same unclaimed occurrence to new immutable approval. Edits to text/destination/time invalidate eligibility; never modify snapshots or reopen exported/claimed/uncertain occurrences. Test demote/re-promote and edit barriers; preserve Task 4 consumption requirements.
+- Strictly reject attachment/upload/ingestion-link/object-reference fields for every role and raw requests. Plain text allowed; zero media storage/fetch/job/charge and no B canary in response/log/state. No export/dispatch implementation.
+- Compile/restart, run `approval.test.ts`, A1/A2 and relevant storage regressions; own normal PR/current CI/API review.
+
+## Coverage
+
+A1 supplies only synthetic request/session subchecks of ACCESS-01/02/04/07/10/11/12/13. A2 retains real activation/recovery/OIDC/MFA/abuse/provenance (ACCESS-09/13/14/17); B owns Employee/issuer cases (ACCESS-16/17); C owns immutable approval/text-only/PLAN-01/ACCESS-15. Keep every original case in the linked evidence map; no gate or acceptance item is waived.

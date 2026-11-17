@@ -22,7 +22,7 @@ async function initialize(): Promise<Fixture> {
   await save('identity-password', f.identityPassword);
   await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
   docker(['pull', postgresImage]);
-  for (const name of ['postgres', 'identity-db', 'keycloak', 'mailbox']) {
+  for (const name of ['postgres', 'identity-db', 'keycloak', 'mailbox', 'customer']) {
     docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'openssl', postgresImage,
       'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', `/CN=${name}`,
       '-addext', `subjectAltName=DNS:${name},DNS:localhost,IP:127.0.0.1`,
@@ -30,6 +30,8 @@ async function initialize(): Promise<Fixture> {
   }
   docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
     postgresImage, '1000:1000', '/fixture/keycloak.key']);
+  docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
+    postgresImage, `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`, '/fixture/customer.key']);
   // Only generated hex values enter bootstrap SQL. No supplied SQL or connection URI is accepted.
   await save('init-app.sql', `CREATE ROLE pilot_app LOGIN PASSWORD '${f.appPassword}' VALID UNTIL '${expiry}';
 ALTER ROLE pilot_owner VALID UNTIL '${expiry}';

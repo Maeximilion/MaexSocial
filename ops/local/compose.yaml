@@ -95,7 +95,10 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    networks: [application, identity]
+    networks:
+      application: {}
+      identity:
+        aliases: [customer]
     labels:
       org.maexsocial.fixture: ${FIXTURE_ID:?}
 networks:

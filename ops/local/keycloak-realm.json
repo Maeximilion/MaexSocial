@@ -9,7 +9,7 @@
     "host": "mailbox",
     "port": "1025",
     "from": "pilot@example.invalid",
-    "starttls": "true",
+    "ssl": "true",
     "auth": "false"
   },
   "clients": [
