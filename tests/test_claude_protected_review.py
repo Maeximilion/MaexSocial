@@ -27,7 +27,7 @@ class ProtectedReviewTests(unittest.TestCase):
         self.folder = Path(temp.name)
         self.env = {
             "GITHUB_REPOSITORY": REPO, "PR": "7", "HEAD_SHA": HEAD, "BASE_SHA": BASE,
-            "TARGET_REF": "main", "TRUSTED_SHA": TRUSTED, "CHECKOUT_SHA": TRUSTED,
+            "TARGET_REF": "main", "REVIEWER_COMMIT": TRUSTED, "CHECKOUT_SHA": TRUSTED,
             "GITHUB_SHA": TRUSTED, "GITHUB_WORKFLOW_SHA": TRUSTED,
             "GITHUB_WORKFLOW_REF": f"{REPO}/.github/workflows/claude-protected-review.yml@refs/heads/main",
             "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
@@ -106,6 +106,15 @@ class ProtectedReviewTests(unittest.TestCase):
         for value in [HEAD, TRUSTED, MERGE, ANCESTOR, "actions/runs/123", "Complete", "0 findings"]:
             self.assertIn(value, body)
 
+    def test_public_reviewer_commit_evidence_contains_no_credentials(self):
+        with patch.dict(self.env, {"GH_TOKEN": "PRIVATE-GITHUB-FIXTURE", "ANTHROPIC_API_KEY": "PRIVATE-PROVIDER-FIXTURE"}):
+            self.prepare()
+            evidence = json.loads((self.folder / "claude-protected-state.json").read_text("utf-8"))
+            self.assertEqual(evidence["reviewer_commit"], TRUSTED)
+            route.publish(self.env)
+        for path in self.folder.glob("*.json"):
+            self.assertNotIn("PRIVATE-", path.read_text("utf-8"))
+
     def test_rejects_closed_fork_retarget_moved_and_unknown_candidate(self):
         original = deepcopy(self.pull)
         for change in [lambda p: p.update(state="closed"), lambda p: p.update(merged=True),
@@ -122,7 +131,7 @@ class ProtectedReviewTests(unittest.TestCase):
 
     def test_dispatch_trust_authorization_and_rerun_guards(self):
         for name, value in [("PR", "7/evil"), ("HEAD_SHA", ""), ("BASE_SHA", "bad"),
-                            ("TARGET_REF", ""), ("CHECKOUT_SHA", BASE), ("TRUSTED_SHA", BASE),
+                            ("TARGET_REF", ""), ("CHECKOUT_SHA", BASE), ("REVIEWER_COMMIT", BASE),
                             ("GITHUB_SHA", BASE), ("GITHUB_WORKFLOW_SHA", BASE),
                             ("GITHUB_WORKFLOW_REF", "other/workflow"), ("GITHUB_REF", "refs/heads/feature"),
                             ("GITHUB_EVENT_NAME", "pull_request"), ("GITHUB_RUN_ATTEMPT", "2")]:

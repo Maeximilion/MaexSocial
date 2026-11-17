@@ -19,7 +19,7 @@ on:
         description: Exact PR target branch name
         required: true
         type: string
-      trusted_sha:
+      reviewer_commit:
         description: Exact independently reviewed current default-branch SHA
         required: true
         type: string
@@ -45,7 +45,7 @@ jobs:
       HEAD_SHA: ${{ inputs.expected_head }}
       BASE_SHA: ${{ inputs.expected_base }}
       TARGET_REF: ${{ inputs.expected_target }}
-      TRUSTED_SHA: ${{ inputs.trusted_sha }}
+      REVIEWER_COMMIT: ${{ inputs.reviewer_commit }}
     steps:
       - id: trusted
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

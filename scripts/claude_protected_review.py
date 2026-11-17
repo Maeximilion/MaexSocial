@@ -40,7 +40,7 @@ def snapshot(env):
     repo = env["GITHUB_REPOSITORY"]
     require(re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo), "invalid_repository")
     require(re.fullmatch(r"[1-9][0-9]*", env.get("PR", "")), "invalid_pr")
-    require(all(sha(env.get(k)) for k in ("HEAD_SHA", "BASE_SHA", "TRUSTED_SHA")), "invalid_revision")
+    require(all(sha(env.get(k)) for k in ("HEAD_SHA", "BASE_SHA", "REVIEWER_COMMIT")), "invalid_revision")
     target = env.get("TARGET_REF", "")
     require(target and len(target) <= 300 and all(c.isprintable() for c in target), "invalid_target")
     require(env.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and env.get("GITHUB_RUN_ATTEMPT") == "1",
@@ -50,11 +50,12 @@ def snapshot(env):
     default = get(f"repos/{repo}")["default_branch"]
     require(env.get("GITHUB_REF") == f"refs/heads/{default}" and
             env.get("GITHUB_WORKFLOW_REF") == f"{repo}/{WORKFLOW}@refs/heads/{default}", "untrusted_workflow_ref")
-    trusted = env["TRUSTED_SHA"]
-    require(all(env.get(k) == trusted for k in ("CHECKOUT_SHA", "GITHUB_SHA", "GITHUB_WORKFLOW_SHA")),
+    # Public Git object ID for the reviewed code, never a credential.
+    reviewer_commit = env["REVIEWER_COMMIT"]
+    require(all(env.get(k) == reviewer_commit for k in ("CHECKOUT_SHA", "GITHUB_SHA", "GITHUB_WORKFLOW_SHA")),
             "untrusted_revision")
     default_tip = get(f"repos/{repo}/git/ref/heads/{quote(default, safe='')}")["object"]["sha"]
-    require(default_tip == trusted, "default_branch_moved")
+    require(default_tip == reviewer_commit, "default_branch_moved")
     for actor in {env.get("GITHUB_ACTOR", ""), env.get("GITHUB_TRIGGERING_ACTOR", "")}:
         require(re.fullmatch(r"[A-Za-z0-9_-]+(?:\[bot\])?", actor), "invalid_actor")
         permission = get(f"repos/{repo}/collaborators/{quote(actor, safe='')}/permission")["permission"]
@@ -76,7 +77,7 @@ def snapshot(env):
     merge_base = compare["merge_base_commit"]["sha"]
     require(sha(merge_base), "invalid_merge_base")
     evidence = {"pr": env["PR"], "repo": repo, "head": env["HEAD_SHA"], "base": env["BASE_SHA"],
-                "target": target, "trusted": trusted, "merge_base": merge_base, "candidate": candidate,
+                "target": target, "reviewer_commit": reviewer_commit, "merge_base": merge_base, "candidate": candidate,
                 "run": env["GITHUB_RUN_ID"], "files": compare["files"],
                 "metadata_sha256": hashlib.sha256(json.dumps(
                     [pull.get("title"), pull.get("body"), pull.get("user"), pull["head"]["ref"],
@@ -127,7 +128,7 @@ def publish(env):
                f"Run: https://github.com/{evidence['repo']}/actions/runs/{evidence['run']}\n\n"
                f"Head `{evidence['head']}`; base `{evidence['base']}`; target `{evidence['target']}`.\n\n"
                f"Merge base `{evidence['merge_base']}`; test merge `{evidence['candidate']}`; "
-               f"trusted reviewer `{evidence['trusted']}`.")
+               f"trusted reviewer `{evidence['reviewer_commit']}`.")
     complete = False
     if env.get("DATA_OUTCOME") != "success" or not state_path.exists():
         body = "**Incomplete / not reviewed:** preparation failed; no API request authorized."
