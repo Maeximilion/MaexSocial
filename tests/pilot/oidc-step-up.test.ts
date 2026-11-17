@@ -110,7 +110,8 @@ test('private step-up evidence binds identity, policy and freshness with real SQ
       const blocked = denied(client.complete(a.callback, a.browserToken)); await delay(300); await owner.query('COMMIT'); await blocked;
       assert.equal(exchanges, before);
       const b = await begin();
-      await owner.query("UPDATE pilot.oidc_attempts SET created_at=clock_timestamp()-interval '6 minutes',expires_at=clock_timestamp()-interval '1 minute'");
+      await owner.query("UPDATE pilot.oidc_attempts SET created_at=statement_timestamp()-interval '6 minutes',expires_at=statement_timestamp()-interval '1 minute'");
+      assert.equal((await owner.query("SELECT expires_at-created_at=interval '5 minutes' AS exact_lifetime FROM pilot.oidc_attempts WHERE state_hash=$1", [hash(state)])).rows[0].exact_lifetime, true);
       await denied(client.complete(b.callback, b.browserToken)); assert.equal(exchanges, before);
       const c = await begin(); await denied(client.complete(c.callback.replace('code=synthetic-code', 'error=access_denied'), c.browserToken));
       await denied(client.complete(c.callback, c.browserToken)); assert.equal(exchanges, before);
