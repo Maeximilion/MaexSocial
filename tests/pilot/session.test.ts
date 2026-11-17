@@ -36,8 +36,8 @@ test('transactional current authority, current IdP factor and exact session expi
     const tenant = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Synthetic A') RETURNING id")).rows[0].id;
     const membership = (await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Manager') RETURNING id", [tenant, identity])).rows[0].id;
     const session = (await db.query(`INSERT INTO pilot.sessions(token_hash,identity_id,identity_version,tenant_id,membership_id,membership_version,
-      audience,created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id,csrf_hash)
-      VALUES($1,$2,1,$3,$4,1,'customer',$5,$5,$6,$5,'current-factor',$1) RETURNING id`,
+      audience,tenant_version,created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id,csrf_hash)
+      VALUES($1,$2,1,$3,$4,1,'customer',1,$5,$5,$6,$5,'current-factor',$1) RETURNING id`,
     [hash(token), identity, tenant, membership, now, new Date(now.getTime() + 28_800_000)])).rows[0].id;
     const resolve = async (at = now, current = status) => {
       await db.query('BEGIN');

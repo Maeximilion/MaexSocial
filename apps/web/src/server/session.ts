@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Client } from 'pg';
 import type { CustomerContext, InspectIdentity } from '../../../../packages/contracts/pilot.js';
 
@@ -25,11 +25,12 @@ export async function requireCustomer(db: Client, token: string, now: Date, insp
     || session.revoked_at || now < session.created_at || now < session.last_seen_at || now >= session.expires_at
     || now.getTime() - session.created_at.getTime() >= 28_800_000 || now.getTime() - session.last_seen_at.getTime() >= 1_800_000) denied();
   const authority = (await db.query(`SELECT i.subject,i.email,i.generation,i.version AS identity_version,i.verified,i.lifecycle,
-    t.active AS tenant_active,m.active AS membership_active,m.version AS membership_version,m.role
+    t.active AS tenant_active,t.version AS tenant_version,m.active AS membership_active,m.version AS membership_version,m.role
     FROM pilot.identities i JOIN pilot.memberships m ON m.identity_id=i.id JOIN pilot.tenants t ON t.id=m.tenant_id
     WHERE i.id=$1 AND t.id=$2 AND m.id=$3`, [located.identity_id, located.tenant_id, located.membership_id])).rows[0];
   if (!authority || !authority.verified || authority.lifecycle !== 'active' || !authority.tenant_active || !authority.membership_active
-    || authority.identity_version !== session.identity_version || authority.membership_version !== session.membership_version) denied();
+    || authority.identity_version !== session.identity_version || authority.membership_version !== session.membership_version
+    || authority.tenant_version !== session.tenant_version) denied();
   const current = await inspect(authority.subject);
   if (current.subject !== authority.subject || current.email !== authority.email || current.generation !== authority.generation
     || !current.verified || !current.enabled || current.requiredActions.length) denied();
@@ -46,5 +47,27 @@ export function requireManagerMfa(context: CustomerContext, now: Date): void {
 export function requireCsrf(origin: string | undefined, proof: string | undefined, expectedOrigin: string, expectedProof: string): void {
   if (origin !== expectedOrigin || !proof || !/^[a-f0-9]{64}$/.test(proof) || !/^[a-f0-9]{64}$/.test(expectedProof)
     || !timingSafeEqual(Buffer.from(proof, 'hex'), Buffer.from(expectedProof, 'hex'))) denied();
+}
+
+export async function rotateCustomerSession(db: Client, token: string, tenantId: string, now: Date, inspect: InspectIdentity): Promise<{ token: string; csrf: string }> {
+  if (!/^[a-f0-9]{64}$/.test(token) || !/^[a-f0-9-]{36}$/.test(tenantId)) denied();
+  const located = (await db.query("SELECT identity_id,tenant_id,membership_id FROM pilot.sessions WHERE token_hash=$1 AND audience='customer'", [tokenHash(token)])).rows[0];
+  if (!located) denied();
+  await lockIdentities(db, [located.identity_id]);
+  const tenants = (await db.query('SELECT id,active,version FROM pilot.tenants WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE', [[...new Set([located.tenant_id, tenantId])].sort()])).rows;
+  if (!tenants.some(t => t.id === tenantId && t.active)) denied();
+  const memberships = (await db.query('SELECT * FROM pilot.memberships WHERE identity_id=$1 AND tenant_id=ANY($2::uuid[]) ORDER BY tenant_id,id FOR UPDATE', [located.identity_id, tenants.map(t => t.id)])).rows;
+  const target = memberships.find(m => m.tenant_id === tenantId && m.active);
+  if (!target) denied();
+  const old = (await db.query('SELECT * FROM pilot.sessions WHERE token_hash=$1 FOR UPDATE', [tokenHash(token)])).rows[0];
+  if (!old || old.identity_id !== located.identity_id || old.tenant_id !== located.tenant_id || old.membership_id !== located.membership_id) denied();
+  await requireCustomer(db, token, now, inspect);
+  const nextToken = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
+  await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,membership_id,membership_version,audience,
+    created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id,tenant_version) VALUES($1,$2,$3,$4,$5,$6,$7,'customer',$8,$9,$10,$11,$12,$13)`,
+  [tokenHash(nextToken), tokenHash(csrf), old.identity_id, old.identity_version, target.tenant_id, target.id, target.version,
+    old.created_at, now, old.expires_at, old.mfa_at, old.mfa_credential_id, tenants.find(t => t.id === tenantId)!.version]);
+  await db.query('UPDATE pilot.sessions SET revoked_at=$1 WHERE id=$2', [now, old.id]);
+  return { token: nextToken, csrf };
 }
 
