@@ -115,6 +115,26 @@ class ProtectedReviewTests(unittest.TestCase):
         for path in self.folder.glob("*.json"):
             self.assertNotIn("PRIVATE-", path.read_text("utf-8"))
 
+    def test_complete_escaped_diff_boundary_preserves_tail_or_denies_before_api(self):
+        prefix = DIFF.decode() + '+🌐é\\"<>&\' '
+        tail = "\n+FINAL_REVIEW_LINE\n"
+        for size in (179_999, 180_000, 180_001):
+            self.diff = (prefix + "x" * (size - route.source.escaped(prefix + tail)) + tail).encode()
+            with self.subTest(size=size), patch.object(route.source.client, "HTTPSConnection") as paid:
+                if size > 180_000:
+                    with self.assertRaisesRegex(route.Denied, "^incomplete_input$"):
+                        route.prepare(self.env)
+                    self.assertFalse((self.folder / "claude-input.json").exists())
+                    self.assertFalse((self.folder / "claude-protected-state.json").exists())
+                else:
+                    route.prepare(self.env)
+                    system, data = json.loads((self.folder / "claude-input.json").read_text("utf-8"))
+                    self.assertIn(self.diff.decode(), data)
+                    self.assertLessEqual(route.source.escaped(system) + route.source.escaped(data), 200_000)
+                    self.assertLessEqual(len(route.source.client.request_body(system, data, "review")), 210_000)
+                paid.assert_not_called()
+                self.assertFalse(self.writes)
+
     def test_rejects_closed_fork_retarget_moved_and_unknown_candidate(self):
         original = deepcopy(self.pull)
         for change in [lambda p: p.update(state="closed"), lambda p: p.update(merged=True),
@@ -174,7 +194,7 @@ class ProtectedReviewTests(unittest.TestCase):
         self.compare["files"] = self.compare["files"][:1]
         self.assert_denied()
         self.pull["changed_files"] = 1
-        for diff in [b"", b"x" * 120001, b"Binary files a/x and b/x differ\n", b"bad\xff", b"bad\0"]:
+        for diff in [b"", b"x" * 180001, b"Binary files a/x and b/x differ\n", b"bad\xff", b"bad\0"]:
             self.diff = diff
             self.assert_denied()
         self.diff = DIFF

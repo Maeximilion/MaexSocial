@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 MODEL = "claude-opus-5-5"
-MAX_REQUEST_BYTES = 150_000
+MAX_REQUEST_BYTES = 210_000
 MAX_TOKENS = 32_768
 MAX_RESPONSE_BYTES = 1024 * 1024
 TEXT = {"type": "string"}

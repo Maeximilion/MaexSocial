@@ -193,11 +193,11 @@ class ClaudeReviewTests(unittest.TestCase):
         base, head = "a" * 40, "b" * 40
         self.assertEqual(claude_input.escaped('🌐é\\"<>&\''), 46)
         prefix = 'diff --git a/f b/f\n@@ -0,0 +1 @@\n+🌐é\\"<>&\' '
-        for limit in [119_999, 120_000, 120_001]:
+        for limit in [179_999, 180_000, 180_001]:
             diff = (prefix + "x" * (limit - claude_input.escaped(prefix))).encode("utf-8")
             with self.subTest(limit=limit):
                 data, _ = self.prepare(diff, BASE_SHA=base, HEAD_SHA=head)
-                self.assertEqual(data["ready"], "false" if limit > 120_000 else "true")
+                self.assertEqual(data["ready"], "false" if limit > 180_000 else "true")
                 pull = {"title": "A change", "body": "</pr-data>", "changed_files": 1,
                         "head": {"ref": "feature"}, "base": {"ref": "main"}}
                 with (patch.object(claude_input, "api", side_effect=[json.dumps(pull).encode(), diff]) as api,
@@ -205,11 +205,11 @@ class ClaudeReviewTests(unittest.TestCase):
                       patch("http.client.HTTPSConnection") as paid):
                     code = claude_input.main(["--repo", REPO, "--pr", "7", "--base", base, "--head", head])
                 result = json.loads(stdout.getvalue())
-                self.assertEqual(code, int(limit > 120_000))
+                self.assertEqual(code, int(limit > 180_000))
                 self.assertEqual({k: result[k] for k in ("status", "base_sha", "head_sha", "gaps", "diff_escaped_bytes", "diff_limit")},
                                  {"status": "incomplete" if code else "complete", "base_sha": base,
-                                  "head_sha": head, "gaps": data["gaps"], "diff_escaped_bytes": limit, "diff_limit": 120_000})
-                self.assertEqual((result["prompt_limit"], result["request_limit"]), (140_000, 150_000))
+                                  "head_sha": head, "gaps": data["gaps"], "diff_escaped_bytes": limit, "diff_limit": 180_000})
+                self.assertEqual((result["prompt_limit"], result["request_limit"]), (200_000, 210_000))
                 if not code:
                     self.assertEqual(result["prompt_escaped_bytes"], claude_input.escaped(self.system) + claude_input.escaped(self.frames))
                     self.assertEqual(result["request_bytes"], len(claude_input.client.request_body(self.system, self.frames, "review")))
@@ -270,7 +270,7 @@ class ClaudeReviewTests(unittest.TestCase):
 
         for kind in ("review", "mention"):
             for alphabet in ("x", '🌐é\\"<>&\''):
-                for size in (90_142, 120_000):
+                for size in (90_142, 149_208, 180_000):
                     with self.subTest(kind=kind, alphabet=alphabet, size=size):
                         prefix = "diff --git a/package-lock.json b/package-lock.json\n@@ -0,0 +1 @@\n+"
                         tail = "\ndiff --git a/tests/storage.ts b/tests/storage.ts\n@@ -0,0 +1 @@\n+// TAIL 🌐\n"
@@ -283,9 +283,9 @@ class ClaudeReviewTests(unittest.TestCase):
                                                pull_fields=fields, KIND=kind)
                         self.assertEqual((data["ready"], data["gaps"]), ("true", ""))
                         self.assertIn(diff, self.frames)
-                        self.assertLessEqual(claude_input.escaped(self.system) + claude_input.escaped(self.frames), 140_000)
+                        self.assertLessEqual(claude_input.escaped(self.system) + claude_input.escaped(self.frames), 200_000)
                         raw = client.request_body(self.system, self.frames, kind)
-                        self.assertLessEqual(len(raw), 150_000)
+                        self.assertLessEqual(len(raw), 210_000)
                         self.assertEqual(raw, claude_input.client.request_body(self.system, self.frames, kind))
                         self.assertEqual(json.loads(raw)["messages"][0]["content"], self.frames)
                         fields = {"findings": [], "overflow": False}
@@ -298,12 +298,12 @@ class ClaudeReviewTests(unittest.TestCase):
             data, _ = self.prepare(b"x", KIND=kind)
             prompt_overhead = claude_input.escaped(self.system) + claude_input.escaped(self.frames) - 1
             request_overhead = len(claude_input.client.request_body(self.system, self.frames, kind)) - 1
-            for metric, limit, overhead in (("prepared input", 140_000, prompt_overhead),
-                                            ("serialized request", 150_000, request_overhead)):
+            for metric, limit, overhead in (("prepared input", 200_000, prompt_overhead),
+                                            ("serialized request", 210_000, request_overhead)):
                 for delta in (-1, 0, 1):
-                    with self.subTest(kind=kind, metric=metric, delta=delta), patch.object(claude_input, "max_diff", 160_000):
+                    with self.subTest(kind=kind, metric=metric, delta=delta), patch.object(claude_input, "max_diff", 220_000):
                         # Permit the synthetic input to reach each independent guard.
-                        with patch.object(claude_input, "prompt_budget", 140_000 if metric == "prepared input" else 160_000):
+                        with patch.object(claude_input, "prompt_budget", 200_000 if metric == "prepared input" else 220_000):
                             data, _ = self.prepare(b"x" * (limit + delta - overhead), KIND=kind)
                         self.assertEqual(data["ready"], "false" if delta == 1 else "true")
                         self.assertEqual(self.output.with_name("claude-input.json").exists(), delta != 1)
