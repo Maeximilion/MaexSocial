@@ -50,6 +50,27 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     assert.equal(response.status(), 303);
     await page.waitForFunction(() => document.title === 'Keyboard B · MaexSocial', undefined, { timeout: 5000 });
     assert.notEqual((await context.cookies()).find(cookie => cookie.name === '__Host-session')!.value, token);
+    const draft = (await db.query('INSERT INTO pilot.drafts(tenant_id) VALUES($1) RETURNING id', [tenants[1]])).rows[0].id;
+    await db.query('INSERT INTO pilot.draft_revisions(tenant_id,draft_id,revision,text) VALUES($1,$2,1,$3)', [tenants[1], draft, '\nKeyboard draft']);
+    await page.getByRole('link', { name: 'Text drafts', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer/drafts', { timeout: 5000 });
+    await page.getByRole('link', { name: 'Keyboard draft', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443/customer/drafts/${draft}`, { timeout: 5000 });
+    assert.equal(await page.locator('#text').inputValue(), '\nKeyboard draft');
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to workspace');
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').getAttribute('id'), 'text');
+    assert.equal(await page.locator('#text').getAttribute('aria-describedby'), 'text-help');
+    await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('Keyboard edited <literal> text');
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Save text');
+    const edited = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/customer/drafts/${draft}`, { timeout: 5000 });
+    await page.keyboard.press('Enter'); assert.equal((await edited).status(), 303);
+    await page.waitForFunction(() => document.body.textContent?.includes('Revision 2.'), undefined, { timeout: 5000 });
+    assert.equal(await page.locator('#text').inputValue(), 'Keyboard edited <literal> text');
+    assert.deepEqual((await db.query('SELECT revision,text FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision', [tenants[1], draft])).rows,
+      [{ revision: 1, text: '\nKeyboard draft' }, { revision: 2, text: 'Keyboard edited <literal> text' }]);
+    await page.screenshot({ path: '/artifacts/draft.png', fullPage: true });
+    await page.getByRole('link', { name: 'Back to workspace' }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer', { timeout: 5000 });
     assert.ok(requests.every(host => host === 'customer'), 'No IdP or external request belongs to this dashboard-only test');
     await page.screenshot({ path: '/artifacts/dashboard.png', fullPage: true });
     await page.getByRole('button', { name: 'Sign out' }).focus(); await page.keyboard.press('Enter');

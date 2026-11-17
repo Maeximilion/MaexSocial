@@ -60,4 +60,12 @@ Implemented/local evidence: current versions/expiry, synthetic MFA age/factor re
 
 ## Coverage
 
+### Existing text editing (#140)
+
+Root's November 17 disposition separates [#140](https://github.com/Maeximilion/MaexSocial/issues/140) from the rest of #124. Employees and Managers read existing own-tenant drafts at `/customer/drafts` and edit through `POST /customer/drafts/:draftId`. Only `text`, `revisionId` and `csrf` are accepted. This POST alone permits 20 KiB of URL-encoded data; other routes retain 2 KiB. Text is 1–1500 Unicode code points, matching PostgreSQL; NUL and isolated surrogates are rejected. The browser does not impose a different UTF-16 maxlength. Text and URLs remain escaped text, never media ingestion or active links. No creation, approval, export or publication route is supplied.
+
+The caller's transaction acquires the existing authority/session locks, then the tenant-bound **draft FOR UPDATE**, then that draft's **occurrences FOR UPDATE in ID order**. Future approval, claim and destination/time changes must follow this domain order too. Read the latest revision only after locking the draft; a different submitted revision ID returns 409 and rolls back. Otherwise append exactly the next immutable revision and invalidate eligibility in the same commit. Drafts have no location column: stored occurrences join locations on tenant and location ID; no caller location/occurrence/tenant selector is accepted.
+
+For this tenant and draft only, clear `approval_id` on `draft`, `approved`, `held` and `quarantined` occurrences with **no attempt**. Change only `approved` to `draft`; never release holds/quarantine. Preserve every other state, every attempt-backed row and all immutable approval/revision history. This is invalidation, not renewed approval. Actual HTTPS tests use harness-seeded AppDB sessions and synthetic current identity; real auth/MFA, integrated Task 2 and G3/G5 remain open under #131/#124.
+
 A1 supplies only synthetic request/session subchecks of ACCESS-01/02/04/07/10/11/12/13. A2 retains real activation/recovery/OIDC/MFA/abuse/provenance (ACCESS-09/13/14/17); B owns Employee/issuer cases (ACCESS-16/17); C owns immutable approval/text-only/PLAN-01/ACCESS-15. Keep every original case in the linked evidence map; no gate or acceptance item is waived.
