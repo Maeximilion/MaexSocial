@@ -26,10 +26,11 @@ export async function migrate(direction: string): Promise<void> {
     }
     const installed = (await db.query(`SELECT to_regclass('pilot.identities') AS base,
       to_regclass('pilot.oidc_attempts') AS oidc,
+      EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='drafts' AND column_name='initial_location_id') AS draft_location,
       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='sessions' AND column_name='csrf_hash') AS access`)).rows[0];
     const migrations = direction === 'up'
-      ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access']), ...(installed.oidc ? [] : ['003_oidc_attempts'])]
-      : [...(installed.oidc ? ['003_oidc_attempts'] : []), ...(installed.access ? ['002_customer_access'] : []), '001_pilot'];
+      ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access']), ...(installed.oidc ? [] : ['003_oidc_attempts']), ...(installed.draft_location ? [] : ['004_draft_initial_location'])]
+      : [...(installed.draft_location ? ['004_draft_initial_location'] : []), ...(installed.oidc ? ['003_oidc_attempts'] : []), ...(installed.access ? ['002_customer_access'] : []), '001_pilot'];
     if (!migrations.length) throw new Error('Pilot migrations already installed');
     for (const name of migrations) await db.query(await readFile(`db/migrations/${name}.${direction}.sql`, 'utf8'));
     await db.query('COMMIT');
