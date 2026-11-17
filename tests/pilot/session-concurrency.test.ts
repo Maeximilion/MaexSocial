@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { requireCustomer, tokenHash } from '../../apps/web/src/server/session.js';
+import { requireCustomer, rotateCustomerSession, tokenHash } from '../../apps/web/src/server/session.js';
 
 test('independent tenant readers proceed while suspension waits for both transactions', async () => {
   if (process.env.PILOT_CONTAINER !== '1') {
@@ -40,12 +40,12 @@ test('independent tenant readers proceed while suspension waits for both transac
       assert.fail('The competing transaction must visibly wait for an expected holder');
     };
     await first.query('BEGIN');
-    checking = requireCustomer(first, actors[0]!.token, now, async subject => {
+    checking = requireCustomer(first, actors[0]!.token, () => now, async subject => {
       enteredInspection(); await inspection; return status(subject);
     });
     await entered;
     await second.query('BEGIN'); await second.query("SET LOCAL lock_timeout='200ms'");
-    assert.equal((await requireCustomer(second, actors[1]!.token, now, async subject => status(subject))).tenantId, tenant);
+    assert.equal((await requireCustomer(second, actors[1]!.token, () => now, async subject => status(subject))).tenantId, tenant);
     await writer.query('BEGIN');
     suspending = writer.query('UPDATE pilot.tenants SET active=false,version=version+1 WHERE id=$1', [tenant]);
     const finishFirst = async () => { releaseInspection(); assert.equal((await checking!).tenantId, tenant); await first.query('COMMIT'); };
@@ -58,25 +58,49 @@ test('independent tenant readers proceed while suspension waits for both transac
     await suspending; await writer.query('COMMIT');
     for (const actor of actors) {
       await first.query('BEGIN');
-      await assert.rejects(requireCustomer(first, actor.token, now, async subject => status(subject)), /Denied/);
+      await assert.rejects(requireCustomer(first, actor.token, () => now, async subject => status(subject)), /Denied/);
       await first.query('ROLLBACK');
     }
     await writer.query('UPDATE pilot.tenants SET active=true,version=version+1 WHERE id=$1', [tenant]);
     await first.query('BEGIN');
-    await assert.rejects(requireCustomer(first, actors[0]!.token, now, async subject => status(subject)), /Denied/);
+    await assert.rejects(requireCustomer(first, actors[0]!.token, () => now, async subject => status(subject)), /Denied/);
     await first.query('ROLLBACK');
     await writer.query('UPDATE pilot.sessions SET tenant_version=3 WHERE tenant_id=$1', [tenant]);
     await first.query('BEGIN');
-    assert.equal((await requireCustomer(first, actors[0]!.token, now, async subject => status(subject))).tenantId, tenant);
+    assert.equal((await requireCustomer(first, actors[0]!.token, () => now, async subject => status(subject))).tenantId, tenant);
     await first.query('COMMIT');
     await writer.query('BEGIN');
     await writer.query('UPDATE pilot.tenants SET active=false,version=version+1 WHERE id=$1', [tenant]);
     await first.query('BEGIN');
     let inspections = 0;
-    const deniedAfterSuspension = assert.rejects(requireCustomer(first, actors[0]!.token, now, async subject => { inspections++; return status(subject); }), /Denied/);
+    const deniedAfterSuspension = assert.rejects(requireCustomer(first, actors[0]!.token, () => now, async subject => { inspections++; return status(subject); }), /Denied/);
     await blockedBy(firstPid, [writerPid]); await writer.query('COMMIT'); await deniedAfterSuspension; await first.query('ROLLBACK');
     assert.equal(inspections, 0);
     assert.deepEqual((await writer.query('SELECT active,version FROM pilot.tenants WHERE id=$1', [tenant])).rows[0], { active: false, version: 4 });
+    await writer.query('UPDATE pilot.tenants SET active=true,version=version+1 WHERE id=$1', [tenant]);
+    await writer.query('UPDATE pilot.sessions SET tenant_version=5 WHERE tenant_id=$1', [tenant]);
+    for (const [index, operation] of ['read', 'switch'].entries()) {
+      const token = actors[0]!.token;
+      let clockValue = new Date(now.getTime() + (index * 3 + 1) * 1000), calls = 0;
+      const clock = () => { calls++; return clockValue; };
+      const later = new Date(now.getTime() + (index * 3 + 2) * 1000);
+      await first.query('BEGIN'); await requireCustomer(first, token, () => later, async subject => status(subject));
+      await second.query('BEGIN');
+      const pending = (operation === 'read'
+        ? requireCustomer(second, token, clock, async subject => status(subject))
+        : rotateCustomerSession(second, token, tenant, clock, async subject => status(subject)))
+        .then(value => ({ value, error: undefined }), error => ({ value: undefined, error }));
+      await blockedBy(secondPid, [firstPid]);
+      assert.equal(calls, 0, 'Read the server clock only after the authority locks are held');
+      clockValue = new Date(now.getTime() + (index * 3 + 3) * 1000);
+      await first.query('COMMIT'); const outcome = await pending;
+      assert.ifError(outcome.error); await second.query('COMMIT');
+      const activeToken = outcome.value && 'token' in outcome.value ? outcome.value.token : token;
+      const saved = (await writer.query('SELECT last_seen_at,expires_at FROM pilot.sessions WHERE token_hash=$1', [tokenHash(activeToken)])).rows[0];
+      assert.equal(saved.last_seen_at.getTime(), clockValue.getTime());
+      assert.equal(saved.expires_at.getTime(), now.getTime() + 28_800_000);
+      assert.equal(calls, 1);
+    }
   } finally {
     releaseInspection(); await checking?.catch(() => undefined);
     await Promise.all([first.query('ROLLBACK'), second.query('ROLLBACK'), writer.query('ROLLBACK')]);

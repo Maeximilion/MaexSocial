@@ -36,7 +36,9 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
       { name: '__Host-csrf', value: csrf, url: 'https://customer:8443', secure: true, httpOnly: true, sameSite: 'Lax' }]);
     const page = await context.newPage();
     const requests: string[] = []; page.on('request', request => requests.push(new URL(request.url()).hostname));
-    await page.goto('https://customer:8443/customer'); assert.equal(await page.title(), 'Keyboard A · MaexSocial');
+    const navigation = await page.goto('https://customer:8443/customer');
+    assert.equal(navigation?.status(), 200, 'The customer document must load before keyboard assertions');
+    assert.equal(await page.title(), 'Keyboard A · MaexSocial');
     await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Skip to workspace');
     await page.keyboard.press('Enter'); assert.equal(await page.locator(':focus').getAttribute('id'), 'main');
     await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').getAttribute('id'), 'tenant');

@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { lockIdentities, requireCsrf, requireCustomer, requireManagerMfa } from '../../apps/web/src/server/session.js';
+import { lockIdentities, requireCsrf, requireCustomer, requireManagerMfa, rotateCustomerSession } from '../../apps/web/src/server/session.js';
 import type { CustomerContext, IdentityStatus } from '../../packages/contracts/pilot.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -17,9 +17,9 @@ test('origin/CSRF and exactly five minute MFA boundaries', () => {
   }
   for (const value of [undefined, '', 'x', randomBytes(32).toString('hex')]) assert.throws(() => requireCsrf('https://customer:8443', value, 'https://customer:8443', proof));
   const manager = { role: 'Manager', mfaEnrolled: true, mfaAt: new Date(now.getTime() - 300_000) } as CustomerContext;
-  requireManagerMfa(manager, now);
+  requireManagerMfa(manager, () => now);
   for (const patch of [{ role: 'Employee' }, { mfaEnrolled: false }, { mfaAt: null }, { mfaAt: new Date(now.getTime() + 1) }, { mfaAt: new Date(now.getTime() - 300_001) }]) {
-    assert.throws(() => requireManagerMfa({ ...manager, ...patch } as CustomerContext, now), /Denied/);
+    assert.throws(() => requireManagerMfa({ ...manager, ...patch } as CustomerContext, () => now), /Denied/);
   }
 });
 
@@ -41,14 +41,32 @@ test('transactional current authority, synthetic current factor and exact sessio
     [hash(token), identity, tenant, membership, now, new Date(now.getTime() + 28_800_000)])).rows[0].id;
     const resolve = async (at = now, current = status) => {
       await db.query('BEGIN');
-      try { return await requireCustomer(db, token, at, async () => current); }
+      try { return await requireCustomer(db, token, () => at, async () => current); }
       finally { await db.query('ROLLBACK'); }
     };
-    const context = await resolve(); assert.equal(context.tenantId, tenant); assert.equal(context.role, 'Manager'); requireManagerMfa(context, now);
-    const noFactor = await resolve(now, { ...status, credentials: [] }); assert.equal(noFactor.mfaEnrolled, false); assert.throws(() => requireManagerMfa(noFactor, now));
+    const context = await resolve(); assert.equal(context.tenantId, tenant); assert.equal(context.role, 'Manager'); requireManagerMfa(context, () => now);
+    const noFactor = await resolve(now, { ...status, credentials: [] }); assert.equal(noFactor.mfaEnrolled, false); assert.throws(() => requireManagerMfa(noFactor, () => now));
     for (const patch of [{ enabled: false }, { verified: false }, { subject: randomUUID() }, { requiredActions: ['UPDATE_PASSWORD'] }]) {
       await assert.rejects(resolve(now, { ...status, ...patch }), /Denied/);
     }
+    for (const operation of ['read', 'switch', 'mfa']) {
+      let at = now, entered!: () => void, release!: () => void;
+      const inspecting = new Promise<void>(resolve => { entered = resolve; });
+      const waiting = new Promise<void>(resolve => { release = resolve; });
+      const inspect = async () => { entered(); await waiting; return status; };
+      await db.query('BEGIN');
+      const pending = (operation === 'switch'
+        ? rotateCustomerSession(db, token, tenant, () => at, inspect)
+        : requireCustomer(db, token, () => at, inspect))
+        .then(value => { if (operation === 'mfa') requireManagerMfa(value as CustomerContext, () => at); })
+        .then(() => undefined, error => error as Error);
+      await inspecting; at = new Date(now.getTime() + (operation === 'mfa' ? 300_001 : 1_800_000)); release();
+      assert.match((await pending)?.message ?? 'allowed', /Denied/, 'Expiry or stale MFA during an awaited status check must deny');
+      await db.query('ROLLBACK');
+      assert.equal((await db.query('SELECT count(*)::int AS n FROM pilot.sessions WHERE identity_id=$1', [identity])).rows[0].n, 1);
+    }
+    await assert.rejects(resolve(new Date(NaN)), /Denied/);
+    await assert.rejects(resolve(new Date(now.getTime() - 1)), /Denied/);
     await assert.rejects(resolve(new Date(now.getTime() + 1_800_000)), /Denied/);
     await resolve(new Date(now.getTime() + 1_799_999));
     await db.query('UPDATE pilot.sessions SET last_seen_at=$1 WHERE id=$2', [new Date(now.getTime() + 28_799_999), session]);
@@ -74,7 +92,7 @@ test('transactional current authority, synthetic current factor and exact sessio
       const protectedPid = (await db.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
       await db.query('BEGIN'); await lockIdentities(db, [identity]);
       await db.query('SELECT id FROM pilot.tenants WHERE id=$1 FOR UPDATE', [tenant]);
-      await requireCustomer(db, token, now, async () => status);
+      await requireCustomer(db, token, () => now, async () => status);
       await resetting.query('BEGIN'); const resetLock = lockIdentities(resetting, [identity]);
       await blocked(resetPid);
       await db.query("UPDATE pilot.tenants SET name='Allowed before identity invalidation',version=version+1 WHERE id=$1", [tenant]);
@@ -87,7 +105,7 @@ test('transactional current authority, synthetic current factor and exact sessio
       await resolve();
       await resetting.query('BEGIN'); await lockIdentities(resetting, [identity]);
       await resetting.query("UPDATE pilot.identities SET verified=false,version=version+1 WHERE id=$1", [identity]);
-      await db.query('BEGIN'); const deniedAfterReset = assert.rejects(requireCustomer(db, token, now, async () => status), /Denied/);
+      await db.query('BEGIN'); const deniedAfterReset = assert.rejects(requireCustomer(db, token, () => now, async () => status), /Denied/);
       await blocked(protectedPid); await resetting.query('COMMIT'); await deniedAfterReset; await db.query('ROLLBACK');
       assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before identity invalidation');
       const secondIdentity = (await db.query('INSERT INTO pilot.identities(subject) VALUES($1) RETURNING id', [randomUUID()])).rows[0].id;

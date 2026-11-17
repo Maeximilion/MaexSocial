@@ -28,7 +28,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   app.get('/customer', async (request, response) => {
     const binding = customerRequest(request); const { csrf } = binding;
     const page = await transaction(async db => {
-      const context = await requireCustomerRequest(db, binding, new Date(), inspect);
+      const context = await requireCustomerRequest(db, binding, () => new Date(), inspect);
       const tenants = (await db.query(`SELECT t.id,t.name FROM pilot.memberships m JOIN pilot.tenants t ON t.id=m.tenant_id
         WHERE m.identity_id=$1 AND m.active AND t.active ORDER BY t.name,t.id`, [context.identityId])).rows;
       return renderPortal(context, tenants, csrf);
@@ -38,7 +38,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   app.post('/customer/switch', async (request, response) => {
     const binding = customerRequest(request, ['tenantId', 'csrf']); const { token } = binding;
     const result = await transaction(async db => {
-      const rotated = await rotateCustomerSession(db, token, request.body.tenantId, new Date(), inspect);
+      const rotated = await rotateCustomerSession(db, token, request.body.tenantId, () => new Date(), inspect);
       await requireBoundCsrf(db, binding);
       const session = (await db.query('SELECT expires_at FROM pilot.sessions WHERE token_hash=$1', [tokenHash(rotated.token)])).rows[0];
       return { ...rotated, expires: session.expires_at as Date };
