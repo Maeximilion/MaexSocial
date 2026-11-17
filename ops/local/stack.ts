@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -18,6 +18,27 @@ async function initialize(): Promise<Fixture> {
   const save = (name: string, value: string) => writeFile(`work/pilot/${name}`, value, { mode: 0o600, flag: 'wx' });
   const expiry = new Date(f.expiresAt).toISOString();
   await save('fixture.json', JSON.stringify(f));
+  const statusSecret = secret(), deniedSecret = secret();
+  await save('status-secret', statusSecret);
+  await save('status-denied-secret', deniedSecret);
+  const realm = JSON.parse(await readFile('ops/local/keycloak-realm.json', 'utf8'));
+  for (const [clientId, clientSecret] of [['pilot-status', statusSecret], ['pilot-status-denied', deniedSecret]]) {
+    realm.clients.push({ clientId, secret: clientSecret, enabled: true, publicClient: false,
+      clientAuthenticatorType: 'client-secret', serviceAccountsEnabled: true, standardFlowEnabled: false,
+      directAccessGrantsEnabled: false, fullScopeAllowed: false, defaultClientScopes: ['roles', 'kc-admin-api'],
+      redirectUris: [], webOrigins: [] });
+  }
+  realm.clientScopeMappings = { 'realm-management': [{ client: 'pilot-status', roles: ['view-users'] }] };
+  realm.users = [
+    { username: 'service-account-pilot-status', enabled: true, serviceAccountClientId: 'pilot-status',
+      clientRoles: { 'realm-management': ['view-users'] } },
+    { username: 'service-account-pilot-status-denied', enabled: true, serviceAccountClientId: 'pilot-status-denied' },
+    { id: '13600000-0000-4000-8000-000000000001', username: 'status-enabled', enabled: true,
+      email: 'status-enabled@example.invalid', emailVerified: true, requiredActions: [] },
+    { id: '13600000-0000-4000-8000-000000000002', username: 'status-disabled', enabled: false,
+      email: 'status-disabled@example.invalid', emailVerified: true, requiredActions: [] }
+  ];
+  await save('keycloak-realm.json', JSON.stringify(realm));
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
   await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
@@ -59,7 +80,7 @@ truststore-paths=/fixture/mail.crt
 health-enabled=true
 `);
   docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'sh', postgresImage,
-    '-c', 'chown 1000:1000 /fixture/keycloak.conf; chown 999:999 /fixture/init-app.sql /fixture/init-identity.sql /fixture/owner-password /fixture/identity-password']);
+    '-c', 'chown 1000:1000 /fixture/keycloak.conf /fixture/keycloak-realm.json; chown 999:999 /fixture/init-app.sql /fixture/init-identity.sql /fixture/owner-password /fixture/identity-password']);
   await mkdir('work/pilot/provider-state');
   return f;
 }
@@ -97,6 +118,13 @@ async function main(): Promise<void> {
   if (action === 'down') {
     compose(f, ['down']);
     console.log('Isolated fixture stopped; database, mailbox and provider state retained.');
+    return;
+  }
+  try {
+    if (!(await stat('work/pilot/keycloak-realm.json')).isFile()) throw new Error('Not a file');
+  } catch {
+    console.error('Fixture realm import file is missing or invalid. Preserve the old work/pilot directory and volumes, then initialize a fresh fixture.');
+    process.exitCode = 1;
     return;
   }
   compose(f, ['up', '-d', '--wait', '--wait-timeout', '120']);

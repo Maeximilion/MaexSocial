@@ -56,7 +56,11 @@ services:
       - ../../work/pilot/keycloak.key:/fixture/server.key:ro
       - ../../work/pilot/identity-db.crt:/fixture/db.crt:ro
       - ../../work/pilot/mailbox.crt:/fixture/mail.crt:ro
-      - ./keycloak-realm.json:/opt/keycloak/data/import/pilot-realm.json:ro
+      - type: bind
+        source: ../../work/pilot/keycloak-realm.json
+        target: /opt/keycloak/data/import/pilot-realm.json
+        read_only: true
+        bind: { create_host_path: false }
     depends_on:
       identity-db: { condition: service_healthy }
     networks: [identity]
