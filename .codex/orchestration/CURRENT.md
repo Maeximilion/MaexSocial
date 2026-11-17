@@ -1,4 +1,12 @@
 # Current coordinator handover
+## Portal chat archived; read-only identity work admitted · 2026-11-17 16:19 UTC
+
+[#117 / PR #135](https://github.com/Maeximilion/MaexSocial/issues/117#issuecomment-6953817539) is closed, Project Done, and its originating chat is now archived and read back. Independent recovery verified all 8,885 saved artifacts, all 1,949 original files including ignored material, 1,948 usable restored files, ten original task Git metadata files, bundle/index/tree and portable Node runtime. The separate shared Git snapshot is historical, not an atomic snapshot of other tasks. Root preserved the completed native transcript and verified it against the actual archive, then rechecked all original source bytes and both clean checkouts. Retained Docker volumes are not a portable database export; ACLs/alternate data streams are not claimed. All earlier #131/#137 limitations remain.
+
+The previously unused #135 merge/archive pair is consumed by the [reserved and confirmed fresh #136 assignment](https://github.com/Maeximilion/MaexSocial/issues/136#issuecomment-6953834163). Native runtime evidence confirms Astra/high with no Fast override. The worker first supplies pinned Keycloak read endpoints, least-privilege permissions, bounded field contract and exact file ownership to root before implementation. Only the issue's read-only local identity status component is authorized. Public auth/issuance, credential changes, lifecycle producers and every excluded experiment remain outside its scope.
+
+One confirmed unarchived work chat (#136), zero pending reservations, zero open PRs at this checkpoint. Current large-wave cap three, absolute maximum five. #123/#124 and Task 3 still require full #131 identity evidence; there is no independent eligible second delivery. Root's source-contract decision is the next control point. The visible dashboard reports zero open repository PRs and refreshes every ten minutes. All standing resume, Claude-only review, safety boundary and pending browser-confirmation rules below remain unchanged.
+
 ## Session foundation merged; identity adapter queued · 2026-11-17 16:13 UTC
 
 The owner's November 17 resume and delegated technical decisions remain active. No pause or shutdown deadline applies. Root continues Superpowers orchestration on Astra/ultra at Standard speed. Claude API remains the only requested PR reviewer; actual execution, complete input, current revision coverage and required CI remain mandatory.
