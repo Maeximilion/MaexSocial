@@ -3,13 +3,23 @@ import { createHash, randomBytes } from 'node:crypto';
 import { request } from 'node:https';
 import * as oauth from 'oauth4webapi';
 
-export interface OidcConfig { issuer: string; clientId: string; clientSecret: string; callback: string; ca: string }
+export interface OidcConfig {
+  issuer: string; clientId: string; clientSecret: string; callback: string; ca: string;
+  stepUp?: { expectedSubject: string; policy: string };
+}
+export interface OidcStepUpEvidence {
+  issuer: string; clientId: string; subject: string; policy: string; acr: '2';
+  factorTimeLowerBound: Date; verifiedAt: Date; validUntil: Date;
+}
 const unavailable = (): never => { throw new Error('OIDC unavailable'); };
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const binding = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 
 // Private server composition only. connect must open a NEW connection, never a caller's transaction.
 export function createOidcVerifier(config: OidcConfig, connect: () => Promise<Client>) {
+  const stepUp = config.stepUp === undefined ? undefined : { ...config.stepUp };
+  if (stepUp && (stepUp.policy !== 'keycloak-26.8.2-enrolled-otp-v1'
+    || typeof stepUp.expectedSubject !== 'string' || !/^[\x21-\x7e]{1,255}$/.test(stepUp.expectedSubject))) return unavailable();
   let issuer: URL, callback: URL;
   try { issuer = new URL(config.issuer); callback = new URL(config.callback); } catch { return unavailable(); }
   for (const url of [issuer, callback]) {
@@ -27,7 +37,8 @@ export function createOidcVerifier(config: OidcConfig, connect: () => Promise<Cl
     authorization_endpoint: `${issuerUrl}/protocol/openid-connect/auth`, token_endpoint: `${issuerUrl}/protocol/openid-connect/token`,
     jwks_uri: `${issuerUrl}/protocol/openid-connect/certs`, id_token_signing_alg_values_supported: ['RS256'],
     authorization_response_iss_parameter_supported: true };
-  const configHash = hash(JSON.stringify([issuerUrl, client.client_id, callbackUrl]));
+  const configHash = hash(JSON.stringify([issuerUrl, client.client_id, callbackUrl,
+    ...(stepUp ? ['step-up', stepUp.expectedSubject, '2', stepUp.policy] : ['sign-in'])]));
 
   async function transaction<T>(work: (db: Client) => Promise<T>): Promise<T> {
     try {
@@ -58,10 +69,11 @@ export function createOidcVerifier(config: OidcConfig, connect: () => Promise<Cl
         const url = new URL(metadata.authorization_endpoint!);
         url.search = new URLSearchParams({ client_id: client.client_id, redirect_uri: callbackUrl, response_type: 'code',
           scope: 'openid', state, nonce, code_challenge: challenge, code_challenge_method: 'S256' }).toString();
+        if (stepUp) url.searchParams.set('claims', JSON.stringify({ id_token: { acr: { essential: true, values: ['2'] } } }));
         return { authorizationUrl: url.href, browserToken };
       } catch { return unavailable(); }
     },
-    async complete(returnedUrl: string, browserToken: string): Promise<{ issuer: string; subject: string }> {
+    async complete(returnedUrl: string, browserToken: string): Promise<{ issuer: string; subject: string } | OidcStepUpEvidence> {
       const controller = new AbortController(); let deadline: NodeJS.Timeout | undefined;
       try {
         if (typeof returnedUrl !== 'string' || returnedUrl.length > 8192 || !binding(browserToken)) return unavailable();
@@ -78,8 +90,8 @@ export function createOidcVerifier(config: OidcConfig, connect: () => Promise<Cl
           await db.query('SELECT slot FROM pilot.oidc_attempts WHERE state_hash=$1 AND browser_hash=$2 AND config_hash=$3 FOR UPDATE',
             [hash(state), hash(browserToken), configHash]);
           const claimed = await db.query(`DELETE FROM pilot.oidc_attempts WHERE state_hash=$1 AND browser_hash=$2 AND config_hash=$3
-            AND created_at<=clock_timestamp() AND expires_at>clock_timestamp() RETURNING nonce,verifier`, [hash(state), hash(browserToken), configHash]);
-          return claimed.rows[0] as { nonce: string; verifier: string } | undefined;
+            AND created_at<=clock_timestamp() AND expires_at>clock_timestamp() RETURNING nonce,verifier,created_at,expires_at`, [hash(state), hash(browserToken), configHash]);
+          return claimed.rows[0] as { nonce: string; verifier: string; created_at: Date; expires_at: Date } | undefined;
         });
         if (!attempt) return unavailable();
         const params = oauth.validateAuthResponse(metadata, client, url, state);
@@ -121,6 +133,19 @@ export function createOidcVerifier(config: OidcConfig, connect: () => Promise<Cl
           || (claims.azp !== undefined && claims.azp !== client.client_id)
           || !Number.isSafeInteger(claims.iat) || claims.iat! > Math.floor(Date.now() / 1000)
           || !Number.isSafeInteger(claims.exp) || claims.exp! <= Math.floor(Date.now() / 1000)) return unavailable();
+        if (stepUp) {
+          if (claims.sub !== stepUp.expectedSubject || claims.acr !== '2') return unavailable();
+          const verifiedAt: Date = await transaction(async db => {
+            const checked = await db.query(`SELECT clock_timestamp() AS now WHERE $1::timestamptz<=clock_timestamp()
+              AND $2::timestamptz>clock_timestamp() AND $2::timestamptz<=$1::timestamptz+interval '5 minutes'`,
+            [attempt.created_at, attempt.expires_at]);
+            if (checked.rowCount !== 1) return unavailable();
+            return checked.rows[0].now;
+          });
+          if (controller.signal.aborted) return unavailable();
+          return { issuer: issuerUrl, clientId: client.client_id, subject: claims.sub, policy: stepUp.policy, acr: '2',
+            factorTimeLowerBound: attempt.created_at, verifiedAt, validUntil: attempt.expires_at };
+        }
         return { issuer: issuerUrl, subject: claims.sub };
       } catch { return unavailable(); }
       finally { if (deadline) clearTimeout(deadline); controller.abort(); }

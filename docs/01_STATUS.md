@@ -14,6 +14,8 @@ November 17 bounded identity delivery: [#139 / PR #142](https://github.com/Maexi
 
 November 17 bounded delivery: [#140](https://github.com/Maeximilion/MaexSocial/issues/140) adds existing own-tenant text editing for Employee and Manager, immutable revisions, explicit stale-edit conflicts and atomic removal of affected unclaimed approval eligibility. It consumes A1's protected request boundary with synthetic test sessions. [The domain contract](superpowers/plans/2026-11-06-task-2-deliveries.md#existing-text-editing-140) preserves claimed/history records. #124 stays open for its remaining approval flow; real auth/MFA #131, integrated Task 2 and all product gates remain open. This delivery has no dependency on #139's private OIDC component.
 
+November 17 private factor component [#143](https://github.com/Maeximilion/MaexSocial/issues/143): the existing unmounted OIDC verifier adds an isolated enrolled-OTP event receipt, bound to server-selected subject/purpose/policy and original attempt expiry. Actual local browser evidence requires another OTP execution after prior high-ACR SSO; unenrolled and first-factor-only flows fail. [Contract and checks](../ops/local/README.md#private-enrolled-factor-evidence-143) and [delivery checkpoint](handovers/sessions/2026-11-17-fresh-factor.md) distinguish event evidence from current enrollment/recovery/action authority. Review/integration and #131's lifecycle bridge remain open; #123/#124 and G3/G5 are not completed.
+
 | Work | State | Evidence |
 |---|---|---|
 | Foundation, MS-001 and G0 | Complete | Closed issues #1, #13 and #22, [foundation PR #19](https://github.com/Maeximilion/MaexSocial/pull/19), [API correction PR #24](https://github.com/Maeximilion/MaexSocial/pull/24) |
