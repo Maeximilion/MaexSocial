@@ -106,6 +106,32 @@ class ClaudeReviewTests(unittest.TestCase):
                 if kind == "mention":
                     self.assertFalse(any("/contents/" in command[2] for command in calls))
                     self.assertIn("Review this change", data["prompt"])
+                else:
+                    self.assertIn("Provide the Claude API review for this pull request.", self.system)
+                    self.assertNotRegex(self.system.lower(), r"advisory|supplementary|astra|codex")
+
+    def test_headers_identify_api_evidence_without_promising_review_completion(self):
+        for kind in ("review", "mention"):
+            for outcome, code, expected in [
+                ({}, 0, "0 findings reported."),
+                ({"WORKFLOW_CHANGED": "true", "EVIDENCE": "protected change"}, 0, "Skipped, not reviewed"),
+                ({"CLAUDE_OUTCOME": "failure", "FAILURE": "output_token_limit"}, 1, "Incomplete"),
+                ({"GAPS": "inline placement failed"}, 0, "Incomplete"),
+            ]:
+                with self.subTest(kind=kind, outcome=outcome):
+                    result = {"findings": [], "overflow": False, "summary": "Requested answer."}
+                    body = self.post(code, KIND=kind, OUTPUT=json.dumps(result), **outcome)
+                    header = body.splitlines()[0]
+                    self.assertTrue(header.startswith("**Claude API review**" if kind == "review"
+                                                      else "**Claude API reply**"))
+                    self.assertNotRegex(header.lower(), r"advisory|supplementary|astra|codex|approved")
+                    if kind == "review":
+                        self.assertNotIn("complete", header.lower())
+                        for boundary in ("check coverage below", "CI", "product gates", "coordinator's merge decision"):
+                            self.assertIn(boundary, header)
+                    else:
+                        self.assertIn("not a complete PR review or merge approval", header)
+                    self.assertIn(expected, body)
 
     def test_missing_auto_diff_skips_paid_step_and_posts_notice(self):
         self.assertIn("if: steps.data.outputs.ready == 'true'", WORKFLOW)
@@ -329,7 +355,7 @@ class ClaudeReviewTests(unittest.TestCase):
 
     def test_post_distinguishes_success_from_empty_and_failed_results(self):
         body = self.post(0, KIND="mention", OUTPUT='{"summary":"Reviewed fixture","overflow":false,"findings":[]}')
-        self.assertIn("Claude reply", body)
+        self.assertIn("Claude API reply", body)
         self.assertIn("reviewed", body)
         self.assertIn("Reviewed fixture", body)
         for kind in ("review", "mention"):

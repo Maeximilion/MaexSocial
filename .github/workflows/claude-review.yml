@@ -1,6 +1,6 @@
-name: Claude review (advisory)
+name: Claude API review
 
-# Supplementary only. The required code review remains gpt-6-astra with reasoning high (AGENTS.md).
+# Claude API review evidence; CI, product gates and the coordinator's merge decision remain separate.
 on:
   pull_request_target:
     types: [opened, synchronize, ready_for_review, reopened]
@@ -81,8 +81,8 @@ jobs:
 
           env = os.environ
           header = {
-              "review": "**Advisory Claude review** (supplementary; does not replace the required gpt-6-astra high review)",
-              "mention": "**Claude reply** (advisory; does not replace the required gpt-6-astra high review)",
+              "review": "**Claude API review** (findings report; check coverage below; CI, product gates and the coordinator's merge decision remain separate)",
+              "mention": "**Claude API reply** (response to a collaborator request; not a complete PR review or merge approval)",
           }[env["KIND"]]
           code = 0
           if env.get("DATA_OUTCOME") != "success":
