@@ -22,6 +22,7 @@ def message(result=None):
 
 class MessagesFailureTests(unittest.TestCase):
     def test_complete_serialized_request_boundaries(self):
+        self.assertEqual(client.MAX_REQUEST_BYTES, 210_000)
         for kind in ("review", "mention"):
             system, prefix = "system 🌐", 'é\\"<>&\''
             overhead = len(client.request_body(system, prefix, kind))

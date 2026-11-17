@@ -17,35 +17,35 @@ Output is JSON with `status` (`complete` or `incomplete`), both SHAs, `diff_esca
 
 ## Complete request envelope
 
-[Maintenance #119](https://github.com/Maeximilion/MaexSocial/issues/119#issuecomment-6682864492) approves these limits:
+[Maintenance #132](https://github.com/Maeximilion/MaexSocial/issues/132) raises the finite input envelope introduced by [#119](https://github.com/Maeximilion/MaexSocial/issues/119#issuecomment-6682864492) to preserve the complete coherent portal-foundation diff:
 
 | Input | Limit | Measurement |
 | --- | --- | --- |
-| Complete diff | 120,000 | Conservative ASCII JSON/HTML-safe escaped bytes |
-| System prompt plus framed data | 140,000 | Same conservative escaping, including metadata and instructions |
-| Entire Messages request | 150,000 | Actual serialized ASCII JSON bytes, including model/configuration/schema |
+| Complete diff | 180,000 | Conservative ASCII JSON/HTML-safe escaped bytes |
+| System prompt plus framed data | 200,000 | Same conservative escaping, including metadata and instructions |
+| Entire Messages request | 210,000 | Actual serialized ASCII JSON bytes, including model/configuration/schema |
 | PR body / trusted mention | 6,000 each | Escaped bytes, unchanged |
 | Title / author, ref and repository names | 1,000 / 300 each | Escaped bytes, unchanged |
 
-Unicode, quotes, backslashes and HTML delimiters can cost more than one byte. Exactly 120,000 diff bytes fits; 120,001 is incomplete. Both the builder and API client use `request_body` in [the client](../../scripts/claude_messages.py); the client also rejects a request over 150,000 bytes before opening a connection. Isolated Python (`-I`) loads that client by its explicit trusted sibling path, without enabling `PYTHONPATH` or current-directory imports. The hosted checkout and protected-path checks remain unchanged.
+Unicode, quotes, backslashes and HTML delimiters can cost more than one byte. Exactly 180,000 diff bytes fits; 180,001 is incomplete. Both the builder and API client use `request_body` in [the client](../../scripts/claude_messages.py); the client also rejects a request over 210,000 bytes before opening a connection. Isolated Python (`-I`) loads that client by its explicit trusted sibling path, without enabling `PYTHONPATH` or current-directory imports. The hosted checkout and protected-path checks remain unchanged.
 
 The former 50,000 diff / 90,000 prompt limits came from [#58](https://github.com/Maeximilion/MaexSocial/pull/58), which passed the prompt through the old action's environment variable under Linux's per-string limit. [#105](https://github.com/Maeximilion/MaexSocial/pull/105) replaced that transport with file-built Messages JSON and a 100,000-byte client cap; [#116](https://github.com/Maeximilion/MaexSocial/pull/116) retained the earlier input limits. They were local transport/cost choices, not the model context limit. Prompts now travel through a file and an HTTP body.
 
-Read-only reproduction on 2026-11-06: #118 at base `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d` / head `2a67df7656c93db55674f842672092633b81535a` measured 90,142 escaped diff bytes, 94,713 escaped prompt bytes and 90,598 serialized request bytes with that day's metadata. The new envelope preserves the complete diff and reports no gaps. The earlier [incomplete receipt](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6682740988) correctly sent no API request. These measurements are not a provider review. Synthetic maximum ASCII fields measure 129,655/135,816 prompt bytes and 130,230/136,404 request bytes for review/mention respectively (repository `Maeximilion/MaexSocial`, PR 118, full SHAs); Unicode/HTML-heavy fields fit too. All caps are still checked rather than inferred from these examples.
+Read-only reproduction on 2026-11-06: #118 at base `4e28499dc1f129d96a06faa8f410cf85a4ddbb3d` / head `2a67df7656c93db55674f842672092633b81535a` measured 90,142 escaped diff bytes, 94,713 escaped prompt bytes and 90,598 serialized request bytes with that day's metadata. That envelope preserved the complete diff and reported no gaps. The earlier [incomplete receipt](https://github.com/Maeximilion/MaexSocial/pull/118#issuecomment-6682740988) correctly sent no API request. These measurements are not a provider review. At the former 120,000-byte diff cap, synthetic maximum ASCII fields measured 129,655/135,816 prompt bytes and 130,230/136,404 request bytes for review/mention respectively (repository `Maeximilion/MaexSocial`, PR 118, full SHAs); Unicode/HTML-heavy fields fit too. All caps are still checked rather than inferred from these examples.
+
+Read-only reproduction for #132 on 2026-11-17: the complete #117 comparison from base `c7f19e4d02f64bafcc97e0fd6f80e714c711332b` to head `231c97ba957d69729b24467cbd436ef52ab4d36e` includes all 26 changed files and measures **149,208 escaped diff bytes, 154,096 escaped prompt bytes and 146,522 serialized request bytes**, with no gaps. The builder retained the entire GitHub diff, including code, tests and lockfile. Metadata used the saved intended PR body, title `feat(portal): add synthetic customer sessions and tenant selection`, author `Maeximilion`, branch `dev-codex/117-customer-activation` and conservative six-digit placeholder PR number 999999. The eventual real PR needs a new pinned preflight with its actual metadata. No Anthropic request was sent; this is input evidence, not review coverage.
 
 ### Cost planning, not billing enforcement
 
-Official sources checked 2026-11-06: [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview) exposes model ID `claude-opus-5-5`, a 1M-token context and up to 128K output tokens. [Standard pricing](https://platform.claude.com/docs/en/about-claude/pricing) is USD4/20 per million input/output tokens across the full context. This client retains high effort, standard speed/tier and **32,768** output tokens including thinking; it requests no tools, cache writes or regional premium.
+Official sources checked 2026-11-06: [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview) exposes model ID `claude-opus-5-5`, a 1M-token context and up to 128K output tokens. [Standard pricing](https://platform.claude.com/docs/en/about-claude/pricing), rechecked on 2026-11-17 for #132, is USD4/20 per million input/output tokens across the full context. This client retains high effort, standard speed/tier and **32,768** output tokens including thinking; it requests no tools, cache writes or regional premium.
 
-For conservative planning, treating all 150,000 serialized bytes as 150,000 input tokens and assuming another 10,000 tokens of provider overhead gives the following comparison at USD4/20 per million input/output tokens:
+For conservative planning, treating all 210,000 serialized bytes as 210,000 input tokens and assuming another 10,000 tokens of provider overhead gives the following comparison at USD4/20 per million input/output tokens:
 
 | Output allowance | Output-only maximum at this rate | Total planning assumption |
 | --- | --- | --- |
-| 8,192 (previous) | USD0.16384 | USD0.80384 |
-| 16,384 (considered) | USD0.32768 | USD0.96768 |
-| 32,768 (selected) | USD0.65536 | USD1.29536 |
+| 32,768 (unchanged) | USD0.65536 | USD1.53536 |
 
-The selected allowance adds at most USD0.49152 in output charges at these rates, with a rounded **USD1.30 per-request planning figure**. Byte size is not a measured token count; the input/overhead assumption is not a provider guarantee or an enforced dollar maximum. A timeout may incur cost. The owner's reported **USD75 monthly workspace limit** is separate, unchanged and not independently verified here. No token-count endpoint, paid diagnostic request or billing setting was used. Recheck official prices when changing the model or envelope.
+The larger input envelope adds USD0.24 to the former USD1.29536 assumption, giving a rounded **USD1.54 per-request planning figure**. Byte size is not a measured token count; the input/overhead assumption is not a provider guarantee or an enforced dollar maximum. A timeout may incur cost. The owner's reported **USD75 monthly workspace limit** is separate, unchanged and not independently verified here. No token-count endpoint, paid diagnostic request or billing setting was used. Recheck official prices when changing the model or envelope.
 
 ### Output exhaustion and bounded transport
 
@@ -70,6 +70,7 @@ The workflow, input builder and API client protect themselves against review of 
 ```text
 python -m unittest discover -s tests -p test_claude_review.py
 python -m unittest discover -s tests -p test_claude_messages.py
+python -m unittest discover -s tests -p test_claude_protected_review.py
 ```
 
-Synthetic pinned base/head fixtures cover 119,999/120,000/120,001 escaped diff bytes, prompt/request boundaries, the observed 90,142-byte diff size with lockfile/test sections, maximum ASCII and Unicode/escaped metadata, review/mention serialization parity, isolated trusted imports, binary/text mixtures, invalid/NUL bytes, unavailable or empty diffs, clipped metadata, protected paths/renames, local CLI parity and skipped-result publication. Output regressions also cover successful complete responses, token/context stops with no publication, absent/malformed/hostile usage, valid zero counters, invalid envelopes, response bytes immediately below/at/above 1 MiB and a single request. GitHub and Anthropic are mocked; no paid call is made.
+Synthetic pinned base/head fixtures cover 179,999/180,000/180,001 escaped diff bytes, prompt/request boundaries, the observed 90,142- and 149,208-byte diff sizes with lockfile/test sections, maximum ASCII and Unicode/escaped metadata, review/mention serialization parity, isolated trusted imports, binary/text mixtures, invalid/NUL bytes, unavailable or empty diffs, clipped metadata, protected paths/renames, local CLI parity and skipped-result publication. Protected-route fixtures preserve the full escaped diff through the same boundary and deny overflow without an input file or API request. Output regressions also cover successful complete responses, token/context stops with no publication, absent/malformed/hostile usage, valid zero counters, invalid envelopes, response bytes immediately below/at/above 1 MiB and a single request. GitHub and Anthropic are mocked; no paid call is made.
