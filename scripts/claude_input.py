@@ -99,7 +99,7 @@ def build_input(env, pull):
                 " only the framed pull-request data. Report a finding only with a specific input or failing"
                 " sequence.")
     else:
-        task = ("Review this pull request as an advisory, supplementary reviewer. Report only concrete findings:"
+        task = ("Provide the Claude API review for this pull request. Report only concrete findings:"
                 " a defect, security issue or repository-rule violation with a specific input, failing"
                 " sequence or rule reference. No style nits.")
     lines = [f"REPO: {repo}", f"PR NUMBER: {env['PR']}", f"HEAD SHA: {head}", "", task,

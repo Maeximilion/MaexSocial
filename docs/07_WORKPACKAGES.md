@@ -34,6 +34,8 @@ The first release should name one customer journey, supported channel and operat
 
 [Maintenance #125](https://github.com/Maeximilion/MaexSocial/issues/125) aligns active review and orchestration instructions with the owner decision of 2026-11-17. The [Claude API review policy](tooling/agent-workflow.md#pr-review-policy) governs PR evidence; existing product dependencies and accepted gates remain unchanged.
 
+[Maintenance #127](https://github.com/Maeximilion/MaexSocial/issues/127) adds the [trusted manual protected-change route](tooling/claude-protected-review.md). Its bootstrap must be reviewed by the unchanged ordinary workflow before merge; live proof awaits a later genuine protected PR. This independent maintenance does not block #117's product delivery.
+
 [Maintenance issue #44](https://github.com/Maeximilion/MaexSocial/issues/44) adds local secret-prevention hooks and verifies native Codex hooks independently of product delivery and G1 acceptance. Security/quality and Dependabot P0/P1 checks are advisory only under the revised owner decision: report the need to address findings and continue requested tasks, without automatic remediation chats. Installation, test boundaries and rollback are documented in [local security operations](19_LOCAL_SECURITY.md).
 
 [Planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40) records the owner-requested [media library, calendar and optional advertising proposal](18_MEDIA_LIBRARY.md). Its gate/task mapping extends MS-005 and MS-007–013. Completing that documentation task does not complete those work packages, implement the feature or approve G2. Paid distribution remains distinct from generating advertising creative.
