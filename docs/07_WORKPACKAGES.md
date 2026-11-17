@@ -8,6 +8,8 @@ Bounded Task 2A2 component [#143](https://github.com/Maeximilion/MaexSocial/issu
 
 ## Planning maturity
 
+Bounded Task 2A2 component [#147](https://github.com/Maeximilion/MaexSocial/issues/147) adds optional private RP-initiated browser logout after committed local session revocation. [Its contract](../ops/local/README.md#private-confirmed-browser-logout-147) keeps fixed copied server configuration, explicit provider confirmation and the existing local-only default. Separate synthetic AppDB and real SSO controls prove only the confirmed browser's logout. No lifecycle completion, session producer, migration or product gate is supplied; #131 and integration remain open.
+
 Bounded Task 2C component [#144](https://github.com/Maeximilion/MaexSocial/issues/144) adds protected new text drafts with stored initial location context and immutable revision 1. [Its contract](superpowers/plans/2026-11-06-task-2-deliveries.md#new-text-drafts-144) creates no occurrence, schedule, approval, attempt or session; it leaves each later occurrence's destination independent. Local synthetic validation does not close #124/#131, Task 2 or any product gate.
 
 Bounded Task 2A2 component [#139 / PR #142](https://github.com/Maeximilion/MaexSocial/pull/142) delivers unmounted ordinary OIDC verification and a separate durable, browser-bound attempt store. [Protocol/database and real browser checks](../ops/local/README.md#private-oidc-verification-139) establish verified issuer/subject and one-use consumption, without application session/admission authority, MFA freshness or lifecycle completion. #131 retains those obligations and timed cleanup before public use; Task 2 and all product gates remain open.
