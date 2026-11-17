@@ -28,5 +28,5 @@ Tests must catch config mutation across pending attempts, ordinary-to-step-up co
 
 - Initial state: merged baseline inspected; no product changes or tests yet. Model Astra/high, no Fast override. Source-based design accepted; runtime proof pending.
 
-- Local evidence: strict build; protocol 9/9; real browser positive, repeated SSO and unenrolled/LoA1 negatives; full pilot 21/21; Python 122 with one Windows-inapplicable skip; Node foundation 20/20. Final retained-volume restart passed 21/21 on the current compiled source. No review or PR yet; publication waits for actual #144 merge and current-main integration.
+- Local evidence: strict build; protocol 9/9; real browser positive, repeated SSO and unenrolled/LoA1 negatives; full pilot 21/21; Python 122 with one Windows-inapplicable skip; Node foundation 20/20. Final retained-volume restart passed 21/21 on the current compiled source. No review or PR yet; the #144 merge has now been integrated normally; fresh migration004 up/down/up and the integrated pilot suite passed 21/21 before publication.
 
