@@ -32,6 +32,8 @@ The first release should name one customer journey, supported channel and operat
 
 ## Definitions of done
 
+[Maintenance #132](https://github.com/Maeximilion/MaexSocial/issues/132) enlarges the existing finite Claude input envelope for the complete coherent #117 delivery. Offline boundary/transport tests and complete-input measurement precede current-candidate CI and the coordinator-dispatched trusted protected review. No product scope, output allowance, model, retry policy or owner budget changes.
+
 [Maintenance #125](https://github.com/Maeximilion/MaexSocial/issues/125) aligns active review and orchestration instructions with the owner decision of 2026-11-17. The [Claude API review policy](tooling/agent-workflow.md#pr-review-policy) governs PR evidence; existing product dependencies and accepted gates remain unchanged.
 
 [Maintenance #127](https://github.com/Maeximilion/MaexSocial/issues/127) adds the [trusted manual protected-change route](tooling/claude-protected-review.md). Its bootstrap must be reviewed by the unchanged ordinary workflow before merge; live proof awaits a later genuine protected PR. This independent maintenance does not block #117's product delivery.

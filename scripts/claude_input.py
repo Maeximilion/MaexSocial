@@ -16,8 +16,8 @@ spec.loader.exec_module(client)
 
 WORKFLOW = ".github/workflows/claude-review.yml"
 PROTECTED = {WORKFLOW, "scripts/claude_messages.py", "scripts/claude_input.py"}
-max_diff, max_body, max_request, max_title, max_name = 120_000, 6_000, 6_000, 1_000, 300
-prompt_budget = 140_000
+max_diff, max_body, max_request, max_title, max_name = 180_000, 6_000, 6_000, 1_000, 300
+prompt_budget = 200_000
 
 
 def api(path, accept=None):
