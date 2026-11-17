@@ -4,7 +4,7 @@ import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
-import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft } from '../routes/content.js';
+import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -77,6 +77,11 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   app.get('/customer/drafts/:draftId', async (request, response) => {
     const binding = customerRequest(request);
     const page = await transaction(async db => renderDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.draftId, binding.csrf));
+    response.type('html').send(page);
+  });
+  app.get('/customer/occurrences/:occurrenceId', async (request, response) => {
+    const binding = customerRequest(request);
+    const page = await transaction(async db => renderOccurrence(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.occurrenceId));
     response.type('html').send(page);
   });
   app.post('/customer/drafts/:draftId', async (request, response) => {

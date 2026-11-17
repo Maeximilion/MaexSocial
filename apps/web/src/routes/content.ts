@@ -61,7 +61,7 @@ export async function renderDraft(db: Client, context: CustomerContext, draftId:
     (SELECT id,revision,text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON true
     WHERE d.tenant_id=$1 AND d.id=$2`, [context.tenantId, draftId])).rows[0];
   if (!draft) deny();
-  const occurrences = (await db.query(`SELECT o.state,l.provider_location FROM pilot.occurrences o
+  const occurrences = (await db.query(`SELECT o.id,o.state,l.provider_location FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
     WHERE o.tenant_id=$1 AND o.draft_id=$2 ORDER BY o.id`, [context.tenantId, draftId])).rows;
   return page('Edit text draft', `<p>Workspace: ${html(draft.name)}. Role: ${html(context.role)}. Revision ${draft.revision}.</p>
@@ -71,8 +71,26 @@ ${draft.provider_location !== null ? `<p>Initial location: ${html(draft.provider
 <input type="hidden" name="revisionId" value="${html(draft.id)}"><label for="text">Draft text</label>
 <p id="text-help">Enter 1–1500 characters. Text only; saving does not approve or publish.</p>
 <textarea id="text" name="text" required aria-describedby="text-help">\n${html(draft.text)}</textarea><p><button type="submit">Save text</button></p></form>
-${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li>${html(row.provider_location)} — ${html(row.state)}</li>`).join('')}</ul>` : ''}
+${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li><a href="/customer/occurrences/${html(row.id)}">${html(row.provider_location)} — ${html(row.state)}</a></li>`).join('')}</ul>` : ''}
 <p><a href="/customer/drafts">All text drafts</a></p>`);
+}
+
+export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
+  if (!uuid(occurrenceId)) deny();
+  const occurrence = (await db.query(`SELECT o.draft_id,o.state,o.due_at,o.timezone,l.provider_location FROM pilot.occurrences o
+    JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
+    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId])).rows[0];
+  if (!occurrence) deny();
+  const utc = (occurrence.due_at as Date).toISOString();
+  const local = new Intl.DateTimeFormat('en-GB', {
+    timeZone: occurrence.timezone, dateStyle: 'long', timeStyle: 'long'
+  }).format(occurrence.due_at);
+  return page('Post occurrence details', `<dl>
+<dt>Status</dt><dd>${html(occurrence.state)}</dd>
+<dt>Destination</dt><dd>${html(occurrence.provider_location)}</dd>
+<dt>Due time (UTC)</dt><dd><time datetime="${html(utc)}">${html(utc)}</time></dd>
+<dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>
+<p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`);
 }
 
 // Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.
