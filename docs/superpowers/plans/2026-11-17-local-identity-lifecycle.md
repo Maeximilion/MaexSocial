@@ -69,6 +69,18 @@
 
 ## Preparation evidence
 
+### Potential next-delivery partition, subject to root assignment
+
+| Could be implemented from already documented standard capabilities | Still depends on the open lifecycle postcondition / additional provenance |
+| --- | --- |
+| Server-side OIDC code/PKCE/state/nonce/token/issuer/audience/expiry validation and fixed return-target handling, from OIDC Core/PKCE | Turning a validated login into current application authority after signup/recovery; an OIDC success cannot establish which credential generation is authoritative. |
+| Authenticated read-only Keycloak user/credential-status adapter with validated minimal output and fail-closed errors, from 26.8.2 REST | Proving credential cleanup/completion or atomic revocation across provider/application state; a status read alone supplies neither. |
+| Ordinary protocol logout handling and immediate local opaque-session revocation, from OIDC logout and A1 | Reporting full recovery complete or old credential/action authority permanently excluded; logout is not that receipt. |
+| Local challenge metadata, independent counters, expiry and explicit POST/CSRF rules as application-only contracts | Binding mailbox proof to safe provider actions, all-entry-path enforcement, exactly-once admission and the completion producer/consumer used by #123. |
+| ACR/AMR claim validation against a documented configured context as a separate evidence parser | Enabling Manager MFA actions until freshness, enrollment/recovery invalidation and the compatible A1 representation are evidenced. |
+
+These are separable implementation candidates, not approved deliveries or authorization to expose live routes. Standard support justifies the bounded parser/adapter operation; it does not establish integrated correctness. No new strategy or procedure for the blocked operation is proposed. The coordinator accepted this requirements interpretation and the MFA direction on 2026-11-17, and will select the next precise delivery after #117.
+
 Official documentation was read on 2026-11-17. The spec records the pinned AIA source blob and prior result boundary; A1 interfaces were inspected at `badc7af09f0a1c05883b957cd0f2e6ed115001f7`. No implementation, runtime, migration, browser, test harness or review was executed by this preparation. Outstanding stage-1 obligations are deliberate missing guarantees, not implementation discretion. The next action belongs to root: disposition those guarantees and the permitted follow-up scope.
 
 Documentation validation: `python scripts/check_repo.py` passed (local links, JSON/TOML and repository artwork); `git diff --check` passed. Foundation/unit/product suites were not run: this assignment permits source/document preparation only and excludes test harness execution. These checks establish no authentication behavior.
