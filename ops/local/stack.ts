@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -118,6 +118,13 @@ async function main(): Promise<void> {
   if (action === 'down') {
     compose(f, ['down']);
     console.log('Isolated fixture stopped; database, mailbox and provider state retained.');
+    return;
+  }
+  try {
+    if (!(await stat('work/pilot/keycloak-realm.json')).isFile()) throw new Error('Not a file');
+  } catch {
+    console.error('Fixture realm import file is missing or invalid. Preserve the old work/pilot directory and volumes, then initialize a fresh fixture.');
+    process.exitCode = 1;
     return;
   }
   compose(f, ['up', '-d', '--wait', '--wait-timeout', '120']);
