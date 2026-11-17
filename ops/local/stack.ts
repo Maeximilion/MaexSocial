@@ -45,7 +45,8 @@ async function initialize(): Promise<Fixture> {
     clientAuthenticatorType: 'client-secret', standardFlowEnabled: true, serviceAccountsEnabled: false,
     directAccessGrantsEnabled: false, implicitFlowEnabled: false, fullScopeAllowed: false,
     defaultClientScopes: [], optionalClientScopes: [],
-    attributes: { 'pkce.code.challenge.method': 'S256', 'id.token.signed.response.alg': 'RS256', 'use.refresh.tokens': 'false' },
+    attributes: { 'pkce.code.challenge.method': 'S256', 'id.token.signed.response.alg': 'RS256', 'use.refresh.tokens': 'false',
+      'post.logout.redirect.uris': 'https://customer:8443/' },
     redirectUris: ['https://customer:8443/oidc/callback'], webOrigins: [] });
   realm.users.push({ id: '13900000-0000-4000-8000-000000000001', username: 'oidc-user', enabled: true,
     email: 'oidc-user@example.invalid', emailVerified: true, firstName: 'Invented', lastName: 'User', requiredActions: [],

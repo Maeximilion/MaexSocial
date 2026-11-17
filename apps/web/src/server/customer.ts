@@ -9,12 +9,21 @@ import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft } fro
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
 
-export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity): express.Express {
+export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity,
+  privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string }): express.Express {
+  // This unmounted option belongs only to the isolated, pinned browser fixture.
+  if (privateLogout && (privateLogout.issuer !== 'https://keycloak:8443/realms/pilot'
+    || privateLogout.clientId !== 'pilot-oidc-test' || privateLogout.postLogoutRedirectUri !== 'https://customer:8443/')) {
+    throw new Error('Invalid private logout configuration');
+  }
+  const logoutRedirect = privateLogout ? `${privateLogout.issuer}/protocol/openid-connect/logout?${new URLSearchParams({
+    client_id: privateLogout.clientId, post_logout_redirect_uri: privateLogout.postLogoutRedirectUri
+  })}` : '/';
   const app = express();
   app.disable('x-powered-by'); app.set('trust proxy', false);
   app.use((request, response, next) => {
     response.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin', 'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" });
+      'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'${logoutRedirect === '/' ? '' : ' https://keycloak:8443/realms/pilot/protocol/openid-connect/logout'}; frame-ancestors 'none'; base-uri 'none'` });
     if (!request.secure || request.headers.host !== 'customer:8443') { response.status(400).type('text').send('HTTPS required.'); return; }
     next();
   });
@@ -84,7 +93,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
       if (!current || current.identity_id !== located.identity_id) deny(); await requireBoundCsrf(db, binding);
       await db.query("UPDATE pilot.sessions SET revoked_at=COALESCE(revoked_at,$1) WHERE token_hash=$2 AND audience='customer'", [new Date(), tokenHash(token)]);
     });
-    response.clearCookie('__Host-session', cookieOptions); response.clearCookie('__Host-csrf', cookieOptions); response.redirect(303, '/');
+    response.clearCookie('__Host-session', cookieOptions); response.clearCookie('__Host-csrf', cookieOptions); response.redirect(303, logoutRedirect);
   });
   app.use((_request, response) => { response.status(404).type('text').send('Not found.'); });
   app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
