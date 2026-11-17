@@ -101,6 +101,23 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     assert.deepEqual((await db.query('SELECT revision,text FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision', [tenants[1], draft])).rows,
       [{ revision: 1, text: originalText }, { revision: 2, text: originalText }, { revision: 3, text: 'Keyboard edited <literal> text\nSecond line' }]);
     await page.screenshot({ path: '/artifacts/draft.png', fullPage: true });
+    const occurrence = (await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
+      VALUES($1,$2,$3,$4,'2030-01-01T12:00:00Z','Europe/Berlin') RETURNING id`, [tenants[1], draft, location, randomUUID()])).rows[0].id;
+    await page.reload();
+    await page.getByRole('button', { name: 'Save text' }).focus(); await page.keyboard.press('Tab');
+    assert.equal(await page.locator(':focus').getAttribute('href'), `/customer/occurrences/${occurrence}`);
+    await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443/customer/occurrences/${occurrence}`, { timeout: 5000 });
+    assert.equal(await page.getByRole('heading', { name: 'Post occurrence details', exact: true }).count(), 1);
+    assert.ok((await page.locator('main').textContent())!.includes('Keyboard <location> & context'));
+    assert.ok((await page.locator('main').textContent())!.includes('1 January 2030 at 13:00:00'));
+    assert.equal(await page.locator('time').getAttribute('datetime'), '2030-01-01T12:00:00.000Z');
+    assert.equal(await page.locator('form').count(), 0);
+    await page.screenshot({ path: '/artifacts/occurrence.png', fullPage: true });
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to workspace');
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to draft');
+    await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443${draftPath}`, { timeout: 5000 });
     await page.getByRole('link', { name: 'Back to workspace' }).focus(); await page.keyboard.press('Enter');
     await page.waitForURL('https://customer:8443/customer', { timeout: 5000 });
     assert.ok(requests.every(host => host === 'customer'), 'No IdP or external request belongs to this dashboard-only test');
