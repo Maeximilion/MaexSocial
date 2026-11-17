@@ -24,7 +24,8 @@ export async function migrate(direction: string): Promise<void> {
         }
       }
     }
-    const installed = (await db.query("SELECT to_regclass('pilot.identities') AS base, to_regclass('pilot.identity_operations') AS access")).rows[0];
+    const installed = (await db.query(`SELECT to_regclass('pilot.identities') AS base,
+      EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='sessions' AND column_name='csrf_hash') AS access`)).rows[0];
     const migrations = direction === 'up'
       ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access'])]
       : [...(installed.access ? ['002_customer_access'] : []), '001_pilot'];

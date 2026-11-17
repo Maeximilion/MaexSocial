@@ -14,14 +14,14 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
   if (process.env.PILOT_CONTAINER !== '1') { console.log(await runPortalBrowserTest()); return; }
   const endpoint = process.env.PORTAL_BROWSER_ENDPOINT; assert.ok(endpoint, 'Run through the isolated portal browser harness');
   const db = await connectFixture(); const now = new Date();
-  const status: IdentityStatus = { subject: randomUUID(), email: `${randomUUID()}@example.invalid`, generation: randomUUID(),
-    verified: true, enabled: true, firstName: 'Invented', lastName: 'Keyboard', requiredActions: [], credentials: [] };
+  const status: IdentityStatus = { subject: randomUUID(),
+    verified: true, enabled: true, requiredActions: [], credentials: [] };
   const app = createCustomerApp(connectFixture, async () => status);
   const server = createServer({ cert: await readFile('work/pilot/customer.crt'), key: await readFile('work/pilot/customer.key') }, app);
   let browser: Browser | undefined;
   try {
     browser = await chromium.connect(endpoint, { timeout: 5000 });
-    const identity = (await db.query("INSERT INTO pilot.identities(subject,email,generation,verified,lifecycle) VALUES($1,$2,$3,true,'active') RETURNING id", [status.subject, status.email, status.generation])).rows[0].id;
+    const identity = (await db.query("INSERT INTO pilot.identities(subject,verified) VALUES($1,true) RETURNING id", [status.subject])).rows[0].id;
     const tenants: string[] = []; const memberships: string[] = [];
     for (const name of ['Keyboard A', 'Keyboard B']) {
       const tenant = (await db.query('INSERT INTO pilot.tenants(name) VALUES($1) RETURNING id', [name])).rows[0].id; tenants.push(tenant);

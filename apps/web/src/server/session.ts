@@ -24,15 +24,15 @@ export async function requireCustomer(db: Client, token: string, now: Date, insp
     || session.membership_id !== located.membership_id || session.token_hash !== tokenHash(token) || session.audience !== 'customer'
     || session.revoked_at || now < session.created_at || now < session.last_seen_at || now >= session.expires_at
     || now.getTime() - session.created_at.getTime() >= 28_800_000 || now.getTime() - session.last_seen_at.getTime() >= 1_800_000) denied();
-  const authority = (await db.query(`SELECT i.subject,i.email,i.generation,i.version AS identity_version,i.verified,i.lifecycle,
+  const authority = (await db.query(`SELECT i.subject,i.version AS identity_version,i.verified,
     t.active AS tenant_active,t.version AS tenant_version,m.active AS membership_active,m.version AS membership_version,m.role
     FROM pilot.identities i JOIN pilot.memberships m ON m.identity_id=i.id JOIN pilot.tenants t ON t.id=m.tenant_id
     WHERE i.id=$1 AND t.id=$2 AND m.id=$3`, [located.identity_id, located.tenant_id, located.membership_id])).rows[0];
-  if (!authority || !authority.verified || authority.lifecycle !== 'active' || !authority.tenant_active || !authority.membership_active
+  if (!authority || !authority.verified || !authority.tenant_active || !authority.membership_active
     || authority.identity_version !== session.identity_version || authority.membership_version !== session.membership_version
     || authority.tenant_version !== session.tenant_version) denied();
   const current = await inspect(authority.subject);
-  if (current.subject !== authority.subject || current.email !== authority.email || current.generation !== authority.generation
+  if (current.subject !== authority.subject
     || !current.verified || !current.enabled || current.requiredActions.length) denied();
   const mfaEnrolled = current.credentials.some(c => c.id === session.mfa_credential_id && ['otp', 'webauthn', 'webauthn-passwordless'].includes(c.type));
   await db.query('UPDATE pilot.sessions SET last_seen_at=$1 WHERE id=$2', [now, session.id]);
@@ -50,7 +50,7 @@ export function requireCsrf(origin: string | undefined, proof: string | undefine
 }
 
 export async function rotateCustomerSession(db: Client, token: string, tenantId: string, now: Date, inspect: InspectIdentity): Promise<{ token: string; csrf: string }> {
-  if (!/^[a-f0-9]{64}$/.test(token) || !/^[a-f0-9-]{36}$/.test(tenantId)) denied();
+  if (!/^[a-f0-9]{64}$/.test(token) || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(tenantId)) denied();
   const located = (await db.query("SELECT identity_id,tenant_id,membership_id FROM pilot.sessions WHERE token_hash=$1 AND audience='customer'", [tokenHash(token)])).rows[0];
   if (!located) denied();
   await lockIdentities(db, [located.identity_id]);

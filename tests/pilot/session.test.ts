@@ -23,16 +23,16 @@ test('origin/CSRF and exactly five minute MFA boundaries', () => {
   }
 });
 
-test('transactional current authority, current IdP factor and exact session expiry', async () => {
+test('transactional current authority, synthetic current factor and exact session expiry', async () => {
   if (process.env.PILOT_CONTAINER !== '1') {
     console.log(await runIsolated(['--test', 'dist/pilot/tests/pilot/session.test.js'])); return;
   }
   const db = await connectFixture();
-  const token = randomBytes(32).toString('hex'), generation = randomUUID();
-  const status: IdentityStatus = { subject: randomUUID(), email: `${randomUUID()}@example.invalid`, verified: true, enabled: true,
-    generation, firstName: 'Invented', lastName: 'Customer', requiredActions: [], credentials: [{ id: 'current-factor', type: 'otp' }] };
+  const token = randomBytes(32).toString('hex');
+  const status: IdentityStatus = { subject: randomUUID(), verified: true, enabled: true,
+    requiredActions: [], credentials: [{ id: 'current-factor', type: 'otp' }] };
   try {
-    const identity = (await db.query("INSERT INTO pilot.identities(subject,email,verified,generation,lifecycle) VALUES($1,$2,true,$3,'active') RETURNING id", [status.subject, status.email, generation])).rows[0].id;
+    const identity = (await db.query("INSERT INTO pilot.identities(subject,verified) VALUES($1,true) RETURNING id", [status.subject])).rows[0].id;
     const tenant = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Synthetic A') RETURNING id")).rows[0].id;
     const membership = (await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Manager') RETURNING id", [tenant, identity])).rows[0].id;
     const session = (await db.query(`INSERT INTO pilot.sessions(token_hash,identity_id,identity_version,tenant_id,membership_id,membership_version,
@@ -46,7 +46,7 @@ test('transactional current authority, current IdP factor and exact session expi
     };
     const context = await resolve(); assert.equal(context.tenantId, tenant); assert.equal(context.role, 'Manager'); requireManagerMfa(context, now);
     const noFactor = await resolve(now, { ...status, credentials: [] }); assert.equal(noFactor.mfaEnrolled, false); assert.throws(() => requireManagerMfa(noFactor, now));
-    for (const patch of [{ enabled: false }, { verified: false }, { generation: randomUUID() }, { subject: randomUUID() }, { email: 'other@example.invalid' }]) {
+    for (const patch of [{ enabled: false }, { verified: false }, { subject: randomUUID() }, { requiredActions: ['UPDATE_PASSWORD'] }]) {
       await assert.rejects(resolve(now, { ...status, ...patch }), /Denied/);
     }
     await assert.rejects(resolve(new Date(now.getTime() + 1_800_000)), /Denied/);
@@ -75,18 +75,19 @@ test('transactional current authority, current IdP factor and exact session expi
       await db.query('BEGIN'); await requireCustomer(db, token, now, async () => status);
       await resetting.query('BEGIN'); const resetLock = lockIdentities(resetting, [identity]);
       await blocked(resetPid);
-      await db.query("UPDATE pilot.tenants SET name='Allowed before recovery',version=version+1 WHERE id=$1", [tenant]);
+      await db.query("UPDATE pilot.tenants SET name='Allowed before identity invalidation',version=version+1 WHERE id=$1", [tenant]);
       await db.query('COMMIT'); await resetLock;
-      await resetting.query("UPDATE pilot.identities SET lifecycle='recovering',version=version+1 WHERE id=$1", [identity]);
+      await resetting.query("UPDATE pilot.identities SET verified=false,version=version+1 WHERE id=$1", [identity]);
       await resetting.query('COMMIT'); await assert.rejects(resolve(), /Denied/);
-      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before recovery');
-      await db.query("UPDATE pilot.identities SET lifecycle='active',version=version+1 WHERE id=$1", [identity]);
-      await db.query('UPDATE pilot.sessions SET identity_version=3 WHERE id=$1', [session]);
+      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before identity invalidation');
+      await db.query("UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1", [identity]);
+      await db.query('UPDATE pilot.sessions SET identity_version=3,tenant_version=2 WHERE id=$1', [session]);
+      await resolve();
       await resetting.query('BEGIN'); await lockIdentities(resetting, [identity]);
-      await resetting.query("UPDATE pilot.identities SET lifecycle='recovering',version=version+1 WHERE id=$1", [identity]);
+      await resetting.query("UPDATE pilot.identities SET verified=false,version=version+1 WHERE id=$1", [identity]);
       await db.query('BEGIN'); const deniedAfterReset = assert.rejects(requireCustomer(db, token, now, async () => status), /Denied/);
       await blocked(protectedPid); await resetting.query('COMMIT'); await deniedAfterReset; await db.query('ROLLBACK');
-      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before recovery');
+      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before identity invalidation');
       const secondIdentity = (await db.query('INSERT INTO pilot.identities(subject) VALUES($1) RETURNING id', [randomUUID()])).rows[0].id;
       await db.query('BEGIN'); await lockIdentities(db, [secondIdentity, identity]);
       await resetting.query('BEGIN'); const reverseOrder = lockIdentities(resetting, [identity, secondIdentity]);

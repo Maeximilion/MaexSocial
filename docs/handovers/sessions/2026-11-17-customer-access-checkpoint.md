@@ -35,7 +35,7 @@ Actual verification before this checkpoint:
 - Work head before the handover commit — `a69f6de9dff10b1ee1dddaeeefb78ca91b016734`.
 - PR — not opened; implementation incomplete.
 - Plan — [Task 2 deliveries](../../superpowers/plans/2026-11-06-task-2-deliveries.md).
-- Implemented boundaries — [session authority](../../../apps/web/src/server/session.ts), [completion consumer](../../../apps/web/src/server/identity.ts), [throttles](../../../apps/web/src/server/throttle.ts), [contracts](../../../packages/contracts/pilot.ts), [access migration](../../../db/migrations/002_customer_access.up.sql).
+- Implemented boundaries — [session authority](../../../apps/web/src/server/session.ts), [completion consumer](https://github.com/Maeximilion/MaexSocial/blob/02784466b2f74ff1dbedbcdcec26a51f823aec4a/apps/web/src/server/identity.ts), [throttles](https://github.com/Maeximilion/MaexSocial/blob/02784466b2f74ff1dbedbcdcec26a51f823aec4a/apps/web/src/server/throttle.ts), [contracts](../../../packages/contracts/pilot.ts), [access migration](../../../db/migrations/002_customer_access.up.sql).
 - Local-only evidence — ignored `work/` retains the original stopped fixture, current disposable fixture and private diagnostic scripts. Do not publish tokens, credentials or raw mail. The blocked race scripts must not be rerun, reformulated or delegated.
 
 ## Decisions

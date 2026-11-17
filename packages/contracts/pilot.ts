@@ -12,25 +12,13 @@ export interface CustomerContext {
   mfaEnrolled: boolean;
 }
 
-// Supplied only by the server's authenticated IdP adapter, never a request body.
+// Server-supplied authority only. This delivery supplies it exclusively in isolated
+// tests; #131 must establish real IdP/MFA provenance before any public login opens.
 export interface IdentityStatus {
   subject: string;
-  email: string;
   verified: boolean;
   enabled: boolean;
-  generation: string;
-  firstName: string;
-  lastName: string;
   requiredActions: string[];
   credentials: { id: string; type: string }[];
 }
 export type InspectIdentity = (subject: string) => Promise<IdentityStatus>;
-
-export interface VerifiedIdentity {
-  identityId: string;
-  subject: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  previouslyVerified: boolean;
-}

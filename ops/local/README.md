@@ -1,6 +1,6 @@
-# Isolated storage fixture
+# Isolated pilot fixture
 
-[Issue #114](https://github.com/Maeximilion/MaexSocial/issues/114) implements only task 1 of the [accepted MS-009 plan](../../docs/superpowers/plans/2026-11-05-ms-009-local-text-pilot.md). No portal, desktop, dispatch, export or recovery workflow is present. G3 remains open.
+Task 1 / #114 supplies storage. [Task 2A1 / #117](https://github.com/Maeximilion/MaexSocial/issues/117) adds a synthetic protected dashboard and session/tenant/CSRF tests. Initial sessions and authority are created only inside isolated tests: no public login/token issuance or runtime launcher. [#131](https://github.com/Maeximilion/MaexSocial/issues/131) retains real auth/lifecycle/MFA/recovery. Desktop, dispatch and export remain later work; G3/G5 stay open.
 
 Use Node **24.22.2**, npm **11.19.1**, Docker Engine and Compose. From the worktree root:
 
@@ -21,7 +21,7 @@ Run the up/down/up migration drill and `migration-empty.js` only before seeding.
 
 `pilot:up` generates a new random namespace, credentials, one-day TLS certificates and an expiring manifest in ignored `work/pilot/`. Database login credentials also expire after one day. It starts separate application PostgreSQL, identity PostgreSQL, Keycloak and a mailbox sink. Both networks are internal with no published ports; a disposable Node runner joins them for readiness, migrations and tests. Package/image downloads occur before runtime. No daemon or host firewall changes, external mail relay, external product request or real credential is needed. `pilot:down` works with an expired manifest and preserves all volumes.
 
-Docker 29.9.2 on the development host accepted internal-network port declarations but supplied no mappings. The plan allows an isolated local network, so this delivery uses that topology throughout. The direct Node test command transparently runs its database assertions inside the isolated runner. It does not require a host database port. Browser ingress and exact OIDC redirect registrations belong to task 2/3; the two public-client definitions are disabled until then, with no wildcard redirects, direct password grants or client secrets. Identity management port 9000 is never published.
+Docker 29.9.2 on the development host accepted internal-network port declarations but supplied no mappings. The plan allows an isolated local network, so this delivery uses that topology throughout. The direct Node test command transparently runs its database assertions inside the isolated runner. It does not require a host database port. The dashboard browser uses an isolated runner alias and generated customer certificate. Real ingress and OIDC redirects belong to A2/Task 3; the two public-client definitions are disabled until then, with no wildcard redirects, direct password grants or client secrets. Identity management port 9000 is never published.
 
 Application login is a non-superuser with no role/database creation, bypass-RLS or identity-database access. It receives explicit table/column privileges, including generated-only occurrence IDs and no delete permission. Composite keys prevent cross-tenant references; they do not replace the later API's active-tenant and role checks. Approval/revision/audit snapshots are immutable. Membership and grant changes advance a version. Later tasks must atomically check current versions and serialize approval, hold/export/claim, revocation and audit. This delivery does not claim those transitions or tenant row-level read authorization.
 
@@ -40,3 +40,11 @@ Pins were read from official sources on 2026-11-06. The lockfile fixes packages 
 - [Docker internal-network behavior](https://docs.docker.com/compose/how-tos/networking/), [upstream port-mapping report](https://github.com/moby/moby/discussions/53256)
 
 Local observed results: strict build passed; TLS readiness passed; empty migration up/down/up passed; storage races, A/B reference rejection, immutable IDs/snapshots, versioned approval, single attempt, invitation reuse denial and populated-down refusal passed. Isolation tests verify internal-only network attachments, no published ports, app-role denial on the identity DB with a valid Keycloak-role control, rejection of plaintext PostgreSQL and verified HTTPS for Keycloak/mailbox. These are synthetic storage/infrastructure results, not ACCESS/PLAN whole-slice or real-provider evidence. Exact revision and hosted results are recorded in the delivery PR.
+
+## Synthetic dashboard checks
+
+`npm run pilot:test` includes a real keyboard browser test. The pinned Playwright worker runs on the internal identity network, without host ports, with read-only root and only the public customer certificate (no private key, manifest or DB credentials). The Node 24 application runner owns test sessions and HTTPS; the browser image runtime is separate. A unique short network alias stays within the DNS label limit. The harness tears down its worker and saves `work/portal-preview/dashboard.png` for local inspection. This dashboard test makes no IdP/external request.
+
+Handlers share `apps/web/src/server/request.ts`; domain callers must bind HTTP/CSRF and current authority inside one transaction and scope queries to its resolved tenant. See the [A1 contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#a1-shared-contract) for lock order and synthetic MFA limits. Same-origin referrer policy retains browser form Origin for strict CSRF checks.
+
+Migration 002 adds only session CSRF, tenant version and synthetic factor binding. The unmerged experimental lifecycle schema is not an upgrade target: preserve old investigative fixtures and initialize a fresh namespace. No migration deletes populated fixture data. Pushed source/private checkpoints retain experiments without delivering executable lifecycle contracts.

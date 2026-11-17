@@ -12,8 +12,8 @@ import type { IdentityStatus } from '../../packages/contracts/pilot.js';
 test('HTTPS customer boundary renders own context and protects switch/logout with CSRF', async () => {
   if (process.env.PILOT_CONTAINER !== '1') { console.log(await runIsolated(['--test', 'dist/pilot/tests/pilot/portal.test.js'])); return; }
   const db = await connectFixture(); const now = new Date();
-  const status: IdentityStatus = { subject: randomUUID(), email: `${randomUUID()}@example.invalid`, generation: randomUUID(),
-    verified: true, enabled: true, firstName: 'Invented', lastName: 'Customer', requiredActions: [], credentials: [] };
+  const status: IdentityStatus = { subject: randomUUID(),
+    verified: true, enabled: true, requiredActions: [], credentials: [] };
   const token = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
   let connections = 0, identityUnavailable = false;
   const app = createCustomerApp(async () => { connections++; return connectFixture(); }, async () => {
@@ -32,7 +32,7 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
     }); req.on('error', reject); if (body) req.write(new URLSearchParams(body).toString()); req.end();
   });
   try {
-    const identity = (await db.query("INSERT INTO pilot.identities(subject,email,generation,verified,lifecycle) VALUES($1,$2,$3,true,'active') RETURNING id", [status.subject, status.email, status.generation])).rows[0].id;
+    const identity = (await db.query("INSERT INTO pilot.identities(subject,verified) VALUES($1,true) RETURNING id", [status.subject])).rows[0].id;
     const tenant = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Invented <script>window.canary=true</script>') RETURNING id")).rows[0].id;
     const membership = (await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Employee') RETURNING id", [tenant, identity])).rows[0].id;
     const foreign = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Unrelated B canary') RETURNING id")).rows[0].id;
@@ -47,6 +47,18 @@ test('HTTPS customer boundary renders own context and protects switch/logout wit
     identityUnavailable = false;
     assert.equal((await send(`/customer?tenantId=${foreign}`)).text.includes('Unrelated B canary'), false);
     const before = Number((await db.query('SELECT count(*) AS n FROM pilot.sessions WHERE identity_id=$1', [identity])).rows[0].n);
+    const beforeAuth = connections;
+    for (const path of ['/signup', '/login', '/callback', '/activate', '/recovery', '/reset', '/mfa', '/session', '/fixture-login', '/test-token', '/customer/login', '/auth/callback']) {
+      for (const method of ['GET', 'POST']) {
+        const result = await send(path, method, { token, subject: status.subject, verified: 'true' }, '');
+        assert.equal(result.status, 404, `${method} ${path} must not issue authority`); assert.deepEqual(result.cookies, []);
+      }
+    }
+    assert.equal(connections, beforeAuth);
+    assert.equal((await send(`/customer?token=${token}&csrf=${csrf}`, 'GET', undefined, '')).status, 403);
+    const wrongBinding = randomBytes(32).toString('hex');
+    assert.equal((await send('/customer', 'GET', undefined, `__Host-session=${token}; __Host-csrf=${wrongBinding}`)).status, 403);
+    assert.equal((await send('/customer/switch', 'POST', { tenantId: tenant, csrf: wrongBinding }, `__Host-session=${token}; __Host-csrf=${wrongBinding}`)).status, 403);
     for (const [body, origin] of [[{ tenantId: tenant, csrf }, 'https://other.invalid'], [{ tenantId: tenant, csrf: randomBytes(32).toString('hex') }, 'https://customer:8443'], [{ tenantId: tenant, csrf, role: 'Manager' }, 'https://customer:8443'], [{ tenantId: foreign, csrf }, 'https://customer:8443']] as const) {
       assert.ok([400, 403].includes((await send('/customer/switch', 'POST', body, undefined, origin)).status));
     }
