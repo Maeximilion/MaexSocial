@@ -19,7 +19,7 @@
 - Per normalized account and independently per source: login 5/30 attempts per 15 minutes; signup, recovery and resend 3/10 per hour for each flow. Count unknown identities as well.
 - Compile before every targeted Node test, restart processes from that build, and record candidate SHA, fixture, expected/observed effects and limitations. Missing prerequisites fail; mocks cannot establish real Keycloak/browser behavior.
 - Canonical main stays clean. One delivery PR per work chat. Only root maintains `.codex/orchestration`; #121 owns review client/tests/tooling documentation.
-- The 2026-11-06 pause was honored. The owner explicitly resumed on 2026-11-17 without a new deadline. Root makes technical decisions within the accepted plan. Publication of #117 waits for the smaller #125 maintenance delivery to merge.
+- The 2026-11-06 pause was honored. The owner explicitly resumed on 2026-11-17 without a new deadline. Root makes technical decisions within the accepted plan. The smaller #125 / PR #126 maintenance delivery merged; the publication hold is lifted, subject to completing A and its checks.
 
 ## Observed Task 1 interfaces
 
@@ -87,7 +87,8 @@ interface VerifiedIdentity {
   previouslyVerified: boolean;
 }
 async function consumeIdentityCompletion(db: Client, completionId: string,
-  purpose: 'signup' | 'invitation', now: Date): Promise<VerifiedIdentity>;
+  purpose: 'signup' | 'invitation' | 'reset', bindingId: string,
+  now: Date): Promise<VerifiedIdentity>;
 ```
 
 `requireCustomer` rechecks current identity version/verification, session revocation/expiry, active tenant and active membership/version, using locks retained through the caller's transaction. `InspectIdentity` is the authenticated server IdP adapter: it reads current enabled/verified state, generation and credential IDs; request claims cannot supply it. Never accept tenant/role from body, email domain or an unverified token. Root approved the single lock order on 2026-11-17: identity -> tenant -> membership -> session -> invitation/content object. Collect the full required identity and tenant sets first and lock each set in stable ID order. A session lookup used to locate those rows is untrusted until repeated under the locks. Changed sets or generations require retry/denial, never unordered additional locks. Revocation, recovery and approval use this same order. Test cross-user removal/reset and tenant-switch interleavings before freezing the protocol. A middleware check outside the mutation transaction is insufficient. Tenant switching checks the destination membership and rotates the opaque session/CSRF proof, rather than trusting each request's tenant selector.
@@ -112,7 +113,7 @@ A supplies `consumeIdentityCompletion` for B, with an opaque one-use completion 
 - [ ] **Session/request tests then implementation:** implement the signatures above and customer HTTPS listener. Exercise code/state/nonce/audience/signature/PKCE/redirect tampering, rotation/login/logout/reset/elevation, 30-minute idle and 8-hour total boundaries, independent account/source throttles, invalid origin/CSRF, safe GET, TLS success/plaintext-credential denial and fail-closed unavailable authority. Verify cookie attributes and no token-bearing logs or responses.
 - [ ] **Portal and boundary controls:** implement keyboard-accessible signup/login/recovery/dashboard. Test shared A/B switching and guessed object IDs, suspended/revoked membership with an open session, no private management authority, canary-free responses/logs. Each denied write has zero mutation/fetch/media-job/charge and a legitimate positive control. Customer role is Employee after public signup; fixture-only Manager setup does not expose a promotion route.
 - [ ] **Verification:** run `npm run pilot:build` before `node --test dist/pilot/tests/pilot/portal.test.js`; restart application processes from that build. Run existing storage/isolation/fixture regression checks and full foundation checks. Use the pinned Node/npm runtime, not the host Node 26/npm 12 observed during planning. Record actual keyboard/browser evidence separately from direct HTTP tests.
-- [ ] **Checkpoint/delivery:** commit focused tested increments; before one normal #117 PR run complete preflight. Hold publication until #125 merges. Attach PR, synchronize issue/Project/status/handover, and report head/base and actual Claude API review evidence to root. Root alone merges; no separate Codex review or bot fallback under the owner's 2026-11-17 instruction.
+- [ ] **Checkpoint/delivery:** commit focused tested increments; before one normal #117 PR run complete preflight. The #125 predecessor merged in PR #126. Attach PR, synchronize issue/Project/status/handover, and report head/base and actual Claude API review evidence to root. Root alone merges; no separate Codex review or bot fallback under the owner's 2026-11-17 instruction.
 
 ## B acceptance and implementation contract
 
