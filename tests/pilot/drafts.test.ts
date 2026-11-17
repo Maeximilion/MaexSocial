@@ -8,7 +8,7 @@ import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { createCustomerApp } from '../../apps/web/src/server/customer.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
-import { editDraft } from '../../apps/web/src/routes/content.js';
+import { createDraft, editDraft } from '../../apps/web/src/routes/content.js';
 import { occurrence, seedTenant } from './fixtures.js';
 
 test('protected text editing preserves tenant, revision and approval boundaries', async t => {
@@ -55,6 +55,114 @@ test('protected text editing preserves tenant, revision and approval boundaries'
     return result;
   };
   try {
+    await t.test('both roles create only a draft and revision one with stored own location, without a Google grant', async () => {
+      assert.equal((await db.query('SELECT grant_active FROM pilot.locations WHERE tenant_id=$1 AND id=$2', [a.tenant, a.location])).rows[0].grant_active, false);
+      const sessionCount = (await db.query('SELECT count(*) FROM pilot.sessions')).rows;
+      for (const who of [employee, manager]) {
+        const before = await snapshot();
+        const page = await send(who, '/customer/drafts/new'); assert.equal(page.status, 200);
+        assert.ok(page.text.includes(a.location)); assert.ok(!page.text.includes(b.location));
+        const text = '  </textarea><script>literal</script> & https://example.invalid/image.png\r\n😀 ';
+        const saved = await send(who, '/customer/drafts', { text, locationId: a.location, csrf: who.csrf });
+        assert.equal(saved.status, 303); assert.match(saved.location!, /^\/customer\/drafts\/[a-f0-9-]{36}$/);
+        const id = saved.location!.split('/').at(-1)!;
+        const rows = (await db.query(`SELECT d.initial_location_id,r.revision,r.text FROM pilot.drafts d JOIN pilot.draft_revisions r
+          ON r.tenant_id=d.tenant_id AND r.draft_id=d.id WHERE d.tenant_id=$1 AND d.id=$2`, [a.tenant, id])).rows;
+        assert.deepEqual(rows, [{ initial_location_id: a.location, revision: 1, text: text.replace(/\r\n?/g, '\n') }]);
+        const readback = await send(who, saved.location!); assert.equal(readback.status, 200);
+        assert.ok(readback.text.includes('Initial location: fake-location'));
+        assert.ok(readback.text.includes('&lt;/textarea&gt;&lt;script&gt;literal')); assert.ok(!readback.text.includes('<script>'));
+        const after = await snapshot();
+        for (const table of Object.keys(before)) {
+          if (['drafts', 'draft_revisions'].includes(table)) assert.equal((after[table] as unknown[]).length, (before[table] as unknown[]).length + 1);
+          else assert.deepEqual(after[table], before[table], table);
+        }
+      }
+      assert.deepEqual((await db.query('SELECT count(*) FROM pilot.sessions')).rows, sessionCount);
+    });
+    await t.test('creation rejects foreign locations, forged fields and invalid text without any domain effect', async () => {
+      const before = await snapshot();
+      for (const who of [employee, manager]) {
+        const valid = { text: 'Plain text', locationId: a.location, csrf: who.csrf };
+        for (const locationId of [b.location, randomUUID(), a.draft, '']) assert.equal((await send(who, '/customer/drafts', { ...valid, locationId })).status, 403);
+        for (const field of ['tenantId', 'role', 'identityId', 'draftId', 'revisionId', 'revision', 'schedule', 'dueAt', 'approvalId', 'occurrenceId', 'attachment', 'upload', 'mediaUrl', 'objectReference']) {
+          assert.equal((await send(who, '/customer/drafts', { ...valid, [field]: b.location })).status, 400);
+        }
+        for (const text of ['', '\u0000', '😀'.repeat(1501), '\r\n' + 'x'.repeat(1500), 'x'.repeat(22000)]) {
+          assert.equal((await send(who, '/customer/drafts', { ...valid, text })).status, 400);
+        }
+        assert.equal((await send(who, '/customer/drafts', { text: 'Missing location', csrf: who.csrf })).status, 400);
+        assert.equal((await send(who, '/customer/drafts', `text=one&text=two&csrf=${who.csrf}`)).status, 400);
+        assert.equal((await send(who, '/customer/drafts', '{}', undefined, undefined, 'application/json')).status, 400);
+        assert.equal((await send(who, '/customer/drafts', valid, 'https://foreign.invalid')).status, 403);
+        assert.equal((await send(who, '/customer/drafts', valid, '')).status, 403);
+        assert.equal((await send(who, '/customer/drafts', valid, undefined, '')).status, 403);
+        assert.equal((await send(who, '/customer/drafts', { ...valid, csrf: '0'.repeat(64) })).status, 403);
+        const proof = '1'.repeat(64);
+        assert.equal((await send(who, '/customer/drafts', { ...valid, csrf: proof }, undefined, `__Host-session=${who.token}; __Host-csrf=${proof}`)).status, 403);
+      }
+      await db.query('BEGIN');
+      try {
+        const context = await requireCustomerRequest(db, employee, () => new Date(), async subject => ({ subject, enabled: true, verified: true, requiredActions: [], credentials: [] }));
+        for (const text of ['\uD800', '\uDC00']) await assert.rejects(createDraft(db, context, a.location, text), /Invalid request/);
+        await assert.rejects(createDraft(db, { ...context, role: 'Admin' as typeof context.role }, a.location, 'No'), /Denied/);
+      } finally { await db.query('ROLLBACK'); }
+      assert.deepEqual(await snapshot(), before);
+      for (const text of [' ', '😀'.repeat(1500), '\r\n' + '😀'.repeat(1499), '\r' + 'x'.repeat(1499)]) {
+        const saved = await send(employee, '/customer/drafts', { text, locationId: a.location, csrf: employee.csrf });
+        assert.equal(saved.status, 303);
+        assert.equal((await db.query('SELECT text FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2', [a.tenant, saved.location!.split('/').at(-1)])).rows[0].text, text.replace(/\r\n?/g, '\n'));
+      }
+    });
+    await t.test('a failed first revision rolls back its new draft and session update', async () => {
+      const owner = await connectFixture(true), before = await snapshot();
+      const session = (await db.query('SELECT * FROM pilot.sessions WHERE token_hash=$1', [tokenHash(employee.token)])).rows;
+      try {
+        await owner.query(`CREATE FUNCTION pilot.reject_revision_probe() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          IF NEW.text = 'revision rollback probe' THEN RAISE EXCEPTION 'synthetic revision failure'; END IF; RETURN NEW; END $$;
+          CREATE TRIGGER reject_revision_probe BEFORE INSERT ON pilot.draft_revisions FOR EACH ROW EXECUTE FUNCTION pilot.reject_revision_probe()`);
+        assert.equal((await send(employee, '/customer/drafts', { text: 'revision rollback probe', locationId: a.location, csrf: employee.csrf })).status, 503);
+        assert.deepEqual(await snapshot(), before);
+        assert.deepEqual((await db.query('SELECT * FROM pilot.sessions WHERE token_hash=$1', [tokenHash(employee.token)])).rows, session);
+      } finally {
+        await owner.query('DROP TRIGGER IF EXISTS reject_revision_probe ON pilot.draft_revisions; DROP FUNCTION IF EXISTS pilot.reject_revision_probe()'); await owner.end();
+      }
+    });
+    await t.test('separate simultaneous creations each commit their own complete revision one', async () => {
+      const holder = await connectFixture(), before = await snapshot();
+      let pending: ReturnType<typeof send>[] = [];
+      try {
+        const holderPid = (await holder.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+        await holder.query('BEGIN');
+        await holder.query('SELECT id FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [a.tenant, a.location]);
+        const start = pids.length;
+        pending = [employee, manager].map(who => send(who, '/customer/drafts', { text: `New ${who.membership}`, locationId: a.location, csrf: who.csrf }));
+        let blocked = false;
+        for (let i = 0; i < 200; i++) {
+          const creators = pids.slice(start);
+          if (creators.length === 2) {
+            const waits = (await db.query('SELECT pg_blocking_pids(pid) AS blockers FROM pg_stat_activity WHERE pid=ANY($1::int[])', [creators])).rows;
+            if (waits.length === 2 && waits.every(row => row.blockers.includes(holderPid))) { blocked = true; break; }
+          }
+          await setTimeout(10);
+        }
+        assert.ok(blocked, 'Both independent HTTPS transactions reach the held location before release');
+        await holder.query('COMMIT');
+        const results = await Promise.all(pending);
+        assert.deepEqual(results.map(result => result.status), [303, 303]); assert.notEqual(results[0]!.location, results[1]!.location);
+        for (const [i, who] of [employee, manager].entries()) {
+          const id = results[i]!.location!.split('/').at(-1);
+          assert.deepEqual((await db.query(`SELECT d.initial_location_id,r.revision,r.text FROM pilot.drafts d JOIN pilot.draft_revisions r
+            ON r.tenant_id=d.tenant_id AND r.draft_id=d.id WHERE d.tenant_id=$1 AND d.id=$2`, [a.tenant, id])).rows,
+          [{ initial_location_id: a.location, revision: 1, text: `New ${who.membership}` }]);
+        }
+        const after = await snapshot();
+        for (const table of Object.keys(before)) {
+          if (['drafts', 'draft_revisions'].includes(table)) assert.equal((after[table] as unknown[]).length, (before[table] as unknown[]).length + 2);
+          else assert.deepEqual(after[table], before[table], table);
+        }
+      } finally { await holder.query('ROLLBACK'); await Promise.allSettled(pending); await holder.end(); }
+    });
     await t.test('both customer roles edit existing drafts without MFA or new authority', async () => {
       assert.equal((await send(employee, '/customer/drafts')).status, 200);
       for (const who of [employee, manager]) {
@@ -104,7 +212,12 @@ test('protected text editing preserves tenant, revision and approval boundaries'
     });
     await t.test('stale sessions and disabled current authority deny without side effects', async () => {
       const old = await latest(), before = await snapshot();
-      const denied = async () => { assert.equal((await send(employee, path)).status, 403); assert.equal((await send(employee, path, { text: 'No', revisionId: old.id, csrf: employee.csrf })).status, 403); };
+      const denied = async () => {
+        assert.equal((await send(employee, path)).status, 403);
+        assert.equal((await send(employee, path, { text: 'No', revisionId: old.id, csrf: employee.csrf })).status, 403);
+        assert.equal((await send(employee, '/customer/drafts/new')).status, 403);
+        assert.equal((await send(employee, '/customer/drafts', { text: 'No', locationId: a.location, csrf: employee.csrf })).status, 403);
+      };
       disabled.add(employee.subject); await denied(); disabled.clear();
       await db.query('UPDATE pilot.identities SET version=version+1 WHERE id=$1', [employee.identity]); await denied();
       await db.query('UPDATE pilot.sessions SET identity_version=2 WHERE token_hash=$1', [tokenHash(employee.token)]);
