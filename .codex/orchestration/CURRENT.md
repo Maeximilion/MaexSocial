@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Narrow platform stop in recovery test; independent work continues · 2026-11-17 14:14 UTC
+
+#117's dedicated local serviceaccount now passes its pilot admin-API positive control and master-realm denial after the pinned admin scope/audience correction. Actual browser controls reject an unused old link and a previously opened old password form; the new password/OIDC positive flow preserves identity. The manage-clients permission is realm-wide inside the isolated fixture, not client-scoped.
+
+The platform safety filter stopped the proposed live test of an already-running old credential request. Do not retry, rephrase or route that blocked test to another agent/provider. Root instructed only safe cleanup/checkpoint of owned in-flight operations and continuation of independent portal/session/CSRF/current-authority product work. This is not a global owner pause. The concurrent recovery case remains unverified; do not freeze the recovery alternative or claim complete acceptance. Last observed local commit was `c407e90929b88a7fd067f79033b3cd2fa1b03153`, with package/lock changes dirty. Worker cleanup and pushed-state confirmation remain pending. [Issue checkpoint](https://github.com/Maeximilion/MaexSocial/issues/117).
+
+#127 continues independently: worker reports its new helper/workflow and 18 new offline tests ready for publication, with 49 combined Claude tests passing and the existing three protected files unchanged. Its actual ordinary Claude review and hosted checks remain pending, as does live execution of the future manual route. The queue helper verified that no third already-authorized task is independent of #117; keep #123/#124 queued. Two active chats, zero pending admissions. All prior owner scope and review requirements remain unchanged.
+
 ## Claude API proven; policy merged; two independent lanes · 2026-11-17 14:06 UTC
 
 The explicit November 17 owner resume remains active, with technical decisions delegated to the coordinator inside the accepted local synthetic plan. No pause deadline applies. Current main's [operating agreement](https://github.com/Maeximilion/MaexSocial/blob/959b248612eeb0b80a4b392160e23826fb0d7bc9/.codex/orchestration/README.md) and [Claude API policy](https://github.com/Maeximilion/MaexSocial/blob/959b248612eeb0b80a4b392160e23826fb0d7bc9/docs/tooling/agent-workflow.md#pr-review-policy) supersede historical fallback directions below. Actual root is Astra/ultra and both current workers Astra/high, Standard. Required CI, candidate binding, product gates and local-only authority remain intact.
