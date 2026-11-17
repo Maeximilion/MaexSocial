@@ -1,6 +1,6 @@
 # Task 2 customer access and content delivery plan
 
-> **For agentic workers:** Use `superpowers:executing-plans` for native execution, with the authorized fresh independent GPT-6 Astra/high reviewer before the delivery PR. Implement only the issue assigned to the current chat. Root accepted the A/B/C split and created #123/#124 on 2026-11-06; concrete contract disposition must still precede product edits.
+> **For agentic workers:** Use `superpowers:executing-plans` for native execution. The owner's 2026-11-17 resume requires Claude API PR review; do not start a separate Codex review or bot fallback. Implement only the issue assigned to the current chat. Root accepted the A/B/C split and created #123/#124 on 2026-11-06; the lifecycle prerequisite and shared-contract evidence still precede contract freeze.
 
 **Goal:** Deliver every accepted Task 2 requirement through a working customer-access foundation followed by independently testable Employee management and immutable content approval.
 
@@ -19,7 +19,7 @@
 - Per normalized account and independently per source: login 5/30 attempts per 15 minutes; signup, recovery and resend 3/10 per hour for each flow. Count unknown identities as well.
 - Compile before every targeted Node test, restart processes from that build, and record candidate SHA, fixture, expected/observed effects and limitations. Missing prerequisites fail; mocks cannot establish real Keycloak/browser behavior.
 - Canonical main stays clean. One delivery PR per work chat. Only root maintains `.codex/orchestration`; #121 owns review client/tests/tooling documentation.
-- All work pauses on 2026-11-06 at 11:30 UTC (12:30 Europe/Berlin). No implementation, push, PR or merge after that boundary without owner resume.
+- The 2026-11-06 pause was honored. The owner explicitly resumed on 2026-11-17 without a new deadline. Root makes technical decisions within the accepted plan. Publication of #117 waits for the smaller #125 maintenance delivery to merge.
 
 ## Observed Task 1 interfaces
 
@@ -72,7 +72,7 @@ interface CustomerContext {
 }
 // server/session.ts; the caller owns BEGIN/COMMIT and the supplied connection.
 async function requireCustomer(
-  db: Client, token: string, now: Date
+  db: Client, token: string, now: Date, inspect: InspectIdentity
 ): Promise<CustomerContext>;
 function requireManagerMfa(context: CustomerContext, now: Date): void;
 function requireCsrf(origin: string | undefined, proof: string | undefined,
@@ -90,7 +90,7 @@ async function consumeIdentityCompletion(db: Client, completionId: string,
   purpose: 'signup' | 'invitation', now: Date): Promise<VerifiedIdentity>;
 ```
 
-`requireCustomer` rechecks current identity version/verification, session revocation/expiry, active tenant and active membership/version, using locks retained through the caller's transaction. Never accept tenant/role from body, email domain or an unverified token. Proposed lock order is tenant -> identity -> membership -> session -> invitation/content object; lock multiple rows in stable ID order. A session lookup used to locate those rows is untrusted until repeated under the locks. Revocation and approval must acquire the same authority locks. Identity-only reset must not later acquire a tenant lock in reverse order. Test cross-user removal/reset and tenant-switch interleavings before freezing the protocol. A middleware check outside the mutation transaction is insufficient. Tenant switching checks the destination membership and rotates the opaque session/CSRF proof, rather than trusting each request's tenant selector.
+`requireCustomer` rechecks current identity version/verification, session revocation/expiry, active tenant and active membership/version, using locks retained through the caller's transaction. `InspectIdentity` is the authenticated server IdP adapter: it reads current enabled/verified state, generation and credential IDs; request claims cannot supply it. Never accept tenant/role from body, email domain or an unverified token. Root approved the single lock order on 2026-11-17: identity -> tenant -> membership -> session -> invitation/content object. Collect the full required identity and tenant sets first and lock each set in stable ID order. A session lookup used to locate those rows is untrusted until repeated under the locks. Changed sets or generations require retry/denial, never unordered additional locks. Revocation, recovery and approval use this same order. Test cross-user removal/reset and tenant-switch interleavings before freezing the protocol. A middleware check outside the mutation transaction is insufficient. Tenant switching checks the destination membership and rotates the opaque session/CSRF proof, rather than trusting each request's tenant selector.
 
 An OIDC result is usable only after signature, issuer, customer audience, expiry, nonce, state, PKCE and exact callback validation. Trusted verified email/profile and MFA evidence must come from the actual local IdP flow; a timestamp or client `amr` field alone is not proof of enrolled MFA. Authentication tokens stay server-side; customer cookies are host-only Secure/HttpOnly/SameSite=Lax. Public challenge GET and invitation GET never consume tokens.
 
@@ -112,7 +112,7 @@ A supplies `consumeIdentityCompletion` for B, with an opaque one-use completion 
 - [ ] **Session/request tests then implementation:** implement the signatures above and customer HTTPS listener. Exercise code/state/nonce/audience/signature/PKCE/redirect tampering, rotation/login/logout/reset/elevation, 30-minute idle and 8-hour total boundaries, independent account/source throttles, invalid origin/CSRF, safe GET, TLS success/plaintext-credential denial and fail-closed unavailable authority. Verify cookie attributes and no token-bearing logs or responses.
 - [ ] **Portal and boundary controls:** implement keyboard-accessible signup/login/recovery/dashboard. Test shared A/B switching and guessed object IDs, suspended/revoked membership with an open session, no private management authority, canary-free responses/logs. Each denied write has zero mutation/fetch/media-job/charge and a legitimate positive control. Customer role is Employee after public signup; fixture-only Manager setup does not expose a promotion route.
 - [ ] **Verification:** run `npm run pilot:build` before `node --test dist/pilot/tests/pilot/portal.test.js`; restart application processes from that build. Run existing storage/isolation/fixture regression checks and full foundation checks. Use the pinned Node/npm runtime, not the host Node 26/npm 12 observed during planning. Record actual keyboard/browser evidence separately from direct HTTP tests.
-- [ ] **Checkpoint/delivery:** commit focused tested increments; before one normal #117 PR run complete preflight and independent fresh actual Astra/high review. Hold publication until #121 merges. Attach PR, synchronize issue/Project/status/handover, and report head/base/review evidence to root. Root alone merges.
+- [ ] **Checkpoint/delivery:** commit focused tested increments; before one normal #117 PR run complete preflight. Hold publication until #125 merges. Attach PR, synchronize issue/Project/status/handover, and report head/base and actual Claude API review evidence to root. Root alone merges; no separate Codex review or bot fallback under the owner's 2026-11-17 instruction.
 
 ## B acceptance and implementation contract
 

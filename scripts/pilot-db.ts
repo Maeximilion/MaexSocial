@@ -24,8 +24,12 @@ export async function migrate(direction: string): Promise<void> {
         }
       }
     }
-    const sql = await readFile(`db/migrations/001_pilot.${direction}.sql`, 'utf8');
-    await db.query(sql);
+    const installed = (await db.query("SELECT to_regclass('pilot.identities') AS base, to_regclass('pilot.identity_operations') AS access")).rows[0];
+    const migrations = direction === 'up'
+      ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access'])]
+      : [...(installed.access ? ['002_customer_access'] : []), '001_pilot'];
+    if (!migrations.length) throw new Error('Pilot migrations already installed');
+    for (const name of migrations) await db.query(await readFile(`db/migrations/${name}.${direction}.sql`, 'utf8'));
     await db.query('COMMIT');
   } catch (error) { await db.query('ROLLBACK'); throw error; }
   finally { await db.end(); }
