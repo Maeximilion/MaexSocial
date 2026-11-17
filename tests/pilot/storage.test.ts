@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { seedTenant, occurrence, withProbeView } from './fixtures.js';
 import { migrate } from '../../scripts/pilot-db.js';
 
 // Removing tenant FKs, immutable references or the unique creation key must fail these tests.
-test('tenant references, immutable occurrence IDs and concurrent creation', async () => {
+test('tenant references, immutable occurrence IDs and concurrent creation', async t => {
   if (process.env.PILOT_CONTAINER !== '1') {
     console.log(await runIsolated(['--test', 'dist/pilot/tests/pilot/storage.test.js']));
     return;
@@ -78,6 +79,35 @@ test('tenant references, immutable occurrence IDs and concurrent creation', asyn
       await assert.rejects(withProbeView(owner, async () => assert.fail('must not run')), { code: '42P07' });
       assert.equal((await owner.query('SELECT value FROM pilot.saved')).rows[0].value, 'existing control');
     } finally { await owner.query('DROP MATERIALIZED VIEW IF EXISTS pilot.saved'); }
+    await t.test('initial location migration preserves populated drafts and independent destinations', checkInitialLocationMigration);
     console.log('Tenant A/B references, generated immutable IDs, one durable concurrent occurrence, one attempt and versioned approval verified.');
   } finally { await app.end(); await owner.end(); }
 });
+
+async function checkInitialLocationMigration(): Promise<void> {
+  const owner = await connectFixture(true);
+  try {
+    // Roll back the whole drill so no other fixture's initial context is discarded.
+    await owner.query('BEGIN');
+    await owner.query(await readFile('db/migrations/004_draft_initial_location.down.sql', 'utf8'));
+    const a = await seedTenant(owner), b = await seedTenant(owner);
+    const old = (await owner.query('SELECT * FROM pilot.draft_revisions WHERE tenant_id=$1', [a.tenant])).rows;
+    await owner.query(await readFile('db/migrations/004_draft_initial_location.up.sql', 'utf8'));
+    assert.equal((await owner.query('SELECT initial_location_id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2', [a.tenant, a.draft])).rows[0].initial_location_id, null);
+    await owner.query('UPDATE pilot.drafts SET initial_location_id=$1 WHERE tenant_id=$2 AND id=$3', [a.location, a.tenant, a.draft]);
+    await owner.query('SAVEPOINT foreign_location');
+    await assert.rejects(owner.query('UPDATE pilot.drafts SET initial_location_id=$1 WHERE tenant_id=$2 AND id=$3', [b.location, a.tenant, a.draft]), { code: '23503' });
+    await owner.query('ROLLBACK TO SAVEPOINT foreign_location');
+    const otherLocation = (await owner.query("INSERT INTO pilot.locations(tenant_id,provider_location) VALUES($1,'Another own destination') RETURNING id", [a.tenant])).rows[0].id;
+    const id = await occurrence(owner, { ...a, location: otherLocation });
+    const approval = (await owner.query(`INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+      VALUES($1,$2,$3,$4,$5,$6,1,1,'2030-01-01T12:00:00Z','Europe/Berlin',now()) RETURNING id`, [a.tenant, id, a.draft, a.revision, otherLocation, a.membership])).rows[0].id;
+    await owner.query(await readFile('db/migrations/004_draft_initial_location.down.sql', 'utf8'));
+    assert.equal((await owner.query("SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema='pilot' AND table_name='drafts' AND column_name='initial_location_id'")).rows[0].n, 0);
+    assert.deepEqual((await owner.query('SELECT * FROM pilot.draft_revisions WHERE tenant_id=$1', [a.tenant])).rows, old);
+    await owner.query(await readFile('db/migrations/004_draft_initial_location.up.sql', 'utf8'));
+    assert.equal((await owner.query('SELECT initial_location_id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2', [a.tenant, a.draft])).rows[0].initial_location_id, null, 'Down discards only the new context metadata');
+    assert.equal((await owner.query('SELECT location_id FROM pilot.occurrences WHERE id=$1', [id])).rows[0].location_id, otherLocation);
+    assert.equal((await owner.query('SELECT location_id FROM pilot.approvals WHERE tenant_id=$1 AND id=$2', [a.tenant, approval])).rows[0].location_id, otherLocation);
+  } finally { await owner.query('ROLLBACK'); await owner.end(); }
+}

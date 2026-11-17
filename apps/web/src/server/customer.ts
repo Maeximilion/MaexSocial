@@ -4,7 +4,7 @@ import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
-import { editDraft, renderDraft, renderDrafts } from '../routes/content.js';
+import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft } from '../routes/content.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -19,6 +19,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     next();
   });
   app.post('/customer/drafts/:draftId', express.urlencoded({ extended: false, limit: '20kb', parameterLimit: 3 }));
+  app.post('/customer/drafts', express.urlencoded({ extended: false, limit: '20kb', parameterLimit: 3 }));
   app.use(express.urlencoded({ extended: false, limit: '2kb', parameterLimit: 4 }));
   app.get('/', (_request, response) => { response.type('html').send(renderSignedOut()); });
   async function transaction<T>(work: (db: Client) => Promise<T>): Promise<T> {
@@ -53,6 +54,16 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     const binding = customerRequest(request);
     const page = await transaction(async db => renderDrafts(db, await requireCustomerRequest(db, binding, () => new Date(), inspect)));
     response.type('html').send(page);
+  });
+  app.get('/customer/drafts/new', async (request, response) => {
+    const binding = customerRequest(request);
+    const page = await transaction(async db => renderNewDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), binding.csrf));
+    response.type('html').send(page);
+  });
+  app.post('/customer/drafts', async (request, response) => {
+    const binding = customerRequest(request, ['text', 'locationId', 'csrf']);
+    const draftId = await transaction(async db => createDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.body.locationId, request.body.text));
+    response.redirect(303, `/customer/drafts/${draftId}`);
   });
   app.get('/customer/drafts/:draftId', async (request, response) => {
     const binding = customerRequest(request);
