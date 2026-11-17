@@ -46,6 +46,7 @@ ${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row 
 // Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.
 export async function editDraft(db: Client, context: CustomerContext, draftId: string, revisionId: string, text: string): Promise<void> {
   if (!uuid(draftId) || !['Employee', 'Manager'].includes(context.role)) deny();
+  text = text.replace(/\r\n?/g, '\n');
   const length = [...text].length;
   if (!uuid(revisionId) || /[\u0000\uD800-\uDFFF]/u.test(text) || length < 1 || length > 1500) throw new Error('Invalid request');
   const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [context.tenantId, draftId]);

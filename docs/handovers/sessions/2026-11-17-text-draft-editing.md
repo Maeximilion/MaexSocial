@@ -2,9 +2,11 @@
 
 ## Status
 
-Prepared at (UTC) — 2026-11-17T17:25:28Z. Implementation and local checks complete; publication, current-candidate CI and Claude API review are next. This record precedes the PR and is not a merge or review verdict.
+Prepared at (UTC) — 2026-11-17T17:25:28Z; updated for the subsequent PR #141 review correction. Implementation and local checks complete; new current-candidate CI and Claude API review are next. This is not a merge verdict.
 
-Implementation/review — Codex implementation → required Claude API review. Native implementer context verified `gpt-6-astra`, effort `high`, service tier null (no Fast override). API execution/settings and published review are not yet observed at this checkpoint. Root alone merges and archives after exact-candidate evidence and private recovery verification.
+Implementation/review — Codex implementation → required Claude API review. Native implementer context verified `gpt-6-astra`, effort `high`, service tier null (no Fast override). [Run 44137365762](https://github.com/Maeximilion/MaexSocial/actions/runs/44137365762) actually executed API and publisher for head `4a7f72005634c192c72eee852f51f22549816e84` against base `3e5512df749661b2ef42e816c0b9bbf3a56a331b`, with empty gaps and 22,076/3,923 reported input/output tokens. The [one authentic finding](https://github.com/Maeximilion/MaexSocial/pull/141#discussion_r4603315872) identified browser CRLF serialization at the text limit. Root alone merges and archives after exact-candidate evidence and private recovery verification.
+
+The real browser reproduced 400 on an unchanged 1500-code-point LF draft. The correction normalizes incoming CRLF/lone CR to LF before validation and insert, leaving history untouched. The browser now verifies unchanged multiline save, exact stored length and a subsequent multiline edit; direct HTTPS tests include CRLF/lone CR and normalized 1501 denial. Full local pilot checks were rerun for the correction. A fresh complete review of the corrected head remains required; the earlier finding is not a clean verdict.
 
 Local commands on the work tree committed as the work head below:
 
@@ -20,8 +22,8 @@ Local commands on the work tree committed as the work head below:
 - Repository — [Maeximilion/MaexSocial](https://github.com/Maeximilion/MaexSocial).
 - Task — [#140](https://github.com/Maeximilion/MaexSocial/issues/140), bounded subset of [#124](https://github.com/Maeximilion/MaexSocial/issues/124).
 - Branch — `dev-codex/140-text-draft-editing`.
-- Work head before the handover commit — `01534c95282a3fda105ec42f7bac42a73dcd6d6c`.
-- PR — not yet opened; open one normal PR with `Closes #140`, attach it to its originating chat, then verify live CI and API receipt.
+- Initial work head before the handover commit — `01534c95282a3fda105ec42f7bac42a73dcd6d6c`; work head before the review-fix/handover update — `4a7f72005634c192c72eee852f51f22549816e84`. Git identifies the subsequent correction commit.
+- PR — [#141](https://github.com/Maeximilion/MaexSocial/pull/141), normal open PR, attached to its originating chat. Labels `type: task`/`priority:p2`, G3 MVP milestone and Project In Review (issue In Progress) were read back.
 - Code — [content](../../../apps/web/src/routes/content.ts), [protected mounts](../../../apps/web/src/server/customer.ts), [HTTPS/DB tests](../../../tests/pilot/drafts.test.ts), [keyboard test](../../../tests/pilot/portal-keyboard.test.ts).
 - Private local evidence — ignored `work/140/` and `work/portal-preview/`; no fixture credentials, raw logs or machine-specific recovery paths are published.
 
@@ -37,7 +39,7 @@ The [accepted G2 decision](https://github.com/Maeximilion/MaexSocial/issues/15#i
 
 ## Open
 
-Push this branch, measure the complete intended input, create/attach the normal PR, then verify the actual current-head/base Claude API run and candidate CI. Fix concrete findings with normal pushes. Root owns merge; after merge prepare verified full private source/Git/runtime recovery and let Root preserve the native transcript and archive. Do not start another task in this chat.
+Push the verified correction, measure the complete actual input and verify the new current-head/base Claude API run and candidate CI. Resolve the original finding with reproduction/fix evidence. Root owns merge; after the final review freeze prepare verified full private source/Git/runtime recovery and let Root preserve the native transcript and archive. Do not start another task in this chat.
 
 - Console — PowerShell.
 - Folder/worktree — the existing linked checkout selected by `git worktree list` for `dev-codex/140-text-draft-editing`.

@@ -93,7 +93,7 @@ test('protected text editing preserves tenant, revision and approval boundaries'
         assert.equal((await send(who, path, { text: 'No', revisionId: old.id, csrf: proof }, undefined, `__Host-session=${who.token}; __Host-csrf=${proof}`)).status, 403);
         assert.equal((await send(who, path, `text=one&text=two&revisionId=${old.id}&csrf=${who.csrf}`)).status, 400);
         assert.equal((await send(who, path, '{}', undefined, undefined, 'application/json')).status, 400);
-        for (const text of ['', 'a'.repeat(1501), '\u0000', '😀'.repeat(1501)]) {
+        for (const text of ['', 'a'.repeat(1501), '\u0000', '😀'.repeat(1501), '\r\n' + 'x'.repeat(1500)]) {
           assert.equal((await send(who, path, { text, revisionId: old.id, csrf: who.csrf })).status, 400);
         }
         assert.equal((await send(who, path, { text: 'x'.repeat(22000), revisionId: old.id, csrf: who.csrf })).status, 400);
@@ -131,6 +131,11 @@ test('protected text editing preserves tenant, revision and approval boundaries'
         for (const text of ['\uD800', '\uDC00']) await assert.rejects(editDraft(db, context, a.draft, old.id, text), /Invalid request/);
       } finally { await db.query('ROLLBACK'); }
       assert.deepEqual(await snapshot(), before);
+      for (const text of ['\r\n' + 'x'.repeat(1499), '\r' + 'x'.repeat(1499)]) {
+        const old = await latest();
+        assert.equal((await send(employee, path, { text, revisionId: old.id, csrf: employee.csrf })).status, 303);
+        assert.equal((await latest()).text, '\n' + 'x'.repeat(1499));
+      }
       for (const text of ['😀'.repeat(1500), '  </textarea><script>alert("x")</script> & https://example.invalid/image.png\n ']) {
         const old = await latest(); assert.equal((await send(employee, path, { text, revisionId: old.id, csrf: employee.csrf })).status, 303);
         assert.equal((await latest()).text, text);
