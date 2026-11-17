@@ -19,7 +19,7 @@ button.secondary{background:transparent;color:#F8FAFC;border:1px solid #64748B}:
 .switch{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end}.switch>div{min-width:0;flex:1}p{max-width:65ch}
 </style></head><body><a class="skip" href="#main">Skip to workspace</a><header><a class="brand" href="/customer">Maex<span>Social</span></a>
 <form action="/customer/logout" method="post"><input type="hidden" name="csrf" value="${html(csrf)}"><button class="secondary" type="submit">Sign out</button></form></header>
-<main id="main" tabindex="-1"><p class="label">Your workspace</p><h1>${html(current.name)}</h1><p>You are signed in as an <strong>${html(context.role)}</strong>.</p>
+<main id="main" tabindex="-1"><p class="label">Your workspace</p><h1>${html(current.name)}</h1><p>Your workspace role is <strong>${html(context.role)}</strong>.</p>
 <section class="card" aria-labelledby="workspace-heading"><h2 id="workspace-heading">Workspace access</h2><p>Your actions apply to the workspace selected here.</p>
 <form class="switch" action="/customer/switch" method="post"><input type="hidden" name="csrf" value="${html(csrf)}"><div><label for="tenant">Active workspace</label><select id="tenant" name="tenantId">${tenants.map(tenant => `<option value="${html(tenant.id)}"${tenant.id === context.tenantId ? ' selected' : ''}>${html(tenant.name)}</option>`).join('')}</select></div><button type="submit">Switch workspace</button></form>
 </section></main></body></html>`;

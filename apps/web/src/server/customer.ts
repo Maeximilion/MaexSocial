@@ -36,7 +36,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   const app = express();
   app.disable('x-powered-by'); app.set('trust proxy', false);
   app.use((request, response, next) => {
-    response.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
+    response.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin', 'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" });
     if (!request.secure || request.headers.host !== 'customer:8443') { response.status(400).type('text').send('HTTPS required.'); return; }
     next();
