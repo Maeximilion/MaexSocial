@@ -27,6 +27,8 @@ If the usage read is unavailable, hold new admission until a fresh reliable read
 
 Within the accepted plan, the coordinator makes delegated technical decisions. Each assignment specifies issue, owned files, accepted contract, checks, allowed actions and next reporting milestone. Workers send uncertainty with evidence and a recommendation, continuing independent work. Each retry needs new evidence; after at most three attempts with the same failure signature, change approach through the coordinator. Do not reopen accepted gates or infer new external authority.
 
+Before the first PR, the owner checks all required documentation and the handover template, including its six sections, a meaningfully labelled work revision and a concrete resumption point. Do not require a file to contain its own final commit hash. Later review, CI, merge and recovery receipts normally belong in comments and private recovery records, not extra result-only commits. Freeze the final source, PR title and body before the coordinator's merge guard; complete any necessary metadata update first and let its checks settle. A genuine missing requirement may need a correction and fresh review, but do not repeat that cycle to record the previous cycle's result.
+
 ## Checkpoint and recover
 
 1. Request a short report from each affected chat before foreseeable compaction, handoff, archive or shutdown. Use the same format at milestones: issue and PR, branch and full SHA, dirty or pushed state, checks/reviews actually seen, in-flight actions or subagents, blocker and one next action. A worker sends this to the coordinator rather than editing this directory.
