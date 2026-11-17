@@ -10,15 +10,19 @@ const browserImage = 'mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc
 async function serve(): Promise<void> {
   const token = process.env.PORTAL_BROWSER_TOKEN;
   if (!token || !/^[a-f0-9]{64}$/.test(token)) throw new Error('Missing browser control token');
-  const certificate = new X509Certificate(await readFile('/customer.crt'));
-  const pin = createHash('sha256').update(certificate.publicKey.export({ type: 'spki', format: 'der' })).digest('base64');
+  const certificates = ['/customer.crt', ...(process.env.OIDC_BROWSER === '1' ? ['/keycloak.crt'] : [])];
+  const pins = await Promise.all(certificates.map(async path => {
+    const certificate = new X509Certificate(await readFile(path));
+    return createHash('sha256').update(certificate.publicKey.export({ type: 'spki', format: 'der' })).digest('base64');
+  }));
   const browser = await chromium.launchServer({ host: '0.0.0.0', port: 3000, wsPath: `/${token}`,
-    args: [`--ignore-certificate-errors-spki-list=${pin}`] });
+    args: [`--ignore-certificate-errors-spki-list=${pins.join(',')}`] });
   process.on('SIGTERM', () => { void browser.close(); });
   console.log('Portal browser ready.');
 }
 
-export async function runPortalBrowserTest(): Promise<string> {
+export async function runPortalBrowserTest(suite: 'portal' | 'oidc' = 'portal'): Promise<string> {
+  if (!['portal', 'oidc'].includes(suite)) throw new Error('Unknown browser test suite');
   const f = await loadFixture(); verifyContainers(f);
   const alias = `portal-browser-${randomBytes(4).toString('hex')}`;
   const name = `${f.project}-${alias}`;
@@ -30,7 +34,9 @@ export async function runPortalBrowserTest(): Promise<string> {
     '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--user', '1000:1000', '--shm-size', '256m',
     '--tmpfs', '/tmp:rw,exec,nosuid,size=1g', '-e', 'HOME=/tmp', '-e', 'PORTAL_BROWSER_TOKEN', '-w', '/workspace',
     '-v', `${resolve('node_modules')}:/workspace/node_modules:ro`, '-v', `${resolve('dist/pilot')}:/workspace/dist/pilot:ro`,
-    '-v', `${resolve('work/pilot/customer.crt')}:/customer.crt:ro`, browserImage, 'node', 'dist/pilot/ops/local/portal-browser.js'],
+    '-v', `${resolve('work/pilot/customer.crt')}:/customer.crt:ro`,
+    ...(suite === 'oidc' ? ['-v', `${resolve('work/pilot/keycloak.crt')}:/keycloak.crt:ro`, '-e', 'OIDC_BROWSER=1'] : []),
+    browserImage, 'node', 'dist/pilot/ops/local/portal-browser.js'],
   { ...process.env, PORTAL_BROWSER_TOKEN: token });
   try {
     const container = JSON.parse(docker(['inspect', name]))[0];
@@ -45,7 +51,8 @@ export async function runPortalBrowserTest(): Promise<string> {
     if (!ready) throw new Error('Portal browser did not become ready');
     process.env.PORTAL_BROWSER_ENDPOINT = `ws://${alias}:3000/${token}`;
     return compose(f, ['run', '--rm', '--no-deps', '--use-aliases', '-e', 'PORTAL_BROWSER_ENDPOINT',
-      '-v', `${resolve('work/portal-preview')}:/artifacts`, 'runner', 'node', '--test', 'dist/pilot/tests/pilot/portal-keyboard.test.js']);
+      '-v', `${resolve('work/portal-preview')}:/artifacts`, 'runner', 'node', '--test',
+      `dist/pilot/tests/pilot/${suite === 'portal' ? 'portal-keyboard' : 'oidc-browser'}.test.js`]);
   } finally {
     if (previous === undefined) delete process.env.PORTAL_BROWSER_ENDPOINT; else process.env.PORTAL_BROWSER_ENDPOINT = previous;
     docker(['rm', '-f', name]);
