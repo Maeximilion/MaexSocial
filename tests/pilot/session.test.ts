@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
+import { setTimeout } from 'node:timers/promises';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { requireCsrf, requireCustomer, requireManagerMfa } from '../../apps/web/src/server/session.js';
+import { lockIdentities, requireCsrf, requireCustomer, requireManagerMfa } from '../../apps/web/src/server/session.js';
 import type { CustomerContext, IdentityStatus } from '../../packages/contracts/pilot.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -60,7 +61,37 @@ test('transactional current authority, current IdP factor and exact session expi
     await assert.rejects(resolve(), /Denied/);
     await db.query('UPDATE pilot.sessions SET membership_version=3 WHERE id=$1', [session]);
     await resolve();
-    await db.query("UPDATE pilot.identities SET lifecycle='recovering',version=version+1 WHERE id=$1", [identity]);
+    const resetting = await connectFixture(), observer = await connectFixture(true);
+    const blocked = async (pid: number) => {
+      for (let i = 0; i < 100; i++) {
+        if ((await observer.query('SELECT cardinality(pg_blocking_pids($1)) > 0 AS blocked', [pid])).rows[0].blocked) return;
+        await setTimeout(10);
+      }
+      assert.fail('Competing transaction must visibly wait on the authority lock');
+    };
+    try {
+      const resetPid = (await resetting.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+      const protectedPid = (await db.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+      await db.query('BEGIN'); await requireCustomer(db, token, now, async () => status);
+      await resetting.query('BEGIN'); const resetLock = lockIdentities(resetting, [identity]);
+      await blocked(resetPid);
+      await db.query("UPDATE pilot.tenants SET name='Allowed before recovery',version=version+1 WHERE id=$1", [tenant]);
+      await db.query('COMMIT'); await resetLock;
+      await resetting.query("UPDATE pilot.identities SET lifecycle='recovering',version=version+1 WHERE id=$1", [identity]);
+      await resetting.query('COMMIT'); await assert.rejects(resolve(), /Denied/);
+      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before recovery');
+      await db.query("UPDATE pilot.identities SET lifecycle='active',version=version+1 WHERE id=$1", [identity]);
+      await db.query('UPDATE pilot.sessions SET identity_version=3 WHERE id=$1', [session]);
+      await resetting.query('BEGIN'); await lockIdentities(resetting, [identity]);
+      await resetting.query("UPDATE pilot.identities SET lifecycle='recovering',version=version+1 WHERE id=$1", [identity]);
+      await db.query('BEGIN'); const deniedAfterReset = assert.rejects(requireCustomer(db, token, now, async () => status), /Denied/);
+      await blocked(protectedPid); await resetting.query('COMMIT'); await deniedAfterReset; await db.query('ROLLBACK');
+      assert.equal((await db.query('SELECT name FROM pilot.tenants WHERE id=$1', [tenant])).rows[0].name, 'Allowed before recovery');
+      const secondIdentity = (await db.query('INSERT INTO pilot.identities(subject) VALUES($1) RETURNING id', [randomUUID()])).rows[0].id;
+      await db.query('BEGIN'); await lockIdentities(db, [secondIdentity, identity]);
+      await resetting.query('BEGIN'); const reverseOrder = lockIdentities(resetting, [identity, secondIdentity]);
+      await blocked(resetPid); await db.query('COMMIT'); await reverseOrder; await resetting.query('COMMIT');
+    } finally { await db.query('ROLLBACK'); await resetting.query('ROLLBACK'); await resetting.end(); await observer.end(); }
     await assert.rejects(resolve(), /Denied/);
   } finally { await db.end(); }
 });
