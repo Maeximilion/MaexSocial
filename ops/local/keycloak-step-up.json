@@ -1,0 +1,45 @@
+{
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyCodeReusable": false,
+  "requiredActions": [
+    { "alias": "CONFIGURE_TOTP", "providerId": "CONFIGURE_TOTP", "name": "Configure OTP", "enabled": false, "defaultAction": false, "priority": 10, "config": {} }
+  ],
+  "authenticatorConfig": [
+    { "alias": "step-up-password-level", "config": { "loa-condition-level": "1", "loa-max-age": "36000" } },
+    { "alias": "step-up-otp-level", "config": { "loa-condition-level": "2", "loa-max-age": "0" } }
+  ],
+  "authenticationFlows": [
+    {
+      "id": "14300000-0000-4000-8000-000000000010", "alias": "private-step-up", "providerId": "basic-flow", "topLevel": true, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "auth-cookie", "requirement": "ALTERNATIVE", "priority": 10, "authenticatorFlow": false },
+        { "flowAlias": "private-step-up-auth", "requirement": "ALTERNATIVE", "priority": 20, "authenticatorFlow": true }
+      ]
+    },
+    {
+      "alias": "private-step-up-auth", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "authenticationExecutions": [
+        { "flowAlias": "private-step-up-password", "requirement": "CONDITIONAL", "priority": 10, "authenticatorFlow": true },
+        { "flowAlias": "private-step-up-otp", "requirement": "CONDITIONAL", "priority": 20, "authenticatorFlow": true }
+      ]
+    },
+    {
+      "alias": "private-step-up-password", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "conditional-level-of-authentication", "authenticatorConfig": "step-up-password-level", "requirement": "REQUIRED", "priority": 10, "authenticatorFlow": false },
+        { "authenticator": "auth-username-password-form", "requirement": "REQUIRED", "priority": 20, "authenticatorFlow": false }
+      ]
+    },
+    {
+      "alias": "private-step-up-otp", "providerId": "basic-flow", "topLevel": false, "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "conditional-level-of-authentication", "authenticatorConfig": "step-up-otp-level", "requirement": "REQUIRED", "priority": 10, "authenticatorFlow": false },
+        { "authenticator": "auth-otp-form", "requirement": "REQUIRED", "priority": 20, "authenticatorFlow": false }
+      ]
+    }
+  ]
+}

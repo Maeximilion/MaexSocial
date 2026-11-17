@@ -50,6 +50,24 @@ async function initialize(): Promise<Fixture> {
   realm.users.push({ id: '13900000-0000-4000-8000-000000000001', username: 'oidc-user', enabled: true,
     email: 'oidc-user@example.invalid', emailVerified: true, firstName: 'Invented', lastName: 'User', requiredActions: [],
     credentials: [{ type: 'password', value: oidcPassword, temporary: false }] });
+  Object.assign(realm, JSON.parse(await readFile('ops/local/keycloak-step-up.json', 'utf8')));
+  const stepSecret = secret(), stepPassword = secret(), stepOtp = secret();
+  await save('step-up-secret', stepSecret); await save('step-up-password', stepPassword); await save('step-up-otp', stepOtp);
+  realm.clients.push({ clientId: 'pilot-step-up-test', secret: stepSecret, enabled: true, publicClient: false,
+    clientAuthenticatorType: 'client-secret', standardFlowEnabled: true, serviceAccountsEnabled: false,
+    directAccessGrantsEnabled: false, implicitFlowEnabled: false, fullScopeAllowed: false,
+    defaultClientScopes: [], optionalClientScopes: [],
+    attributes: { 'pkce.code.challenge.method': 'S256', 'id.token.signed.response.alg': 'RS256', 'use.refresh.tokens': 'false' },
+    authenticationFlowBindingOverrides: { browser: '14300000-0000-4000-8000-000000000010' },
+    protocolMappers: [{ name: 'acr', protocol: 'openid-connect', protocolMapper: 'oidc-acr-mapper', config: { 'id.token.claim': 'true' } }],
+    redirectUris: ['https://customer:8443/oidc/callback'], webOrigins: [] });
+  for (const [suffix, username, enrolled] of [['1', 'step-up-enrolled', true], ['2', 'step-up-unenrolled', false]] as const) {
+    realm.users.push({ id: `14300000-0000-4000-8000-00000000000${suffix}`, username, enabled: true,
+      email: `${username}@example.invalid`, emailVerified: true, firstName: 'Invented', lastName: 'Factor', requiredActions: [],
+      credentials: [{ type: 'password', value: stepPassword, temporary: false }, ...(enrolled ? [{ type: 'otp',
+        secretData: JSON.stringify({ value: stepOtp }),
+        credentialData: JSON.stringify({ subType: 'totp', digits: 6, counter: 0, period: 30, algorithm: 'HmacSHA1' }) }] : [])] });
+  }
   await save('keycloak-realm.json', JSON.stringify(realm));
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
