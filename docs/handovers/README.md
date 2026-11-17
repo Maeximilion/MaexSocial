@@ -16,13 +16,13 @@ Before context runs out, stop at a clean checkpoint, write the session handover,
 - [codex-rea](codex-rea.md) — Continue bounded Codex research with reproducible evidence and explicit access limits.
 - [synthesis](synthesis.md) — Reconcile the research lanes and prepare G2 decisions.
 - [build](build.md) — Plan and implement the approved product scope after G2.
-- [review-workflow](review-workflow.md) — Coordinate the handover-structure PR, manual cross-model review and the subsequent review-policy task.
+- [review-workflow](review-workflow.md) — Historical review-workflow brief, superseded by the current PR review policy.
 
 ## Session template
 
 Use the six sections below in this order. Every session handover must identify the repository, task ID and issue, branch, full 40-character head SHA and PR, implementer and reviewer, plus a runnable start containing the console, exact folder/worktree, full start command and first message. For maintenance without an MS ID, use the maintenance issue as the task ID. If a PR does not yet exist, say so explicitly and make opening it a concrete next action.
 
-Record the review direction as `Codex → Claude review` or `Claude → GPT-6 Astra review`, including the actual model/settings when verified and any unverified setting. A requested review is not a published review. GPT-6 Astra reviews use reasoning `high`.
+Record the implementer and Claude API reviewer, including actual settings, run/result links and head/base coverage under the [review policy](../tooling/agent-workflow.md#pr-review-policy). Mark unverified settings and pending, skipped or incomplete review explicitly; a requested review is not a published review.
 
 Capture `git rev-parse HEAD` before writing the handover and label it as the **work head before the handover commit**. The file cannot contain the SHA of its own eventual commit; Git history identifies that delivery commit. Verify the branch, remote and clean state again after pushing.
 
@@ -33,7 +33,7 @@ Capture `git rev-parse HEAD` before writing the handover and label it as the **w
 
 Stopped at (UTC) — <YYYY-MM-DDTHH:MM:SSZ>.
 Actual completed, running, pending and blocked work; checks run and their outcomes.
-Implementation/review — <Codex → Claude review or Claude → GPT-6 Astra review>.
+Implementation/review — <implementer → Claude API review>.
 Actual models/settings and review state — <verified facts or explicitly unverified>.
 
 ## Artifacts

@@ -28,4 +28,4 @@ Run `python scripts/check_repo.py`, `python -m unittest discover -s tests` and `
 
 ## Platform entry points
 
-See `docs/tooling/agent-workflow.md` for skills, the read-only evidence researcher, scoped rules and the registered Stop hook. The hook checks links, JSON/TOML and repository SVG policy; it does not run the full test suite or establish upload security. Code reviews must use the configured Codex Astra reviewer with the actual model/effort verified; a Claude agent cannot substitute for it.
+See `docs/tooling/agent-workflow.md` for skills, the read-only evidence researcher, scoped rules and the registered Stop hook. The hook checks links, JSON/TOML and repository SVG policy; it does not run the full test suite or establish upload security. PR reviews follow the canonical [Claude API review policy](docs/tooling/agent-workflow.md#pr-review-policy), including execution evidence, coverage and failure handling.

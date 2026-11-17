@@ -1,5 +1,20 @@
 # Current coordinator handover
 
+## Resumed queue and review policy · 2026-11-17 13:40 UTC
+
+The owner explicitly resumed work on 2026-11-17 and delegated technical decisions within the accepted plan to the coordinator. The November 6 pause is superseded; no new shutdown deadline applies. [Claude API PR review](../../docs/tooling/agent-workflow.md#pr-review-policy) replaces historical Astra/Codex fallback directions below. Required CI, product gates, complete current-candidate review evidence and verified recovery remain mandatory. Full prior coordination checkpoints are preserved in the [published coordinator record](https://github.com/Maeximilion/MaexSocial/blob/015ffa02a9cdaa1566e038502827f57e1778a1ff/.codex/orchestration/CURRENT.md).
+
+G2 and local synthetic implementation were accepted in [the owner decision](https://github.com/Maeximilion/MaexSocial/issues/15#issuecomment-6681723454); #113 merged and gate-g2 was verified. Task 1/#114 merged in #118. The input/output review corrections #116/#120/#122 are merged, with their source chats recovered and archived. Canonical main is `9d95d06e8163ff9ed111653ce9867118f3a29e6b`. G3 remains open; #10/#82 retain real operating evidence and #88/#99 remain release blockers. No real customers, external runtime, deployment or product spending is authorized by this resumption.
+
+| Assigned issue | Current owner scope and next action |
+| --- | --- |
+| [#117](https://github.com/Maeximilion/MaexSocial/issues/117#issuecomment-6949519664) | Existing customer-activation/session chat resumed from clean pushed `ce5dd915f67630f67f9f5a3e74b51f09f59887fe`. Real SMTP protocol mismatch was reproduced and corrected locally. Native action links preserve preregistration credentials, so complete the accepted app challenge/IdP cleanup/crash-retry evidence before freezing the shared contract. |
+| [#125](https://github.com/Maeximilion/MaexSocial/issues/125#issuecomment-6949528865) | Fresh active-instruction delivery uses the previously unused verified #113 merge/archive pair. Its first genuine PR must obtain actual Claude API review; root owns coordinator-record edits and serial merge/archive. |
+
+Two work chats, no pending creation; current large-work cap three and absolute maximum five. Merge the smaller #125 delivery before publishing #117's larger PR; local product work continues. #123/#124 have no chats and remain blocked by #117's merged shared contract. Task 3 still depends on all three Task 2 deliveries. Keep a single issue/delivery PR in each work chat and verify merge plus archival before a successor admission.
+
+The Claude workflow is active and the secret name is present. Opus 5.5/high/standard and the owner-reported monthly USD75 are unchanged. #113 is the last complete actual API review; #118 exhausted the former output limit. #122's expected protected self-skip does not prove runtime success of its larger output envelope. Verify the next ordinary PR's actual API execution and complete authentic current-head result, with no Codex mentions or paid diagnostic. The restored local dashboard visibly reports repository-wide open PRs separately from the original nine merged deliveries and refreshes every ten minutes.
+
 ## G2 planning handover · 2026-11-05 15:44 UTC
 
 The owner accepted bounded G1 discovery and authorized G2 planning with Superpowers. [Gate #14](https://github.com/Maeximilion/MaexSocial/issues/14) is completed. [PR #89](https://github.com/Maeximilion/MaexSocial/pull/89) merged in `e6cf4adbdffde01436c42be34b61d269b06b9d4f`; annotated tag `gate-g1` was verified on that commit. The five carried research gaps have individual closure criteria in [#88](https://github.com/Maeximilion/MaexSocial/issues/88), an open native blocker of [G5 / #18](https://github.com/Maeximilion/MaexSocial/issues/18). The [gate procedure](../../.claude/commands/gate.md) applies the same requirement to later deferred gaps and any nearer decision that depends on the evidence.

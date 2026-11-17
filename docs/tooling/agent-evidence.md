@@ -1,6 +1,6 @@
 # Agent roles and research handovers
 
-Keep the existing Codex reviewer and Claude evidence researcher. The recurring need in [#5](https://github.com/Maeximilion/MaexSocial/issues/5) and [#6](https://github.com/Maeximilion/MaexSocial/issues/6) is a short handover that lets a second reader tell what a public source establishes and what still needs runtime verification. The assigned Codex work chat can produce it directly.
+Current routing (2026-11-17): follow the [Claude API PR review policy](agent-workflow.md#pr-review-policy). The Codex-reviewer recommendation in the dated 2026-11-05 assessment below is superseded for MaexSocial PRs; its historical evidence remains unchanged. Keep the Claude evidence researcher. The recurring need in [#5](https://github.com/Maeximilion/MaexSocial/issues/5) and [#6](https://github.com/Maeximilion/MaexSocial/issues/6) is a short handover that lets a second reader tell what a public source establishes and what still needs runtime verification. The assigned Codex work chat can produce it directly.
 
 ## Primary sources
 
@@ -14,7 +14,7 @@ Stars are GitHub adoption snapshots taken on 2026-11-05. Dates in the second col
 | Obra Superpowers · 312,657 stars | [Reviewer handoff, Nov 3](https://github.com/obra/superpowers/blob/22f0b463e7a5e579904dd6211a520321035526f7/skills/subagent-driven-development/references/cannot-verify.md) · [integration test](https://github.com/obra/superpowers/blob/22f0b463e7a5e579904dd6211a520321035526f7/tests/claude-code/test-subagent-driven-development-integration.sh) | The task owner resolves claims the reviewer cannot verify from the diff. The published Bash/Claude Code test checks subagent dispatches and repository outputs. We read the test without running it. |
 | Aider · 49,959 stars | [Release attribution data, May 22 snapshot](https://github.com/Aider-AI/aider/blob/5dc9490bb35f9729ef2c95d00a19ccd30c26339c/aider/website/_data/blame.yml) | For v0.6.0, dated June 15, 2023, the project attributes 47 of 150 new lines to Aider. This historical self-report supports a bounded AI-assistance claim. It does not measure code quality or establish whole-repository authorship. |
 
-## Decisions and smallest checks
+## Historical decisions and smallest checks (2026-11-05)
 
 | Decision | Responsibility, owner and evidence |
 |---|---|
