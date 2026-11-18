@@ -2,9 +2,10 @@
 
 ## Status
 
-Prepublication checkpoint (UTC) — 2026-11-18T18:34:00Z. The internal throttle component, migration 006,
+Prepublication checkpoint (UTC) — 2026-11-18T18:53:09Z. The internal throttle component, migration 006,
 private fixture key and focused database tests are implemented. This record precedes the first normal PR.
-Publication waits for #153's actual merge, integration of its migration 005 and fresh candidate checks.
+Predecessor #153 / PR #156 merged as `40bbe1f379bee7e3df629217a47f0646ce4a7404` and is integrated.
+Migration 005 is retained before 006 on up and after 006 on down; both deliveries' documentation is preserved.
 Hosted CI, authentic current-head/base Claude API review, Root merge and final recovery remain pending.
 
 Implementation/review — Codex implementation followed by the existing Claude Messages API workflow.
@@ -18,9 +19,9 @@ uses native Superpowers execution, without an additional Codex review.
 - Repository — [Maeximilion/MaexSocial](https://github.com/Maeximilion/MaexSocial).
 - Task — bounded Task 2A2 [#154](https://github.com/Maeximilion/MaexSocial/issues/154), child of #131.
 - Branch — `dev-codex/154-auth-throttle`.
-- Work head before the handover commit — `570d129c3aa479d119da3f194a3c82c6f228de97`, based on main
-  `1cc71c2e0490eb66bca9e9d82e3e98ba2277a136`. That work head is pushed; publication/integration checks remain.
-- PR — not yet opened. Open only after #153 merges and its main is integrated. Later CI/API/merge evidence
+- Work head before the handover commit — `6e050a64edad683690c5a4ec9ac7fd229cdf7fe8`, integrating main
+  `40bbe1f379bee7e3df629217a47f0646ce4a7404`. The final integration and this handover are pushed before publication.
+- PR — not yet opened. The predecessor publication hold is satisfied; open after final local checks. Later CI/API/merge evidence
   belongs in issue/PR comments and private recovery, without result-only commits.
 - Source — [internal server component](../../../apps/web/src/server/auth-throttle.ts),
   [migration](../../../db/migrations/006_auth_throttle.up.sql),
@@ -45,8 +46,10 @@ initial fixture stay in ignored `work/`. No dependency or lockfile change was re
 | `python scripts/check_repo.py`; `git diff --check` | Passed including this handover |
 
 The later test-only commit allows an already-expired restart canary to recover rather than assuming every
-manual rerun happens within 15 minutes. Its strict build and focused suite passed. Final integrated candidate
-coverage must be recorded separately after #153; earlier runs do not establish future-head CI/API coverage.
+manual rerun happens within 15 minutes. Its strict build and focused suite passed. Integrated source is `6e050a64edad683690c5a4ec9ac7fd229cdf7fe8`; the final migration/full/restart results
+passed: strict build, prior-fixture upgrade, focused 10/10, fresh 001–006 up/down/up and
+unknown-object rollback, full pilot 26/26 and retained-volume restart 26/26. The final source edits after that
+work head only update this handover and status. Hosted CI/API must still cover the current PR head/base.
 
 ## Decisions
 
@@ -76,8 +79,7 @@ product spend remain outside scope. Root alone merges and verifies archival.
 
 ## Open
 
-Wait for #153's merge, integrate main/migration 005, rerun changed/integrated
-checks, and create/attach the single normal `Closes #154` PR. Verify complete actual Claude API review and
+Create/attach the single normal `Closes #154` PR. Verify complete actual Claude API review and
 candidate CI; fix confirmed findings, then freeze source/title/body and send Root the final merge checkpoint.
 After merge and the last fetch, preserve source, ignored files, task Git, runtime and volumes outside the
 worktree, verify a usable restore and send Root the frozen recovery checkpoint. No second assignment.
