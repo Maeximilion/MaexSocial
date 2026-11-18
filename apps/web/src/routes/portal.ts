@@ -28,5 +28,5 @@ button.secondary{background:transparent;color:#F8FAFC;border:1px solid #64748B}:
 <main id="main" tabindex="-1"><p class="label">Your workspace</p><h1>${html(current.name)}</h1><p>Your workspace role is <strong>${html(context.role)}</strong>.</p>
 <section class="card" aria-labelledby="workspace-heading"><h2 id="workspace-heading">Workspace access</h2><p>Your actions apply to the workspace selected here.</p>
 <form class="switch" action="/customer/switch" method="post"><input type="hidden" name="csrf" value="${html(csrf)}"><div><label for="tenant">Active workspace</label><select id="tenant" name="tenantId">${tenants.map(tenant => `<option value="${html(tenant.id)}"${tenant.id === context.tenantId ? ' selected' : ''}>${html(tenant.name)}</option>`).join('')}</select></div><button type="submit">Switch workspace</button></form>
-</section><p><a href="/customer/drafts">Text drafts</a></p></main></body></html>`;
+</section><p><a href="/customer/drafts">Text drafts</a></p><p><a href="/customer/facts">Business facts</a></p></main></body></html>`;
 }

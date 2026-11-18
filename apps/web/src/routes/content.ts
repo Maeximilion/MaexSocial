@@ -12,7 +12,7 @@ function draftText(text: string): string {
   return text;
 }
 
-function page(title: string, content: string): string {
+export function page(title: string, content: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${html(title)} · MaexSocial</title><style>
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0B0F19;color:#F8FAFC}*{box-sizing:border-box}
@@ -29,7 +29,7 @@ export async function renderDrafts(db: Client, context: CustomerContext): Promis
   const drafts = (await db.query(`SELECT d.id,r.text FROM pilot.drafts d JOIN LATERAL
     (SELECT text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON true
     WHERE d.tenant_id=$1 ORDER BY d.id`, [context.tenantId])).rows;
-  return page('Text drafts', '<p><a href="/customer/drafts/new">New draft</a></p>' + (drafts.length ? `<ul>${drafts.map(draft => `<li><a href="/customer/drafts/${html(draft.id)}">${html(draft.text)}</a></li>`).join('')}</ul>` : '<p>No text drafts yet.</p>'));
+  return page('Text drafts', '<p><a href="/customer/drafts/new">New draft</a></p><p><a href="/customer/facts">Business facts</a></p>' + (drafts.length ? `<ul>${drafts.map(draft => `<li><a href="/customer/drafts/${html(draft.id)}">${html(draft.text)}</a></li>`).join('')}</ul>` : '<p>No text drafts yet.</p>'));
 }
 
 export async function renderNewDraft(db: Client, context: CustomerContext, csrf: string): Promise<string> {

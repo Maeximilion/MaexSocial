@@ -120,6 +120,37 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     await page.waitForURL(`https://customer:8443${draftPath}`, { timeout: 5000 });
     await page.getByRole('link', { name: 'Back to workspace' }).focus(); await page.keyboard.press('Enter');
     await page.waitForURL('https://customer:8443/customer', { timeout: 5000 });
+    const factOwner = await connectFixture(true);
+    const factsText = 'Invented hours: Monday 09:00–17:00\n<script>literal</script> https://media.invalid/photo.jpg 😀';
+    const emptyLocation = (await db.query("INSERT INTO pilot.locations(tenant_id,provider_location) VALUES($1,'Empty facts location') RETURNING id", [tenants[1]])).rows[0].id;
+    try {
+      const factIdentity = (await db.query('INSERT INTO pilot.identities(subject) VALUES($1) RETURNING id', [randomUUID()])).rows[0].id;
+      const factManager = (await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Manager') RETURNING id", [tenants[1], factIdentity])).rows[0].id;
+      for (const [revision, text] of [[1, 'Old invented facts'], [2, factsText]] as const) {
+        await factOwner.query(`INSERT INTO pilot.business_fact_revisions(tenant_id,location_id,revision,text,source_note,evidence_kind,membership_id,membership_version,confirmed_at)
+          VALUES($1,$2,$3,$4,'Invented fixture source','synthetic_fixture',$5,1,'2026-01-01T12:00:00Z')`, [tenants[1], location, revision, text, factManager]);
+      }
+    } finally { await factOwner.end(); }
+    await page.getByRole('link', { name: 'Business facts', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer/facts', { timeout: 5000 });
+    assert.equal(await page.getByRole('heading', { name: 'Business facts', exact: true }).count(), 1);
+    assert.ok((await page.locator('main').textContent())!.includes(factsText));
+    assert.ok((await page.locator('main').textContent())!.includes('Revision 2'));
+    assert.ok((await page.locator('main').textContent())!.includes('Simulated fixture confirmation'));
+    assert.ok(!(await page.locator('main').textContent())!.includes('Old invented facts'));
+    assert.equal(await page.locator('script, img, video, audio, form, a[href^="https:"]').count(), 0);
+    await page.getByRole('link', { name: 'Keyboard <location> & context', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443/customer/facts/${location}`, { timeout: 5000 });
+    await page.screenshot({ path: '/artifacts/facts.png', fullPage: true });
+    await page.getByRole('link', { name: 'All business facts' }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer/facts', { timeout: 5000 });
+    await page.getByRole('link', { name: 'Empty facts location', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443/customer/facts/${emptyLocation}`, { timeout: 5000 });
+    assert.ok((await page.locator('main').textContent())!.includes('No business facts yet'));
+    await page.getByRole('link', { name: 'Text drafts', exact: true }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer/drafts', { timeout: 5000 });
+    await page.getByRole('link', { name: 'Back to workspace' }).focus(); await page.keyboard.press('Enter');
+    await page.waitForURL('https://customer:8443/customer', { timeout: 5000 });
     assert.ok(requests.every(host => host === 'customer'), 'No IdP or external request belongs to this dashboard-only test');
     await page.screenshot({ path: '/artifacts/dashboard.png', fullPage: true });
     await page.getByRole('button', { name: 'Sign out' }).focus(); await page.keyboard.press('Enter');

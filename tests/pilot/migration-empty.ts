@@ -15,6 +15,7 @@ test('down refuses an unknown populated materialized view and rolls back all tea
       await assert.rejects(migrate('down'), { code: '2BP01' });
       assert.equal((await db.query('SELECT value FROM pilot.saved')).rows[0].value, 'retained synthetic fixture');
       assert.equal((await db.query("SELECT to_regclass('pilot.occurrences') AS name")).rows[0].name, 'pilot.occurrences');
+      assert.equal((await db.query("SELECT to_regclass('pilot.business_fact_revisions') AS name")).rows[0].name, 'pilot.business_fact_revisions');
     });
   } finally { await db.end(); }
 });
