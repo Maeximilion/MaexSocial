@@ -18,6 +18,7 @@ async function initialize(): Promise<Fixture> {
   const save = (name: string, value: string) => writeFile(`work/pilot/${name}`, value, { mode: 0o600, flag: 'wx' });
   const expiry = new Date(f.expiresAt).toISOString();
   await save('fixture.json', JSON.stringify(f));
+  await save('throttle-key', secret());
   const statusSecret = secret(), deniedSecret = secret();
   await save('status-secret', statusSecret);
   await save('status-denied-secret', deniedSecret);
