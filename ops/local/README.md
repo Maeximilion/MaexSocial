@@ -31,6 +31,14 @@ Application login is a non-superuser with no role/database creation, bypass-RLS 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Synthetic business facts (#153)
+
+After the strict build and migrations, `node --test dist/pilot/tests/pilot/facts.test.js` runs actual HTTPS/PostgreSQL checks for the protected facts list/detail routes. Invented A/B facts and historical Manager evidence are inserted only with `connectFixture(true)` in the private test harness. The app connection has SELECT-only access to the new table. No facts are inserted by public requests or startup, and no real customer confirmation/MFA is claimed.
+
+The suite covers both reader roles, shared identities, latest revision per location, empty states, escaped hostile content, Unicode/newline bounds, composite references, historical confirmation, write denial, current authority and unchanged domain records. A transactional migration005 down/up compatibility probe rolls back its metadata loss; complete down remains restricted to empty fixtures. Run a fresh up/down/up before seeding. Preserve populated fixtures and their volumes.
+
+The existing keyboard suite follows workspace → facts → location → empty location → drafts, with customer-only requests. Its private screenshot is `work/portal-preview/facts.png`. Run the complete pilot before and after `pilot:down`/`pilot:up` with retained volumes. [Detailed contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [handover](../../docs/handovers/sessions/2026-11-18-business-facts.md) separate these synthetic checks from #124/#131 and product gates.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.

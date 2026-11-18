@@ -41,6 +41,6 @@ Tests cover cross-tenant IDs with a shared identity; latest revision per locatio
 **Interfaces:** Private owner seeds invented facts; existing isolated browser runner is unchanged. App remains SELECT-only.
 
 - [x] Add keyboard navigation from workspace to latest facts, verify literal hostile text, simulated confirmation and no active external links, and return to drafting. Verify an empty location.
-- [ ] Run strict build, targeted keyboard test and complete `npm run pilot:test`; stop/start the same isolated fixture with volumes retained and repeat the complete suite. Expected: all pass; record any failed run honestly.
-- [ ] Run foundation checks with the Git-configured Gitleaks binary. Complete docs and handover with a meaningful work revision/resumption point before the first normal PR.
+- [x] Run strict build, targeted keyboard test and complete `npm run pilot:test`; stop/start the same isolated fixture with volumes retained and repeat the complete suite. Expected: all pass; record any failed run honestly.
+- [x] Run foundation checks with the Git-configured Gitleaks binary. Complete docs and handover with a meaningful work revision/resumption point before the first normal PR.
 - [ ] Commit/push, open one normal PR with `Closes #153`, attach it to this chat, fetch, and verify actual Claude API execution/current head-base coverage and candidate CI. Send frozen head/title/body and recovery checkpoint to Root; Root alone merges/archives.
