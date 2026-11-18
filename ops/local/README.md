@@ -31,6 +31,66 @@ Application login is a non-superuser with no role/database creation, bypass-RLS 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Internal account/source throttles (#154)
+
+`createAuthThrottle(key, connect, flow)` is an **unmounted internal component**. The composition root fixes
+`login`, `signup`, `recovery` or `resend`; `consume(account, trustedSourceIp)` returns a boolean only after its
+own PostgreSQL transaction commits. `connect` must open a fresh client, never reuse another operation's
+transaction. Authentication failure or later caller rollback does not undo a committed attempt. Missing/invalid
+configuration, unavailable SQL, lock/statement timeout, key mismatch or capacity exhaustion throws only
+`Throttle unavailable`; a future adapter must deny on either false or error. No account lookup, credential,
+mail, provider, tenant, role or session action occurs here. This does not complete ACCESS-09, #131 or #149.
+
+Login allows 5/account and independently 30/source in a moving 15-minute window. Signup, recovery and resend
+each allow 3/account and 10/source in separate moving one-hour windows. At time `t`, the interval is `(t-W,t]`:
+exactly `t-W` has expired. Sample `clock_timestamp()` as PostgreSQL text **after** acquiring transaction lock
+`(154,1)`; preserve microseconds and use that same time for both charges. Both buckets are charged even when
+either rejects, including unknown accounts. Keep only the latest L timestamps in each bucket: once there are
+L more recent attempts, older attempts cannot affect any subsequent allow/deny decision. These are capped
+decision histories, not full audit totals. Attempts stop blocking after sufficient inactivity; continued abuse
+can continue to throttle, without setting a permanent identity lockout. Future stored timestamps fail closed.
+
+The account boundary accepts ASCII mailbox syntax, at most 254 characters and 64 local-part characters,
+trims outer ASCII space/tab/CR/LF and lowercases the whole mailbox. It rejects Unicode before folding,
+malformed dot-local parts and domain labels; it does not strip plus-tags or dots. Future identity integration
+must use this same account contract or explicitly revise it; international/quoted mailboxes remain unsupported.
+Source accepts only a validated direct transport IP, canonicalizes IPv6 and collapses IPv4-mapped IPv6 to IPv4.
+It rejects ports, zones, lists and hostnames. **The trusted transport adapter must supply the source**; this
+module never reads forwarding headers, a request body or proxy configuration. NAT clients share the source
+limit; rotating sources still shares an account limit. IPv6 prefix aggregation/proxy trust are not implemented.
+
+Store only domain-separated HMAC-SHA256 bucket digests and timestamps. `pilot:up` writes 32 random bytes as
+64 lowercase hex characters in private `work/pilot/throttle-key` only when initializing a new fixture. Keep
+that file with the database across restarts and restores; do not print it, reuse another service's key or
+generate a replacement on missing configuration. The persisted HMAC key binding rejects a different key even
+when every bucket has expired. No reset/clear/rotation API exists. Future controlled rotation requires stopped
+admission for at least the maximum one-hour window, verification that all buckets expired, authorized metadata
+replacement and consistent key/database recovery. That operating procedure is not implemented or tested here.
+
+The single global lock and maximum 4096 buckets intentionally bound this small local component. The transaction
+rolls back both new charges if capacity would exceed 4096; availability can be exhausted by many distinct pairs.
+The private SQL charging helper is an invoker-privilege primitive, not a safe external API: it requires the
+global lock and post-lock database time. Only the Node component orchestrates the complete key/cleanup/capacity
+contract. Do not call that helper directly from an authentication adapter.
+
+Consumption and explicit `cleanup()` physically DELETE expired bucket rows under the same lock; neither
+deletes the key binding. There is **no timer**: inactive expired rows remain until an operation runs. PostgreSQL
+DELETE is logical row removal, not secure erasure of heap/WAL/backups. Public integration must supply bounded
+timed cleanup, monitoring, trusted source provenance, identity normalization and operational key recovery,
+while retaining the [product retention/deletion contract](../../docs/17_ACCESS_SECURITY.md#data-recovery-and-rollback-proposals).
+Global contention, finite capacity, ASCII scope and operation-driven cleanup are deliberate local limitations.
+
+Migration 006 adds only the two throttle tables, expiry index and internal SQL helper. The fixture down runner
+still refuses any populated table, including a key binding. Direct down removes throttle history and binding;
+never use it to recover a live admission service. Tests use invented data and owner-only SQL for deterministic
+exact-microsecond boundary setup, future/expired timestamps and injected failure. The Node API exposes no clock.
+Real clients/processes prove independent counters, rollback, normalization, key mismatch, capacity and post-lock
+time. A retained exhausted canary is checked on the second full-suite run after `pilot:down`/`pilot:up`.
+
+Run `npm run pilot:build` before `node --test dist/pilot/tests/pilot/auth-throttle.test.js`, then the full pilot
+and retained-volume restart commands above. These checks establish this bounded internal component only;
+public response timing/equivalence, lifecycle, MFA authority and G3/G5 remain unproven.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.

@@ -10,6 +10,13 @@
 
 ## Current work
 
+November 18 bounded Task 2A2 component [#154](https://github.com/Maeximilion/MaexSocial/issues/154) implements internal
+durable independent account/source throttles. The [private contract](../ops/local/README.md#internal-accountsource-throttles-154)
+defines moving windows, both charges on denial, database time after locks, pseudonymous bounded storage and retained
+key continuity. Public auth, provider actions, sessions and timed idle cleanup are absent; #149's generation gap,
+#131, integrated Task 2 and G3/G5 remain open. The [delivery checkpoint](handovers/sessions/2026-11-18-auth-throttle.md)
+records local checks; integration and current-head/base review remain pending.
+
 November 17 bounded content delivery [#151](https://github.com/Maeximilion/MaexSocial/issues/151): Employee and Manager can follow an existing draft destination to a read-only occurrence detail and back. The protected lookup uses the active tenant and occurrence's own location; stored state, UTC instant and timezone-aware local time are displayed without showing an approved snapshot or changing domain records. [Delivery evidence and restart instructions](handovers/sessions/2026-11-17-occurrence-details.md) distinguish this read from scheduling, approval, export and provider execution. #124/#131, Task 2 and G3/G5 remain open.
 
 November 17 source-only identity evidence: [#149](https://github.com/Maeximilion/MaexSocial/issues/149) records the [pinned Keycloak 26.8.2 generation assessment](security/identity-generation-evidence.md). No complete supported enrollment/recovery-generation contract was established: #143's factor event and #136's status reads cannot yet produce current App-session/Manager MFA authority. Internal credential-row versioning and transactional events have narrower scopes. Root retains the missing-assurance checklist pending new primary evidence; #131, the affected #123/#124 Manager actions, integrated Task 2 and G3/G5 remain blocked. No provider experiment or product change was performed; [handover](handovers/sessions/2026-11-17-identity-generation.md).
