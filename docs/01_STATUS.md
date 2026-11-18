@@ -1,6 +1,6 @@
 # Project status
 
-- Status date — 2026-11-17
+- Status date — 2026-11-18
 - Stage — Bounded G2 accepted; Task 1 and Task 2A1/#135 merged; #136 adds bounded local identity-status reads; real identity lifecycle retained in #131
 - Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06; #113 merged and annotated gate-g2 verified at `192d0c5`. G3–G5 open. #10/#82/#131 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
 - Product implementation — Task 1 / #118 and synthetic session/tenant/CSRF/dashboard foundation #135 merged. #136 supplies a read-only Keycloak status component with local positive/disabled/denied guard evidence; #131 retains all real signup/login/activation/recovery/MFA and completion provenance. #123 Employee management and #124 content approval retain their real auth prerequisites; Root decides contract readiness before dispatch. Task 2 needs A1+A2+B+C and integrated evidence; Task 3 still waits. See the [delivery plan](superpowers/plans/2026-11-06-task-2-deliveries.md), [evidence map](superpowers/plans/2026-11-05-ms-009-pilot-evidence-map.md) and [fixture commands](../ops/local/README.md). No public auth or G3/G5 acceptance is supplied by A1 or #136.
@@ -16,6 +16,8 @@ defines moving windows, both charges on denial, database time after locks, pseud
 key continuity. Public auth, provider actions, sessions and timed idle cleanup are absent; #149's generation gap,
 #131, integrated Task 2 and G3/G5 remain open. The [delivery checkpoint](handovers/sessions/2026-11-18-auth-throttle.md)
 records local checks; integration and current-head/base review remain pending.
+
+November 18 bounded content delivery [#153](https://github.com/Maeximilion/MaexSocial/issues/153): current Employees and Managers can read the latest synthetic facts revision for each own-tenant location. Private fixture ownership alone writes normalized plain text, provenance and explicitly simulated historical Manager confirmation; the app has SELECT-only access. [Contract](superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [delivery evidence](handovers/sessions/2026-11-18-business-facts.md) preserve current authority checks, empty states and all existing content records. No real fact confirmation, generation, publication or new authority is supplied. #124/#131, Task 2 and G3/G5 remain open; PR review and integration are pending at this source checkpoint.
 
 November 17 bounded content delivery [#151](https://github.com/Maeximilion/MaexSocial/issues/151): Employee and Manager can follow an existing draft destination to a read-only occurrence detail and back. The protected lookup uses the active tenant and occurrence's own location; stored state, UTC instant and timezone-aware local time are displayed without showing an approved snapshot or changing domain records. [Delivery evidence and restart instructions](handovers/sessions/2026-11-17-occurrence-details.md) distinguish this read from scheduling, approval, export and provider execution. #124/#131, Task 2 and G3/G5 remain open.
 
