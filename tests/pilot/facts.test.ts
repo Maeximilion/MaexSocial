@@ -64,6 +64,21 @@ test('business facts remain synthetic, immutable and scoped to current tenant au
       }
       return result;
     };
+    await t.test('simulated confirmation cannot be in the future at insertion', async () => {
+      try {
+        await db.query('BEGIN');
+        const future = values(); future[8] = '2999-01-01T00:00:00Z';
+        await assert.rejects(db.query(insertSql, future), { code: '23514' });
+      } finally { await db.query('ROLLBACK'); }
+      try {
+        await db.query('BEGIN');
+        await db.query(insertSql, values());
+        assert.equal((await db.query('SELECT confirmed_at FROM pilot.business_fact_revisions WHERE tenant_id=$1', [a.tenant])).rows[0].confirmed_at.toISOString(), '2026-01-01T12:00:00.000Z');
+        await db.query('SELECT pg_sleep(0.02)');
+        await db.query(insertSql.replace('$9)', 'clock_timestamp())'), values(2).slice(0, 8));
+        assert.equal((await db.query('SELECT count(*)::int AS n FROM pilot.business_fact_revisions WHERE tenant_id=$1', [a.tenant])).rows[0].n, 2);
+      } finally { await db.query('ROLLBACK'); }
+    });
     await t.test('storage enforces composite references, lengths, synthetic provenance and append-only privileges', async () => {
       await db.query(insertSql, values());
       const latest = values(3, hostile, source); await db.query(insertSql, latest);

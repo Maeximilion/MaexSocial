@@ -24,6 +24,9 @@ BEGIN
     IF FOUND AND (NOT member.active OR member.role <> 'Manager' OR member.version <> NEW.membership_version) THEN
         RAISE EXCEPTION 'Invalid synthetic Manager evidence' USING ERRCODE = '23514';
     END IF;
+    IF NEW.confirmed_at > clock_timestamp() THEN
+        RAISE EXCEPTION 'Future synthetic confirmation' USING ERRCODE = '23514';
+    END IF;
     RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION pilot.prepare_fixture_facts() FROM PUBLIC;
