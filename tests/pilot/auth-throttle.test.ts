@@ -6,6 +6,7 @@ import { fork } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createAuthThrottle } from '../../apps/web/src/server/auth-throttle.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+import { migrate } from '../../scripts/pilot-db.js';
 
 test('durable independent account/source throttles in actual PostgreSQL', async t => {
   if (process.env.PILOT_CONTAINER !== '1') {
@@ -44,6 +45,19 @@ test('durable independent account/source throttles in actual PostgreSQL', async 
       await make().cleanup();
       assert.equal((await owner.query('SELECT key_hash FROM pilot.auth_throttle_key')).rows[0].key_hash, digest('key-binding'));
       await reset();
+    });
+    await t.test('missing key after binding refuses migration without resetting retained quota', async () => {
+      for (let i = 0; i < 5; i++) assert.equal(await consume(), true);
+      const before = await rows(), binding = (await owner.query('SELECT * FROM pilot.auth_throttle_key')).rows;
+      const cwd = process.cwd();
+      try {
+        process.chdir('work'); // Read-only runner: an absent key path without modifying the private key file.
+        await assert.rejects(migrate('up'), /Fixture throttle key is missing or invalid/);
+      } finally { process.chdir(cwd); }
+      assert.deepEqual(await rows(), before);
+      assert.deepEqual((await owner.query('SELECT * FROM pilot.auth_throttle_key')).rows, binding);
+      assert.equal(await consume(), false);
+      await reset(); assert.equal(await consume('positive@example.invalid', '192.0.2.9'), true); await reset();
     });
     await t.test('SQL exact moving boundaries, denied suffix and all flow/dimension limits', async () => {
       for (const flow of ['login', 'signup', 'recovery', 'resend']) for (const dimension of ['account', 'source']) {

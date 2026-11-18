@@ -3,6 +3,11 @@ import { connectFixture, runIsolated } from '../ops/local/fixture.js';
 
 export async function migrate(direction: string): Promise<void> {
   if (!['up', 'down'].includes(direction)) throw new Error('Expected up or down');
+  if (direction === 'up') {
+    try {
+      if (!/^[a-f0-9]{64}$/.test(await readFile('work/pilot/throttle-key', 'utf8'))) throw new Error();
+    } catch { throw new Error('Fixture throttle key is missing or invalid; preserve the old fixture and initialize a fresh one.'); }
+  }
   const db = await connectFixture(true);
   try {
     await db.query('BEGIN');

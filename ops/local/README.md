@@ -67,6 +67,13 @@ when every bucket has expired. No reset/clear/rotation API exists. Future contro
 admission for at least the maximum one-hour window, verification that all buckets expired, authorized metadata
 replacement and consistent key/database recovery. That operating procedure is not implemented or tested here.
 
+Migration `up` refuses a missing or malformed throttle key **before opening a database connection**. Fixtures
+created before this component lack that file and are not supported for in-place upgrade to 006. Stop the old
+fixture with `npm run pilot:down`, preserve its complete `work/pilot/` directory under a distinct ignored name
+and retain its volumes; then run `npm run pilot:up` to initialize a new namespace/key and migrate the fresh
+fixture. This does not transfer old data or reset an existing binding. A missing key after binding likewise
+denies; recover the original key with its database. The guarded `down`/recovery path is unchanged.
+
 The single global lock and maximum 4096 buckets intentionally bound this small local component. The transaction
 rolls back both new charges if capacity would exceed 4096; availability can be exhausted by many distinct pairs.
 The private SQL charging helper is an invoker-privilege primitive, not a safe external API: it requires the
