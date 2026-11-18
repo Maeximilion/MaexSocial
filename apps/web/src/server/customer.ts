@@ -5,6 +5,7 @@ import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
 import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
+import { renderFacts } from '../routes/facts.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -58,6 +59,11 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     response.cookie('__Host-session', result.token, { ...cookieOptions, expires: result.expires });
     response.cookie('__Host-csrf', result.csrf, { ...cookieOptions, expires: result.expires });
     response.redirect(303, '/customer');
+  });
+  app.get<{ locationId?: string }>(['/customer/facts', '/customer/facts/:locationId'], async (request, response) => {
+    const binding = customerRequest(request);
+    const page = await transaction(async db => renderFacts(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.locationId));
+    response.type('html').send(page);
   });
   app.get('/customer/drafts', async (request, response) => {
     const binding = customerRequest(request);
