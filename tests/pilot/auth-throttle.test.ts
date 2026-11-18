@@ -31,9 +31,14 @@ test('durable independent account/source throttles in actual PostgreSQL', async 
       const binding = (await owner.query('SELECT key_hash FROM pilot.auth_throttle_key')).rows[0];
       if (binding) {
         assert.equal(binding.key_hash, digest('key-binding'));
-        if (await count('account', 'restart@example.invalid')) {
-          assert.equal(await count('account', 'restart@example.invalid'), 5);
-          assert.equal(await consume('restart@example.invalid'), false);
+        const retained = (await owner.query(`SELECT cardinality(attempts) AS n,
+          expires_at>clock_timestamp()+interval '10 seconds' AS active,
+          expires_at<=clock_timestamp() AS expired FROM pilot.auth_throttle_buckets WHERE bucket_key=$1`,
+          [digest('login', 'account', 'restart@example.invalid')])).rows[0];
+        if (retained) {
+          assert.equal(retained.n, 5);
+          if (retained.active) assert.equal(await consume('restart@example.invalid'), false);
+          if (retained.expired) assert.equal(await consume('restart@example.invalid'), true);
         }
       }
       await make().cleanup();
