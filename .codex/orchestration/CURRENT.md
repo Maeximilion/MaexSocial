@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Local delivery during external waits · 2026-11-21
+
+The owner reopened independent implementation across the next gate. [#198](https://github.com/Maeximilion/MaexSocial/issues/198) has the first work chat and will count actual local video submissions across restart. The next staggered starts are [#199](https://github.com/Maeximilion/MaexSocial/issues/199) for the local GBP test adapter and [#200](https://github.com/Maeximilion/MaexSocial/issues/200) for the offline media-library preview. All three are native sub-issues with no open blocking edge. The real trial in #11, current MFA evidence in #131 and release acceptance still require their respective inputs. The decision packet reached main in [#197](https://github.com/Maeximilion/MaexSocial/pull/197). #167 remains open for the owner's dated choice.
+
 ## GitHub-based handovers
 
 The owner retired routine per-task recovery packages. Verify the published GitHub revision and link the existing handover. If meaningful work exists only locally, identify it and preserve its original before archiving. A requested rollback can justify a targeted copy. [#192](https://github.com/Maeximilion/MaexSocial/issues/192) carries this rule into the project defaults.
