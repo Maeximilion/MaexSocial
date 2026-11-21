@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Website preview and admission verification · 2026-11-21 17:18 UTC
+
+Two consecutive native worker starts respected the corrected rule. The interval from #179 to [#183](https://github.com/Maeximilion/MaexSocial/issues/183) was 12 minutes 45.864 seconds; from #183 to [#185](https://github.com/Maeximilion/MaexSocial/issues/185) it was 10 minutes 51.342 seconds. One worker was admitted at each opportunity, with no extra start for a PR opening or an intervening archive. The ten-minute heartbeat and sole coordinator binding were verified. The private ledger records actual starts and the earliest next intake.
+
+The customer website has a working offline preview, a desktop and mobile rendering, a keyboard-operable example draft and a signed-out state. Five targeted checks passed in the isolated fixture on the initial implementation. #183 now owns integration testing and the next main publication window. [#185](https://github.com/Maeximilion/MaexSocial/issues/185) owns the reusable guidance delivery, including the explicit hold on any second reservation while a creation or its start time is unknown.
+
+The three original independent deliverables have reached main. The [customer journey](https://github.com/Maeximilion/MaexSocial/pull/180) and [operating-cost inputs](https://github.com/Maeximilion/MaexSocial/pull/181) are closed out, restored and archived. The [draft-form correction](https://github.com/Maeximilion/MaexSocial/pull/184) merged at `4f36d6fad83c236640b8fdd62d7eb1d772900423` with the exact tested tree. #179 is closed and Done; the work chat retains recovery and archive ownership through verification. Stack #182 is integrated. No public host or live sign-in was activated.
+
 ## Staggered admissions and local website · 2026-11-21 17:07 UTC
 
 The three workers for #177, #178 and #179 initially started within five minutes. The owner corrected that interpretation. Aim for five useful independent work chats above the parallel threshold, admitting **at most one new worker per ten-minute tick and never less than ten full minutes after the last actual worker start**. Earlier PR openings, multiple vacancies or missed ticks do not accelerate admission. Record the last actual native start, next eligible UTC time and at most one pending reservation in the private ledger. Reconcile uncertain creations before retrying. Continue existing work, reviews and serial merges between admissions. Lower gate caps, serial and full-pause boundaries still apply. The current heartbeat was updated and read back. [#185](https://github.com/Maeximilion/MaexSocial/issues/185) tracks the corresponding reusable startup guidance.
