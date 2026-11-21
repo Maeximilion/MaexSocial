@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Serial stack integration · 2026-11-21 15:24 UTC
+
+[PR #172](https://github.com/Maeximilion/MaexSocial/pull/172) merged as `091f666e502d9a5458e509bf3a0a52ce17198acf`. The candidate passed the hosted pilot 28/28 before and after retained restart. Issue #155 is Done. The independent recovery and final archived transcript were verified. The host-specific cause of the original timing observation remains unknown.
+
+[#170 / PR #174](https://github.com/Maeximilion/MaexSocial/pull/174) merged as `5a19a57a8a5411a06eef5df9353ea34140621e29`, with the checked tree `9a6f71fe31d121fd97297476c3a899dec196dccb`. Canonical main was fast-forwarded cleanly. Two actual review findings were fixed; the [complete final Claude result](https://github.com/Maeximilion/MaexSocial/pull/174#issuecomment-7064723016) found none. The [hosted pilot](https://github.com/Maeximilion/MaexSocial/actions/runs/44918129945) passed 28/28 before and after retained restart. Issue and PR are Done. Its worker owns final recovery until archival.
+
+[#173 / PR #175](https://github.com/Maeximilion/MaexSocial/pull/175) started against the [verified open #174 reservation](https://github.com/Maeximilion/MaexSocial/issues/173#issuecomment-7064674500). Both PRs were published in [native stack #176](https://github.com/Maeximilion/MaexSocial/stack/176). After merging only #174, GitHub retargeted #175 to main and rebased its head to `d1c6d16b330b7e790aa9e79a121c5c6f57952985`. Three [initial review findings](https://github.com/Maeximilion/MaexSocial/pull/175#issuecomment-7064784700) concern unused admissions after a gate drain and draft eligibility. The coordinator supplied a three-source correction in `df5d82a17309ef92470ede64f6c5642e46c20b95`. The worker owns integration and fresh current-pair evidence before the next serial merge. One PR open, two occupied workers, zero pending creations. #131 still blocks integrated Task 2; G3–G5 stay open.
+
 ## Owner scheduling update · 2026-11-21 14:59 UTC
 
 Maxi authorized starting the next eligible independent assignment as soon as its predecessor publishes a normal PR. This supersedes the earlier wait for predecessor merge plus archival before starting that successor. Record the verified source PR and one reservation before dispatch. The predecessor chat continues to count toward the cap until recovery and archive readback. Product dependencies, the weekly full stop, native stacking for concurrent PRs, current-base review/CI and serial merges still apply.
