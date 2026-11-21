@@ -86,6 +86,8 @@ The [focused tests](../tests/test_media_evaluation.py) replay this receipt and d
 
 Reuse the fixture and receipt format for [#167's evaluation plan](https://github.com/Maeximilion/MaexSocial/issues/167) and the [later #11 spike](https://github.com/Maeximilion/MaexSocial/issues/11). This receipt evaluates the supplied fictional records. Actual provider measurements, human assessment of media, approved thresholds, format and release evidence remain open for those deliveries and [#99](https://github.com/Maeximilion/MaexSocial/issues/99).
 
+The [#167 decision packet and executable examples](research/2026-11-21-product-ai-decision.md) extend the fictional media receipt with source conflicts, denied rights, manual approval and unauthorized model actions. It assigns the remaining measurements to #11, #99 and #12.
+
 ## Report format
 
 Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds before interpreting the applicable pilot as passing.
