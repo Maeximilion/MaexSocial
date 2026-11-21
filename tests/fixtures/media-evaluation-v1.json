@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "observations": [
+    {
+      "job_id": "captured",
+      "source_id": "paper-hill",
+      "revision_id": "paper-hill-r1",
+      "rights": {
+        "state": "granted",
+        "source_id": "paper-hill",
+        "revision_id": "paper-hill-r1"
+      },
+      "outcome": "succeeded",
+      "cancellation": "not_requested",
+      "output_reported": true,
+      "private_capture": true,
+      "charge_minor": 120
+    },
+    {
+      "job_id": "missing-source-rights",
+      "revision_id": "felt-river-r1",
+      "outcome": "succeeded",
+      "cancellation": "not_requested",
+      "output_reported": true,
+      "private_capture": true,
+      "charge_minor": 120
+    },
+    {
+      "job_id": "conflicting-rights",
+      "source_id": "cardboard-kite",
+      "revision_id": "cardboard-kite-r2",
+      "rights": {
+        "state": "granted",
+        "source_id": "cardboard-kite",
+        "revision_id": "cardboard-kite-r1"
+      },
+      "outcome": "succeeded",
+      "cancellation": "not_requested",
+      "output_reported": true,
+      "private_capture": true,
+      "charge_minor": 120
+    },
+    {
+      "job_id": "cancel-requested",
+      "source_id": "painted-cloud",
+      "revision_id": "painted-cloud-r1",
+      "rights": {
+        "state": "granted",
+        "source_id": "painted-cloud",
+        "revision_id": "painted-cloud-r1"
+      },
+      "cancellation": "requested",
+      "output_reported": true,
+      "private_capture": false,
+      "charge_minor": null
+    },
+    {
+      "job_id": "cancel-confirmed",
+      "source_id": "wooden-moon",
+      "revision_id": "wooden-moon-r1",
+      "rights": {
+        "state": "granted",
+        "source_id": "wooden-moon",
+        "revision_id": "wooden-moon-r1"
+      },
+      "outcome": "cancelled",
+      "cancellation": "confirmed",
+      "output_reported": false,
+      "private_capture": false,
+      "charge_minor": 0,
+      "latency_ms": 320
+    },
+    {
+      "job_id": "captured",
+      "source_id": "paper-hill",
+      "revision_id": "paper-hill-r1",
+      "rights": {
+        "state": "granted",
+        "source_id": "paper-hill",
+        "revision_id": "paper-hill-r1"
+      },
+      "outcome": "succeeded",
+      "cancellation": "not_requested",
+      "output_reported": true,
+      "private_capture": true,
+      "charge_minor": 120
+    }
+  ]
+}
