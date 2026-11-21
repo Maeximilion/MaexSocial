@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { test, type TestContext } from 'node:test';
 
 function fixture(t: TestContext) {
@@ -36,6 +37,28 @@ test('reconciliation before any writes leaves the fresh fixture empty', t => {
   assert.deepEqual(f.read('reconcile', f.job), { stopped: false, attempt: null });
   assert.equal(existsSync(f.database), false);
   assert.deepEqual(f.acceptedJobs(), []);
+});
+
+test('reconciliation safely reads an interrupted database bootstrap', t => {
+  const f = fixture(t);
+  const db = new DatabaseSync(f.database);
+  try {
+    const empty = { stopped: false, attempt: null };
+    const beforeSchema = readFileSync(f.database);
+    assert.deepEqual(f.read('reconcile', f.job), empty);
+    assert.deepEqual(readFileSync(f.database), beforeSchema);
+
+    db.exec('CREATE TABLE attempts (job TEXT PRIMARY KEY)');
+    const partialSchema = readFileSync(f.database);
+    assert.deepEqual(f.read('reconcile', f.job), empty);
+    assert.deepEqual(readFileSync(f.database), partialSchema);
+
+    db.prepare('INSERT INTO attempts (job) VALUES (?)').run(f.job);
+    assert.throws(() => f.read('reconcile', f.job), /no such table: stop/);
+    assert.deepEqual(f.acceptedJobs(), []);
+  } finally {
+    db.close();
+  }
 });
 
 test('lost reply, reopened replay and read-only reconciliation keep one actual submission', t => {

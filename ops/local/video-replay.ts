@@ -11,10 +11,16 @@ function submitToFake(directory: string, job: string): never {
 function run(directory: string, command: string, job = '') {
   const database = join(directory, 'runner.sqlite');
   const readOnly = command === 'reconcile';
-  if (readOnly && !lstatSync(database, { throwIfNoEntry: false })) return { stopped: false, attempt: null };
+  const empty = { stopped: false, attempt: null };
+  if (readOnly && !lstatSync(database, { throwIfNoEntry: false })) return empty;
   const db = new DatabaseSync(database, { readOnly, timeout: 5000 });
   try {
-    if (!readOnly) {
+    if (readOnly) {
+      const tables = db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table'").all();
+      // Bootstrap creates attempts first and cannot submit until both tables exist.
+      if (tables.length === 0 || (tables.length === 1 && tables[0]?.name === 'attempts' &&
+        !db.prepare('SELECT 1 FROM attempts LIMIT 1').get())) return empty;
+    } else {
       db.exec(`CREATE TABLE IF NOT EXISTS attempts (job TEXT PRIMARY KEY);
                CREATE TABLE IF NOT EXISTS stop (id INTEGER PRIMARY KEY CHECK (id = 1));`);
     }
