@@ -10,6 +10,8 @@ Maxi contrasted this with explanatory/promotional videos in [SocialEdge's librar
 
 ## Proposed customer journey
 
+From a local checkout, open the [offline media library example](examples/media-library/index.html) directly in a browser. Use Tab to focus the source list, then use the arrow keys to switch records. The read-only example uses source and rights entries from the [invented evaluation fixture](../tests/fixtures/media-evaluation-v1.json).
+
 1. **Media library:** upload customer images and videos into a private workspace. Show the original, preview, usage permission, processing state and related generated versions. Files belong to the customer's workspace; a platform administrator's access requires its separate authority and audit trail.
 2. **Create:** choose source assets, a business offer, the intended audience and destination formats. Request a caption, visual variation or video. Show estimated generation cost and obtain the required authority before starting a paid job. Store originals and generated versions separately, retaining source/model/job provenance.
 3. **Review:** preview the actual text, crop, video and account for each destination. Show missing facts and unsupported formats. Approve an immutable content revision, or use a separately enabled bounded-autonomy policy. Uploading a file does not authorize its publication.
