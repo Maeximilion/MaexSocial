@@ -1,8 +1,8 @@
 # Orchestration dry run
 
-First give a fresh evaluator only the requests/facts and repository skill catalogue (names and descriptions). Ask which skill, if any, it would select for A–H, O and Q–S. Record that selection before exposing a skill body. In a separate dry run, supply the coordination skill body and the cases. Ask for next actions and missing evidence. Withhold the answer key in both stages. Use invented IDs only, with no tool calls, changes, messages or actual assignments.
+First give a fresh evaluator only the requests/facts and repository skill catalogue (names and descriptions). Ask which skill, if any, it would select for A–H, O, Q–S and AE. Record that selection before exposing a skill body. In a separate dry run, supply the coordination skill body and the cases. Ask for next actions and missing evidence. Withhold the answer key in both stages. Use invented IDs only, with no tool calls, changes, messages or actual assignments.
 
-For X–AG also supply the manual startup entry and its linked startup prompt. These are instruction-application scenarios, not evidence of live native skill discovery, dispatch, stack creation, API review or merge behavior. The paused PR in Z is a fixture; obtain current evidence before any real action.
+For X–AG in the second stage, also supply the manual startup entry and its linked startup prompt. These are instruction-application scenarios, not evidence of live native skill discovery, dispatch, stack creation, API review or merge behavior. The paused PR in Z is a fixture; obtain current evidence before any real action.
 
 | Case | Request and available evidence |
 | --- | --- |

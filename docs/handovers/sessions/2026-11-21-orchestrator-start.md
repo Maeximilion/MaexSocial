@@ -2,7 +2,7 @@
 
 ## Status
 
-Stopped at (UTC) — 2026-11-21T13:21:00Z, at the pre-PR checkpoint.
+Stopped at (UTC) — 2026-11-21T13:18:19Z, the work-commit boundary before writing this pre-PR checkpoint.
 
 Implementation is complete: explicit-only Codex startup skill, full owner-copyable prompt, existing coordination contract, recovery record and scenario coverage. Product work and PR #157 remain paused. The manually started successor owns the full planning audit and future P1 gap umbrella; neither is claimed complete here.
 
