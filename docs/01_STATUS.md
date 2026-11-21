@@ -10,6 +10,13 @@
 
 ## Current work
 
+November 18 bounded Task 2A2 component [#154](https://github.com/Maeximilion/MaexSocial/issues/154) implements internal
+durable independent account/source throttles. The [private contract](../ops/local/README.md#internal-accountsource-throttles-154)
+defines moving windows, both charges on denial, database time after locks, pseudonymous bounded storage and retained
+key continuity. Public auth, provider actions, sessions and timed idle cleanup are absent; #149's generation gap,
+#131, integrated Task 2 and G3/G5 remain open. The [delivery checkpoint](handovers/sessions/2026-11-18-auth-throttle.md)
+records local checks and predecessor integration; current-head/base review remains pending.
+
 November 18 bounded content delivery [#153](https://github.com/Maeximilion/MaexSocial/issues/153): current Employees and Managers can read the latest synthetic facts revision for each own-tenant location. Private fixture ownership alone writes normalized plain text, provenance and explicitly simulated historical Manager confirmation; the app has SELECT-only access. [Contract](superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [delivery evidence](handovers/sessions/2026-11-18-business-facts.md) preserve current authority checks, empty states and all existing content records. No real fact confirmation, generation, publication or new authority is supplied. #124/#131, Task 2 and G3/G5 remain open; PR review and integration are pending at this source checkpoint.
 
 November 17 bounded content delivery [#151](https://github.com/Maeximilion/MaexSocial/issues/151): Employee and Manager can follow an existing draft destination to a read-only occurrence detail and back. The protected lookup uses the active tenant and occurrence's own location; stored state, UTC instant and timezone-aware local time are displayed without showing an approved snapshot or changing domain records. [Delivery evidence and restart instructions](handovers/sessions/2026-11-17-occurrence-details.md) distinguish this read from scheduling, approval, export and provider execution. #124/#131, Task 2 and G3/G5 remain open.

@@ -8,6 +8,11 @@ Bounded Task 2A2 component [#143](https://github.com/Maeximilion/MaexSocial/issu
 
 ## Planning maturity
 
+Bounded Task 2A2 component [#154](https://github.com/Maeximilion/MaexSocial/issues/154) adds only the internal
+[PostgreSQL abuse-limit contract](../ops/local/README.md#internal-accountsource-throttles-154): accepted per-account
+and per-source limits, atomic denied-attempt charging and restart continuity. This is not public authentication,
+full ACCESS-09 or enrollment/recovery-generation evidence; #131/#149, integrated Task 2 and G3/G5 stay open.
+
 Bounded Task 2C component [#153](https://github.com/Maeximilion/MaexSocial/issues/153) supplies the accepted Business Facts read view with tenant/location revision history and explicitly synthetic fixture provenance. Current Employee/Manager readers use the existing protected request boundary; only the fixture owner seeds facts. [Contract and limits](superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) retain genuine confirmation, generated-claim provenance and approval under #124, real identity/MFA under #131 and all integrated Task 2/G3/G5 obligations. [Delivery checkpoint](handovers/sessions/2026-11-18-business-facts.md) records actual checks; review/integration remain pending.
 
 Bounded Task 2C component [#151](https://github.com/Maeximilion/MaexSocial/issues/151) adds `GET /customer/occurrences/:occurrenceId` for both customer roles, linked from existing draft destinations. Current server-derived session/identity/active-tenant authority remains mandatory; a second membership cannot select another tenant. The detail renders the actual occurrence location, stored state and UTC/local due time, preserving DST disambiguation. [Focused HTTPS/DB and browser evidence](handovers/sessions/2026-11-17-occurrence-details.md) covers non-disclosure and unchanged domain records. No scheduling, approval, delivery, export, lifecycle completion or product-gate acceptance is added; #124/#131 remain open.
