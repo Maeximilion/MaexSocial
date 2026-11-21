@@ -43,6 +43,8 @@ The PC and browser have no provider grant or DB access. Bind the admin session t
 
 ### What would one pilot month cost?
 
+[November 21 operating cost evidence](2026-11-21-pilot-operating-costs.md) prices this scenario and its remaining decision inputs for #10.
+
 **Planning scenario, USD before tax, public list prices checked 2026-11-05.** One full month in Frankfurt, one customer, one approved text post, one administrator. An 8 GB single-host Linux/IPv4 bundle is a sizing assumption. Model at most 1 GB of encrypted logical backups across the retention window, under 25 GB bucket transfer, low portal traffic within the VM allowance and at most 100 small verification/recovery emails. Confirm actual load, German-region pricing, processor terms and account eligibility before purchasing.
 
 | Cost component | Units and planning amount |
