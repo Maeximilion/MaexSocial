@@ -4,9 +4,39 @@ import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:https';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { performance } from 'node:perf_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createOidcVerifier } from '../../apps/web/src/server/oidc.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+
+function startElapsedCheck() {
+  const wallStart = Date.now();
+  const monotonicStart = performance.now();
+  return (label: string) => {
+    const monotonicMs = performance.now() - monotonicStart;
+    const wallMs = Date.now() - wallStart;
+    assert.ok(monotonicMs < 6500, `${label}: expected <6500 ms (monotonic ${monotonicMs.toFixed(3)} ms, wall ${wallMs} ms)`);
+  };
+}
+
+test('elapsed deadline uses monotonic time across wall-clock changes', t => {
+  let wall = 100000;
+  let monotonic = 100;
+  t.mock.method(Date, 'now', () => wall);
+  t.mock.method(performance, 'now', () => monotonic);
+
+  const checkUnderLimit = startElapsedCheck();
+  wall += 10000;
+  monotonic += 6499;
+  checkUnderLimit('clock control');
+
+  const checkAtLimit = startElapsedCheck();
+  wall -= 10000;
+  monotonic += 6500;
+  assert.throws(() => checkAtLimit('clock control'), {
+    message: 'clock control: expected <6500 ms (monotonic 6500.000 ms, wall -10000 ms)'
+  });
+});
 
 test('OIDC protocol and durable claims against controlled HTTPS, not real provider evidence', async t => {
   if (process.env.PILOT_CONTAINER !== '1') {
@@ -157,10 +187,15 @@ test('OIDC protocol and durable claims against controlled HTTPS, not real provid
       }
       keyResponse = undefined; responseLimit = true; a = await begin();
       assert.equal((await createOidcVerifier(config, connectFixture).complete(a.callback, a.browserToken)).subject, 'immutable-subject');
-      responseLimit = false; tokenDelay = 2700; keyDelay = 2700; a = await begin(); const before = Date.now();
-      await denied(createOidcVerifier(config, connectFixture).complete(a.callback, a.browserToken));
-      assert.ok(Date.now() - before < 6500); tokenDelay = 0; keyDelay = 0;
-      await delay(500); calls.length = 0;
+      responseLimit = false; tokenDelay = 2700; keyDelay = 2700;
+      try {
+        a = await begin(); const checkElapsed = startElapsedCheck();
+        await denied(createOidcVerifier(config, connectFixture).complete(a.callback, a.browserToken));
+        checkElapsed('Token and JWKS completion');
+      } finally {
+        tokenDelay = 0; keyDelay = 0;
+        await delay(500); calls.length = 0;
+      }
     });
     await t.test('provider errors, redirects, malformed/oversized/partial responses and deadlines never retry', async () => {
       const cases = [
@@ -174,12 +209,16 @@ test('OIDC protocol and durable claims against controlled HTTPS, not real provid
         (_req: IncomingMessage, res: ServerResponse) => { res.setHeader('content-type', 'application/json'); res.setHeader('content-length', '100'); res.flushHeaders(); res.write('{'); res.destroy(); },
         (_req: IncomingMessage, res: ServerResponse) => { res.setHeader('content-type', 'application/json'); res.flushHeaders(); res.write('{'); }
       ];
-      for (const handler of cases) {
-        respond = handler; calls.length = 0; const a = await begin(); const before = Date.now();
-        await denied(client.complete(a.callback, a.browserToken)); assert.ok(Date.now() - before < 6500);
-        await denied(client.complete(a.callback, a.browserToken)); assert.equal(calls.length, 1);
+      try {
+        for (const [index, handler] of cases.entries()) {
+          respond = handler; calls.length = 0; const a = await begin(); const checkElapsed = startElapsedCheck();
+          await denied(client.complete(a.callback, a.browserToken));
+          checkElapsed(`Provider response case ${index + 1}`);
+          await denied(client.complete(a.callback, a.browserToken)); assert.equal(calls.length, 1);
+        }
+      } finally {
+        respond = undefined; calls.length = 0;
       }
-      respond = undefined; calls.length = 0;
       const a = await begin(); await denied(client.complete(a.callback.replace('code=synthetic-code', 'error=access_denied'), a.browserToken));
       await denied(client.complete(a.callback, a.browserToken)); assert.equal(calls.length, 0);
     });
