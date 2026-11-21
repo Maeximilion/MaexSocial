@@ -14,11 +14,15 @@ Routine authorized work includes task worktrees, Git, tests, fixes, the agreed P
 
 Request High reasoning and Standard speed, with full access (`danger-full-access`/`never`). Verify each actual coordinator/worker turn. A prompt, global configuration, local start or `auto_review` is not proof of runtime rights; a successful local/High test chat proves only that chat. Use only supported, owner-authorized app settings. Never invent setters, edit hidden app state, self-confirm native approvals or bypass rejections. Continue work permitted by the actual profile and report specific gaps.
 
+The owner explicitly requested unrestricted normal native chats on 2026-11-21. This changes the desired access recommendation, with the [documented security tradeoff](../../.agents/skills/coordinate-project-chats/SKILL.md#decisions-and-actual-permissions); no access configuration is changed by this maintenance PR.
+
 Before a large external download, obtain owner confirmation. The provisional boundary is 100 MiB for the combined related transfer, including split parts. For unknown size, verify/enforce an upper bound within that cap or obtain confirmation. Quarantine downloaded bytes until an isolated antivirus scan with current signatures returns a clean, complete result. Verify their SHA-256 before release for opening, extraction, installation, execution or tool use. Detection, incomplete/stale scan or checksum mismatch keeps quarantine. Use verified local copies meanwhile.
 
 ## Run the queue
 
 The adapter defines scheduling and merge details: evidenced security work, open PRs, then eligible gate/task priority. Admission needs an eligible authorized task, a free slot and 600 seconds since the previous actual worker start. Maximum five occupied workers, counting pending creations; use a lower two/three limit for large work when appropriate. Reconcile uncertain starts; never accumulate missed intervals or require historical predecessor-PR admission tokens. Latest owner pause, drain/serial, usage and deadline controls take precedence.
+
+Read current shared usage before each admission and approximately every ten minutes while active. The standing intake cutoff remains 7% remaining unless the owner changes it: at or below the cutoff, or with an unknown reading, hold new intake. Already-admitted work may continue only absent a full pause. A newer explicit threshold or stop overrides this default; quota reset alone never resumes work. Keep account readings private.
 
 Use Superpowers for planning and Ponytail before opening a PR. Preserve the subsequent [Claude API review policy](../../docs/tooling/agent-workflow.md#pr-review-policy), required current-candidate CI, verified stack for concurrent delivery PRs and serial guarded merges. Green CI is not product acceptance. Keep canonical main clean; implement in separate task worktrees. Advisory scans still require explicit `/start` or `/task`.
 
