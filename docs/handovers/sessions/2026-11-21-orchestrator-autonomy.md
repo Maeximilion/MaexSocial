@@ -2,20 +2,20 @@
 
 ## Status
 
-Checkpoint (UTC) — 2026-11-21T23:00:40Z. Implementation is pushed in open PR #202; the latest review findings are being resolved in this same maintenance session. Product orchestration remains cancelled by the owner's newer instruction; this delivery does not restart it.
+Checkpoint (UTC) — 2026-11-21T23:11:15Z. Implementation is pushed in open PR #202; the latest review findings are being resolved in this same maintenance session. Product orchestration remains cancelled by the owner's newer instruction; this delivery does not restart it.
 
 Codex implemented the personal skill and repository adapter. The separate fresh-context Ponytail reviewer used `gpt-6-astra` / High. Its initial combined review found missing stop propagation in both the personal skill and adapter (fixed), and redundant routine planning in the repository skill-role table (fixed). Its subsequent review of the full personal body and UI metadata found zero defects. The final targeted recheck of explicit invocation and UI policy also returned Ship, with zero findings at the exact personal hashes below. Main did not supply these independent reviews.
 
 Local checks passed after each correction: `python scripts/check_repo.py`, `python -m unittest tests.test_foundation` (12 tests), and `git diff --check`. The exact personal two-file inventory and both hashes passed a local assertion. A fresh evaluator exercised nine instruction cases plus a missing-acknowledgment pause case before later Claude corrections; these were hypothetical decisions, not native execution. Earlier broad local results (129 Python tests, one platform skip; 20 Node tests) predate this final documentation change. Final candidate CI must provide current coverage.
 
-Claude API executed on work head `6f0d8efc2c788354dee9ae99e8227391bc65e5e1` against base `adbcb9c264e207bed7b5a98a269f0c5951ec44b4`: [run](https://github.com/Maeximilion/MaexSocial/actions/runs/44959396129), [result](https://github.com/Maeximilion/MaexSocial/pull/202#issuecomment-7070556373). Its two handover findings are addressed by this revision; a review for the new head is pending. The unchanged client requests `claude-opus-5-5`, effort `high`, speed `standard`, `service_tier=standard_only` and validates the returned model. No Claude configuration or reviewer client changed.
+Claude API executed on work head `ce2c9755dc1e2624182fc80608fc5ef3379a964a` against base `adbcb9c264e207bed7b5a98a269f0c5951ec44b4`: [run](https://github.com/Maeximilion/MaexSocial/actions/runs/44960250028), [result](https://github.com/Maeximilion/MaexSocial/pull/202#issuecomment-7070674455). Its ownership/entry findings are addressed by this update. The recorded parent is a historical checkpoint, not the resume target; always use the live PR head and matching review/CI. A review for the new head is pending. The unchanged client requests `claude-opus-5-5`, effort `high`, speed `standard`, `service_tier=standard_only` and validates the returned model. No Claude configuration or reviewer client changed.
 
 ## Artifacts
 
 - Repository — [Maeximilion/MaexSocial](https://github.com/Maeximilion/MaexSocial).
 - Task and issue — [maintenance #201](https://github.com/Maeximilion/MaexSocial/issues/201).
 - Branch — `dev-codex/201-orchestrator-autonomy`.
-- Work head before this handover commit — `6f0d8efc2c788354dee9ae99e8227391bc65e5e1`.
+- Work head immediately before this handover update (historical parent, not resume target) — `ce2c9755dc1e2624182fc80608fc5ef3379a964a`.
 - PR — [#202](https://github.com/Maeximilion/MaexSocial/pull/202), open; use its actual final head/review/CI before integration.
 - Entry and adapter — [START](../../../.codex/orchestration/START.md), [MaexSocial adapter](../../../.agents/skills/coordinate-project-chats/SKILL.md).
 - Personal edition — installed outside the repository, not distributed by this PR or reviewed by its Claude workflow. Historical review hashes: `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`; `orchestrator/agents/openai.yaml` SHA-256 `835543744a0ab20e9eb2ce7e3e98f509ba8e49641421cb7bd94b9b4b58eb8db8`. The adapter's current table is the sole authoritative pin.

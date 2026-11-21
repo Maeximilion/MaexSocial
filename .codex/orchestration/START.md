@@ -7,7 +7,7 @@ Use this prompt in the owner's chosen MaexSocial chat. It loads the personal ski
 ```text
 $maexsocial-orchestrator
 
-Coordinate my authorized MaexSocial queue. Speak German to me; keep repository and GitHub text English. Read the repository's .agents/skills/coordinate-project-chats/SKILL.md adapter first; verify its pinned personal-skill hash before loading that skill. If the edition is missing or different, follow the adapter's maintenance rule rather than activating it.
+Coordinate my authorized MaexSocial queue. Speak German to me; keep repository and GitHub text English. Read the repository's .agents/skills/coordinate-project-chats/SKILL.md adapter first; verify the exact personal two-file inventory and both pinned hashes before loading that skill. If the edition is missing or different, follow the adapter's maintenance rule rather than activating it.
 
 Verify Maeximilion/MaexSocial, read AGENTS.md, CLAUDE.md, .codex/orchestration/README.md, CURRENT.md, status, charter and the current issue. Reconcile the live private ledger, actual chats and newest owner control. Keep one acting coordinator; verify relinquishment before takeover. Do not resume a pause from skill loading, old CURRENT text or a quota reset.
 
