@@ -9,7 +9,14 @@ Read this adapter first. Resolve and hash the owner's installed personal skill w
 
 On conflict, this adapter and MaexSocial policies override the personal skill, including review, stack, gate, pause and authority limits. Current owner instructions and host/system rules retain their precedence.
 
-Before reading or invoking the personal body, verify installed `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`, the reviewed edition in [the delivery handover](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md). Personal implicit invocation is disabled. Keep a missing or mismatching edition inactive: a changed hash requires a merged repository maintenance PR with focused personal-skill review evidence and the updated pin before activation. Main may handle that within existing maintenance authority; a local self-approval or ledger edit is insufficient. No remote download/replacement is authorized. This is an instruction check, not a sandbox.
+Before reading or invoking the personal body, verify the installed skill contains exactly these two files and compare both SHA-256 values from [the reviewed edition](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md):
+
+| File within `orchestrator/` | SHA-256 |
+| --- | --- |
+| `SKILL.md` | `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e` |
+| `agents/openai.yaml` | `835543744a0ab20e9eb2ce7e3e98f509ba8e49641421cb7bd94b9b4b58eb8db8` |
+
+The verified metadata disables implicit invocation. Keep missing, additional or mismatching files inactive. A changed edition needs an independent fresh reviewer to inspect its actual body and metadata, with reviewer/settings, exact hashes, findings and disposition recorded; Main cannot supply its own review. Then merge a repository maintenance PR containing that evidence and updated pins before activation. Existing maintenance authority covers this process, not local self-approval or a ledger-only update. No remote download/replacement is authorized. These instructions do not technically constrain the host loader or provide a sandbox.
 
 ## Establish ownership
 

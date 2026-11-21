@@ -6,6 +6,8 @@
 
 Reviewed personal edition: `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`; UI metadata `orchestrator/agents/openai.yaml` SHA-256 `835543744a0ab20e9eb2ce7e3e98f509ba8e49641421cb7bd94b9b4b58eb8db8`. The explicit MaexSocial entry checks the hash before loading the personal body; implicit personal invocation is disabled. A changed edition stays inactive until a maintenance PR with personal-skill review evidence and the updated hash is merged. Local self-approval cannot change the pin. Personal-skill review is distinct from Claude's repository PR review.
 
+The final personal edition was reviewed by a separate fresh-context Ponytail reviewer using `gpt-6-astra` / High, including the actual body and UI metadata. Its exact-hash targeted recheck returned Ship with no remaining findings. Main implemented the files and did not supply that review. Both files and the complete two-file set are verified before use; future pin changes require the same independent actual-content review and a merged maintenance PR. This is procedural evidence, not a claim that the desktop loader is technically constrained.
+
 The latest owner direction cancelled the replacement product coordinator and its work chats. This maintenance chat handles this delivery only. No product task is resumed. The historical [CURRENT](../../../.codex/orchestration/CURRENT.md) remains recovery evidence and now explicitly defers to current owner control and live state.
 
 ## Operating decisions
