@@ -77,19 +77,35 @@ ${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row 
 
 export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
   if (!uuid(occurrenceId)) deny();
-  const occurrence = (await db.query(`SELECT o.draft_id,o.state,o.due_at,o.timezone,l.provider_location FROM pilot.occurrences o
+  // Read the proposal and its occurrence from the same statement snapshot.
+  const occurrence = (await db.query<{
+    draft_id: string; state: string; due_at: Date; timezone: string; provider_location: string;
+    revision: number | null; text: string | null;
+  }>(`SELECT o.draft_id,o.state,o.due_at,o.timezone,l.provider_location,p.revision,p.text FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
-    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId])).rows[0];
-  if (!occurrence) deny();
-  const utc = (occurrence.due_at as Date).toISOString();
+    LEFT JOIN LATERAL (
+      SELECT revision,text FROM pilot.draft_revisions
+      WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id
+        AND $3::boolean AND o.state='draft' AND o.approval_id IS NULL
+        AND NOT EXISTS (SELECT 1 FROM pilot.attempts a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id)
+      ORDER BY revision DESC LIMIT 1
+    ) p ON true
+    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId, context.role === 'Manager'])).rows[0];
+  if (!occurrence) return deny();
+  const utc = occurrence.due_at.toISOString();
   const local = new Intl.DateTimeFormat('en-GB', {
     timeZone: occurrence.timezone, dateStyle: 'long', timeStyle: 'long'
   }).format(occurrence.due_at);
-  return page('Post occurrence details', `<dl>
+  const details = `<dl>
 <dt>Status</dt><dd>${html(occurrence.state)}</dd>
 <dt>Destination</dt><dd>${html(occurrence.provider_location)}</dd>
 <dt>Due time (UTC)</dt><dd><time datetime="${html(utc)}">${html(utc)}</time></dd>
-<dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>
+<dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>`;
+  const content = occurrence.revision === null || occurrence.text === null ? details : `<section aria-labelledby="proposed-text">
+<h2 id="proposed-text">Proposed text · Revision ${occurrence.revision}</h2>
+${details}
+<p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
+  return page('Post occurrence details', `${content}
 <p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`);
 }
 
