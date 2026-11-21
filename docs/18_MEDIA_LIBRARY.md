@@ -21,6 +21,8 @@ Suggested dashboard areas are **Media library**, **Create**, **Calendar** and **
 
 Example: a local business uploads three product photos, requests two weekly social drafts and one short video, reviews the variants and places approved content in the calendar. An optional local advertising proposal has its own audience, budget and activation approval. This is a target scenario, not a claim that every format or channel is already supported.
 
+> **Accepted local baseline, 2026-11-06.** The [G2 decision](superpowers/specs/2026-11-06-g2-acceptance-packet.md) accepts one synthetic Google Business Profile text occurrence with media disabled for every role. The Meta/media-first approach below is a historical proposal. Product AI candidate scope belongs to [#167](https://github.com/Maeximilion/MaexSocial/issues/167); later media and operating evidence remain in #11/#99 and #12.
+
 ## Delivery approaches for G2
 
 | Approach | Benefit | Trade-off |

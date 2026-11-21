@@ -54,7 +54,7 @@ There is no deployment pipeline or production application yet. MS-009 must defin
 
 ## Test data
 
-At G2, accept and map the proposed MEDIA-01–04, PLAN-01–04 and ADS-01–04 cases in the [media-library proposal](18_MEDIA_LIBRARY.md) to executable tasks. They cover asset isolation, billable-job recovery, recurrence, approval/stop races and separate advertising authority. These cases are specifications only; no application/provider test has been run for them.
+Apply PLAN-01/03/04 and the ADS-01 disabled-path control under the accepted pilot. For later separately approved media, recurrence or advertising, map the applicable MEDIA-01–04, PLAN-02 and ADS-02–04 cases in the [media-library proposal](18_MEDIA_LIBRARY.md) to executable tasks. They cover asset isolation, billable-job recovery, recurrence, approval/stop races and separate advertising authority. These cases are specifications only; no application/provider test has been run for them.
 
 Use synthetic businesses, accounts and content. Authorized test-account identifiers stay out of public fixtures. Provider fakes test deterministic behavior. Live provider tests must be labeled with environment, date and permission scope. A fake success does not establish live API availability.
 
@@ -62,7 +62,7 @@ Use synthetic businesses, accounts and content. Authorized test-account identifi
 
 Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds at G2 before interpreting a pilot as passing.
 
-A failed gate remains open. Fixes add regression coverage for the failing scenario. Code review uses `gpt-6-astra` with reasoning `high`, on the actual reviewed commit. Any later commit requires the relevant checks and review to apply to that new head.
+A failed gate remains open. Fixes add regression coverage for the failing scenario. The [MaexSocial PR review policy](tooling/agent-workflow.md#pr-review-policy) requires actual complete Claude API evidence for the current head/base and applicable integration checks.
 
 ## Advisory PR reviews
 
@@ -78,4 +78,4 @@ Automatic reviews return each finding once. The publisher builds the main commen
 
 The client distinguishes `output_token_limit` from `context_window_limit`, and invalid result JSON from invalid fields, findings, overflow or a manual answer. Older `output_truncated` and `invalid_schema` notices remain ambiguous. The [#106 offline reproduction](https://github.com/Maeximilion/MaexSocial/issues/109#issuecomment-6673074291) checks transport of all 49,210 escaped diff bytes. A synthetic response cannot establish a provider verdict.
 
-The [original run](https://github.com/Maeximilion/MaexSocial/actions/runs/42129500055) failed with no structured output, no usage and $0 reported. Maxi confirmed credit; its type and the failure's cause are unverified. The [credit FAQ](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans) distinguishes custom API apps from the Claude Code GitHub Action. Only the coordinator activates the workflow and tests [#60](https://github.com/Maeximilion/MaexSocial/pull/60) once. Record the exact historical SHA, Actions URL, genuine inline finding and main comment on [#102](https://github.com/Maeximilion/MaexSocial/issues/102). Keep the product pause and exact-head Codex fallback until a real receipt is verified; Claude supplements the required independent Astra/high review.
+The [original run](https://github.com/Maeximilion/MaexSocial/actions/runs/42129500055) failed with no structured output, no usage and $0 reported. Maxi confirmed credit; its type and the failure's cause are unverified. The [credit FAQ](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans) distinguishes custom API apps from the Claude Code GitHub Action. The historical diagnostic is retained in [#102](https://github.com/Maeximilion/MaexSocial/issues/102). For current delivery evidence follow the [PR review policy](tooling/agent-workflow.md#pr-review-policy) and use only the existing authorized route.
