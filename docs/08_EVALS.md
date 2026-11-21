@@ -60,6 +60,32 @@ Apply PLAN-01/03/04 and the ADS-01 disabled-path control under the [accepted tex
 
 Use synthetic businesses, accounts and content. Authorized test-account identifiers stay out of public fixtures. Provider fakes test deterministic behavior. Live provider tests must be labeled with environment, date and permission scope. A fake success does not establish live API availability.
 
+### Offline media trial records
+
+Run this from the repository root with Python 3.12 or later. The [fixture](../tests/fixtures/media-evaluation-v1.json) contains fictional job facts. The [evaluator](../scripts/media_evaluation.py) reads that JSON and writes a JSON receipt to standard output.
+
+```text
+python scripts/media_evaluation.py tests/fixtures/media-evaluation-v1.json
+```
+
+Version 1 uses one final snapshot for each distinct `job_id`. Record the source and revision identifiers and the rights judgment bound to both. Record the job outcome, cancellation state, whether output was reported, and whether private capture was confirmed. Omit a field or use `null` when evidence is missing. Supply `charge_minor` in minor currency units, `latency_ms` in milliseconds and `human_quality` as `pass` or `fail` only when the example has those observations. This fixture uses invented amounts in a single unit and never totals charges.
+
+Identical snapshots of the same job count once. Different snapshots of the same job are a conflict. Use a single reconciled snapshot to represent observations that supersede each other. A `complete` receipt requires matching granted rights, a known charge and a coherent terminal state. Success requires confirmed private capture. A confirmed cancellation requires evidence of no reported output or capture. Missing evidence gives `incomplete`. Conflicts, denied rights or a failed job give `failed`. The command exits zero for a valid fixture, including one containing failed jobs. Invalid fixture data exits nonzero.
+
+On 2026-11-21, the command ran locally on Windows with Python 3.14.7. Expected and observed results were six observations and five unique jobs:
+
+| Job | Expected and observed | Evidence |
+|---|---|---|
+| `captured` | Complete | Matching rights, reported output and confirmed private capture. The repeated snapshot counted once. |
+| `missing-source-rights` | Incomplete | Source and usage rights were missing. |
+| `conflicting-rights` | Failed | The rights evidence named an earlier revision of the same source. |
+| `cancel-requested` | Incomplete | Cancellation was requested, output was reported without private capture, and charge was unmeasured. |
+| `cancel-confirmed` | Complete | Cancellation was confirmed, no output was reported or captured, and charge was zero. |
+
+The [focused tests](../tests/test_media_evaluation.py) replay this receipt and demonstrate that changing the source or capture observation changes the verdict. Missing fictional latency, charge and human judgments appear as `unmeasured`. Approved thresholds remain `unmeasured` in this tool.
+
+Reuse the fixture and receipt format for [#167's evaluation plan](https://github.com/Maeximilion/MaexSocial/issues/167) and the [later #11 spike](https://github.com/Maeximilion/MaexSocial/issues/11). This receipt evaluates the supplied fictional records. Actual provider measurements, human assessment of media, approved thresholds, format and release evidence remain open for those deliveries and [#99](https://github.com/Maeximilion/MaexSocial/issues/99).
+
 ## Report format
 
 Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds before interpreting the applicable pilot as passing.
