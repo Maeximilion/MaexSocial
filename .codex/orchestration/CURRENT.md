@@ -1,5 +1,19 @@
 # Current coordinator handover
 
+## Independent work during an external wait · 2026-11-21 16:53 UTC
+
+The owner asked the coordinator to keep work moving while a prerequisite waits on an external answer. At a new material wait, identify the acceptance step that consumes the missing evidence. If an existing requirement has a concrete deliverable, an independent check, an identified consumer and its inputs already available, deliver it as a linked child. Give it only its actual prerequisites. Keep the unresolved proof, its owner, and the next decision date on the parent. Revisit this split when evidence or scope changes. A deadline triggers a decision and cannot substitute for a product, security or operating approval.
+
+| Parent and remaining decision | Independent work in progress | Available inputs |
+| --- | --- | --- |
+| [#163](https://github.com/Maeximilion/MaexSocial/issues/163) retains real staging host, integrated sign-in and accessibility evidence. | [#177](https://github.com/Maeximilion/MaexSocial/issues/177) reconciles the GUI guide with accepted signup and invitation behavior, then specifies keyboard entry, outcomes and return targets. | Accepted G2 #15 and existing protected portal paths. |
+| [#10](https://github.com/Maeximilion/MaexSocial/issues/10) retains the payer, cap, operator, release conditions and actual end-to-end result. | [#178](https://github.com/Maeximilion/MaexSocial/issues/178) prices the pilot's operating assumptions and exclusions using dated public supplier sources. | Accepted G2 #15 and the existing one-month workload. |
+| [#124](https://github.com/Maeximilion/MaexSocial/issues/124) retains actual Manager approval and reapproval. | [#179](https://github.com/Maeximilion/MaexSocial/issues/179) lets customers correct invalid draft text on the create and edit response pages. The existing keyboard test currently navigates to a new form. | Merged draft editing #140 and creation #144. |
+
+All three issues have separate active work chats and verified native parent and dependency links. No reservation is pending. The graph contains 100 issues and 122 dependency links and is acyclic. G3, G4 and G5 retain their preceding-gate dependencies. Main is clean at `fbf4d2cc979ec0fb094438f80e372e230bc34241`. At this checkpoint 22 issues and zero repository-wide PRs are open. Three of five work-chat slots are occupied; the original delivery batch is complete. Current CI and Claude review start with the actual delivery PRs. Initial publication order for ready work is #177, #178, #179; verify a single native stack if PRs overlap and merge each candidate separately.
+
+The provider check on resumption found zero comments or replies and no accepted answer. [#131](https://github.com/Maeximilion/MaexSocial/issues/131#issuecomment-7066005106) retains its evidence requirements. Check hourly while working, daily while idle and once on genuine resumption. If the evidence is still missing on **November 28, 2026 at 16:00 UTC**, present the owner with the supported options, the effect of deferring sensitive actions and any scope decision needed. The coordinator owns the follow-up. The [audit tracker](https://github.com/Maeximilion/MaexSocial/issues/162#issuecomment-7066005551) records the rule and current deliveries.
+
 ## Blocker dispositions · 2026-11-21 15:59 UTC
 
 [Historical recovery #83](https://github.com/Maeximilion/MaexSocial/issues/83#issuecomment-7065264731) is closed and Done by explicit owner decision. All eleven Git revisions had been restored. Four original worktrees were absent from the earlier snapshots; the final ignored contents remain partially unknown. No native issue depended on #83. Keep existing recovery controls.
