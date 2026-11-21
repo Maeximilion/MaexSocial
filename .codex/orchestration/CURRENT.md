@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Owner-directed ten-minute orchestration · 2026-11-21 15:38 UTC
+
+For the current run the owner authorized admitting independent, eligible local tasks at the ten-minute queue check, up to five occupied work chats in parallel mode, including outstanding reservations. Admission may precede a predecessor PR. A qualifying PR can also admit work between checks, with each reservation counted once. Keep the applicable lower cap for a large issue or gate. Continue serial merges, current-candidate CI and review, recovery and verified archive.
+
+At the owner's serial threshold, checkpoint other lanes safely and advance one assignment at a time through closeout. At the lower full-stop threshold, freeze the queue and the scheduled follow-up. An account reset does not resume paused work. The private ledger records the exact thresholds and active recurring schedule for this coordinator. On takeover, verify both ownership and schedule binding before resuming.
+
+At the first check there were 20 open issues, zero open PRs, zero occupied worker chats and zero pending reservations. The local evidence boundaries below still apply. Reassess changed evidence or newly eligible tasks on the next check.
+
 ## No eligible local delivery · 2026-11-21 15:35 UTC
 
 Canonical main is clean at `fbf4d2cc979ec0fb094438f80e372e230bc34241`. The original inherited delivery and subsequent work are closed out. Repository-wide open PRs **0**; active or paused worker chats **0/5**; pending reservations **0**. The verified #175 merge and archive remain available once a new independent task qualifies. The previous #174 admission was consumed by #173 when #174 was still open.
