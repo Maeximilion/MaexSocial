@@ -1,11 +1,41 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { validateFixture, safeDiagnostics, verifyTopology, type Fixture } from '../../ops/local/fixture.js';
+
+test('migration rejects missing or malformed throttle keys before database access without replacing them', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'maex-throttle-key-'));
+  const entry = resolve('dist/pilot/scripts/pilot-db.js');
+  const invoke = `require(${JSON.stringify(entry)}).migrate('up').catch(e=>{console.error(e.message);process.exitCode=1})`;
+  try {
+    const folder = join(root, 'work', 'pilot'); await mkdir(folder, { recursive: true });
+    const id = randomBytes(16).toString('hex');
+    const legacy = JSON.stringify({ schema: 1, id, project: `maex-pilot-${id}`, expiresAt: Date.now() + 10000,
+      ownerPassword: 'a'.repeat(64), appPassword: 'b'.repeat(64), identityPassword: 'c'.repeat(64), keycloakPassword: 'd'.repeat(64) });
+    await writeFile(join(folder, 'fixture.json'), legacy);
+    for (const value of [undefined, '', 'g'.repeat(64), 'a'.repeat(63)]) {
+      if (value !== undefined) await writeFile(join(folder, 'throttle-key'), value);
+      const before = await readdir(folder);
+      const result = spawnSync(process.execPath, ['-e', invoke], { cwd: root, encoding: 'utf8', timeout: 10000,
+        env: { ...process.env, PILOT_CONTAINER: '0' } });
+      assert.equal(result.status, 1); assert.equal(result.stdout, '');
+      assert.equal(result.stderr.trim(), 'Fixture throttle key is missing or invalid; preserve the old fixture and initialize a fresh one.');
+      assert.deepEqual(await readdir(folder), before);
+      assert.equal(await readFile(join(folder, 'fixture.json'), 'utf8'), legacy);
+      if (value !== undefined) assert.equal(await readFile(join(folder, 'throttle-key'), 'utf8'), value);
+    }
+    await writeFile(join(folder, 'throttle-key'), 'a'.repeat(64));
+    const valid = spawnSync(process.execPath, ['-e', invoke], { cwd: root, encoding: 'utf8', timeout: 10000,
+      env: { ...process.env, PILOT_CONTAINER: '0' } });
+    assert.equal(valid.stderr.trim(), 'Database access requires the isolated runner', 'valid key reaches the next guard');
+  } finally {
+    assert.equal(dirname(root), resolve(tmpdir())); await rm(root, { recursive: true, force: true });
+  }
+});
 
 test('old or invalid realm-import fixtures fail before Docker and preserve their directory', async () => {
   const root = await mkdtemp(join(tmpdir(), 'maex-status-import-'));

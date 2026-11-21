@@ -25,7 +25,8 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     const tenants: string[] = []; const memberships: string[] = [];
     for (const name of ['Keyboard A', 'Keyboard B']) {
       const tenant = (await db.query('INSERT INTO pilot.tenants(name) VALUES($1) RETURNING id', [name])).rows[0].id; tenants.push(tenant);
-      memberships.push((await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Employee') RETURNING id", [tenant, identity])).rows[0].id);
+      const role = name === 'Keyboard A' ? 'Employee' : 'Manager';
+      memberships.push((await db.query('INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,$3) RETURNING id', [tenant, identity, role])).rows[0].id);
     }
     const token = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
     await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
@@ -109,9 +110,11 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     await page.keyboard.press('Enter');
     await page.waitForURL(`https://customer:8443/customer/occurrences/${occurrence}`, { timeout: 5000 });
     assert.equal(await page.getByRole('heading', { name: 'Post occurrence details', exact: true }).count(), 1);
-    assert.ok((await page.locator('main').textContent())!.includes('Keyboard <location> & context'));
-    assert.ok((await page.locator('main').textContent())!.includes('1 January 2030 at 13:00:00'));
-    assert.equal(await page.locator('time').getAttribute('datetime'), '2030-01-01T12:00:00.000Z');
+    const proposal = page.getByRole('region', { name: 'Proposed text · Revision 3' });
+    assert.ok((await proposal.textContent())!.includes('Keyboard edited <literal> text\nSecond line'));
+    assert.ok((await proposal.textContent())!.includes('Keyboard <location> & context'));
+    assert.ok((await proposal.textContent())!.includes('1 January 2030 at 13:00:00'));
+    assert.equal(await proposal.locator('time').getAttribute('datetime'), '2030-01-01T12:00:00.000Z');
     assert.equal(await page.locator('form').count(), 0);
     await page.screenshot({ path: '/artifacts/occurrence.png', fullPage: true });
     await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to workspace');
