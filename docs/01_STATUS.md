@@ -1,6 +1,6 @@
 # Project status
 
-- Status date — 2026-11-18
+- Status date — 2026-11-21
 - Stage — Bounded G2 accepted; Task 1 and Task 2A1/#135 merged; #136 adds bounded local identity-status reads; real identity lifecycle retained in #131
 - Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06; #113 merged and annotated gate-g2 verified at `192d0c5`. G3–G5 open. #10/#82/#131 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
 - Product implementation — Task 1 / #118 and synthetic session/tenant/CSRF/dashboard foundation #135 merged. #136 supplies a read-only Keycloak status component with local positive/disabled/denied guard evidence; #131 retains all real signup/login/activation/recovery/MFA and completion provenance. #123 Employee management and #124 content approval retain their real auth prerequisites; Root decides contract readiness before dispatch. Task 2 needs A1+A2+B+C and integrated evidence; Task 3 still waits. See the [delivery plan](superpowers/plans/2026-11-06-task-2-deliveries.md), [evidence map](superpowers/plans/2026-11-05-ms-009-pilot-evidence-map.md) and [fixture commands](../ops/local/README.md). No public auth or G3/G5 acceptance is supplied by A1 or #136.
@@ -9,6 +9,8 @@
 - Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
 
 ## Current work
+
+November 21 bounded content delivery [#169](https://github.com/Maeximilion/MaexSocial/issues/169) adds a read-only Manager preview in the existing occurrence detail. It shows the proposed current draft revision with the actual destination and both stored time interpretations. [Local evidence](handovers/sessions/2026-11-21-approval-preview.md) records a retained-volume run with the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). Integration and Claude API review remain pending at this checkpoint. #124/#131 and G3–G5 remain open.
 
 November 18 bounded Task 2A2 component [#154](https://github.com/Maeximilion/MaexSocial/issues/154) implements internal
 durable independent account/source throttles. The [private contract](../ops/local/README.md#internal-accountsource-throttles-154)

@@ -37,13 +37,13 @@ test('stored occurrence details preserve active-tenant authority and domain reco
     await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Manager')", [b.tenant, identity]);
     await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
       VALUES($1,$2,$3,1,$4,1,$5,1,'customer',now(),now(),now()+interval '8 hours')`, [tokenHash(token), tokenHash(csrf), identity, a.tenant, membership]);
-    return { token, csrf };
+    return { token, csrf, membership };
   };
   const employee = await actor('Employee'), manager = await actor('Manager');
-  const send = async (who: typeof employee, path: string, cookie = `__Host-session=${who.token}; __Host-csrf=${who.csrf}`, body?: string) =>
+  const send = async (who: typeof employee, path: string, cookie = `__Host-session=${who.token}; __Host-csrf=${who.csrf}`, body?: string, method = 'GET') =>
     new Promise<{ status: number; text: string }>((resolve, reject) => {
-      const req = request({ hostname: '127.0.0.1', servername: 'customer', port: address.port, path, method: 'GET', ca,
-        headers: { host: 'customer:8443', cookie, 'content-type': 'application/x-www-form-urlencoded', ...(body ? { 'content-length': Buffer.byteLength(body) } : {}) } }, res => {
+      const req = request({ hostname: '127.0.0.1', servername: 'customer', port: address.port, path, method, ca,
+        headers: { host: 'customer:8443', cookie, origin: 'https://customer:8443', 'content-type': 'application/x-www-form-urlencoded', ...(body ? { 'content-length': Buffer.byteLength(body) } : {}) } }, res => {
         let text = ''; res.setEncoding('utf8'); res.on('data', chunk => text += chunk);
         res.on('end', () => resolve({ status: res.statusCode!, text }));
       }); req.on('error', reject); req.end(body);
@@ -75,6 +75,69 @@ test('stored occurrence details preserve active-tenant authority and domain reco
         const july = await send(who, `/customer/occurrences/${summer}`); assert.equal(july.status, 200);
         assert.ok(july.text.includes('2030-07-01T12:00:00.000Z')); assert.ok(july.text.includes('1 July 2030 at 14:00:00'));
       }
+      assert.deepEqual(await snapshot(), before);
+    });
+    await t.test('only a current Manager sees the latest proposed revision with the actual destination and times', async () => {
+      const previewPath = `/customer/occurrences/${summer}`;
+      await db.query('UPDATE pilot.occurrences SET location_id=$1 WHERE tenant_id=$2 AND id=$3', [target, a.tenant, summer]);
+      const beforeEdit = await snapshot();
+      const original = await send(manager, previewPath);
+      assert.equal(original.status, 200);
+      assert.ok(original.text.includes('Proposed text · Revision 1'));
+      assert.ok(original.text.includes('Invented plain text'));
+      assert.deepEqual(await snapshot(), beforeEdit);
+
+      const revision = { revisionId: a.revision, csrf: employee.csrf, text: 'Updated <b>literal</b> & text\nSecond line' };
+      assert.equal((await send(employee, `/customer/drafts/${a.draft}`, undefined, new URLSearchParams(revision).toString(), 'POST')).status, 303);
+      const beforeReads = await snapshot();
+      const preview = await send(manager, previewPath);
+      assert.equal(preview.status, 200);
+      assert.ok(preview.text.includes('Proposed text · Revision 2'));
+      assert.ok(preview.text.includes('Updated &lt;b&gt;literal&lt;/b&gt; &amp; text\nSecond line'));
+      assert.ok(preview.text.includes('Stored destination &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; branch'));
+      assert.ok(preview.text.includes('Europe/Berlin') && preview.text.includes('1 July 2030 at 14:00:00'));
+      assert.ok(preview.text.includes('2030-07-01T12:00:00.000Z'));
+      assert.doesNotMatch(preview.text, /Invented plain text|fake-location|<b>literal|<form|<button/);
+      const employeeView = await send(employee, `${previewPath}?role=Manager`);
+      assert.equal(employeeView.status, 200);
+      assert.doesNotMatch(employeeView.text, /Proposed text|Updated/);
+      assert.ok(employeeView.text.includes('2030-07-01T12:00:00.000Z'));
+      assert.equal((await send(manager, `/customer/occurrences/${foreign}`)).status, 403);
+      assert.deepEqual(await snapshot(), beforeReads);
+    });
+    await t.test('only an unapproved draft with no attempt has a proposal', async () => {
+      const unavailable = await occurrence(db, a), claimed = await occurrence(db, a);
+      const approve = async (id: string) => (await db.query(`INSERT INTO pilot.approvals
+        (tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+        SELECT tenant_id,id,draft_id,$3,location_id,$4,1,1,due_at,timezone,now() FROM pilot.occurrences
+        WHERE tenant_id=$1 AND id=$2 RETURNING id`, [a.tenant, id, a.revision, a.membership])).rows[0].id;
+      const approval = await approve(unavailable), claimedApproval = await approve(claimed);
+      await db.query('UPDATE pilot.occurrences SET approval_id=$1 WHERE tenant_id=$2 AND id=$3', [approval, a.tenant, unavailable]);
+      await db.query('INSERT INTO pilot.attempts(tenant_id,occurrence_id,approval_id) VALUES($1,$2,$3)', [a.tenant, claimed, claimedApproval]);
+      const before = await snapshot();
+      for (const id of [unavailable, claimed, winter]) {
+        const view = await send(manager, `/customer/occurrences/${id}`);
+        assert.equal(view.status, 200);
+        assert.doesNotMatch(view.text, /Proposed text|Updated|Invented plain text/);
+      }
+      assert.deepEqual(await snapshot(), before);
+      for (const state of ['approved', 'held', 'exported', 'in_flight', 'unknown', 'pending', 'confirmed', 'rejected', 'quarantined']) {
+        await db.query('UPDATE pilot.occurrences SET state=$1 WHERE tenant_id=$2 AND id=$3', [state, a.tenant, summer]);
+        const view = await send(manager, `/customer/occurrences/${summer}`);
+        assert.equal(view.status, 200);
+        assert.ok(view.text.includes(`<dd>${state}</dd>`));
+        assert.doesNotMatch(view.text, /Proposed text|Updated/);
+      }
+      await db.query("UPDATE pilot.occurrences SET state='draft' WHERE tenant_id=$1 AND id=$2", [a.tenant, summer]);
+    });
+    await t.test('a stored draft without a text revision retains the status page', async () => {
+      const draft = (await db.query('INSERT INTO pilot.drafts(tenant_id) VALUES($1) RETURNING id', [a.tenant])).rows[0].id;
+      const id = await occurrence(db, { ...a, draft });
+      const before = await snapshot();
+      const view = await send(manager, `/customer/occurrences/${id}`);
+      assert.equal(view.status, 200);
+      assert.ok(view.text.includes('<dd>draft</dd>'));
+      assert.doesNotMatch(view.text, /Proposed text|Revision/);
       assert.deepEqual(await snapshot(), before);
     });
     await t.test('foreign and unknown IDs deny equally despite second membership and forged authority input', async () => {
@@ -111,10 +174,26 @@ test('stored occurrence details preserve active-tenant authority and domain reco
       for (const instant of ['2030-10-27T00:30:00.000Z', '2030-10-27T01:30:00.000Z']) {
         await db.query('UPDATE pilot.occurrences SET due_at=$1 WHERE tenant_id=$2 AND id=$3', [instant, a.tenant, summer]);
         const before = await snapshot();
-        const page = await send(employee, `/customer/occurrences/${summer}`); assert.equal(page.status, 200);
+        const page = await send(manager, `/customer/occurrences/${summer}`); assert.equal(page.status, 200);
         assert.ok(page.text.includes(instant)); assert.ok(page.text.includes('27 October 2030 at 02:30:00'));
+        assert.match(page.text, instant.includes('T00:') ? /02:30:00 (?:CEST|GMT\+2)/ : /02:30:00 (?:CET|GMT\+1)/);
+        assert.ok(page.text.includes('Proposed text · Revision 2'));
         assert.deepEqual(await snapshot(), before);
       }
+    });
+    await t.test('unavailable stored time fails closed and demotion invalidates the prior Manager session', async () => {
+      const previewPath = `/customer/occurrences/${summer}`;
+      await db.query("UPDATE pilot.occurrences SET timezone='Fixture/Unavailable' WHERE tenant_id=$1 AND id=$2", [a.tenant, summer]);
+      const before = await snapshot();
+      const unavailable = await send(manager, previewPath);
+      assert.equal(unavailable.status, 503);
+      assert.doesNotMatch(unavailable.text, /Proposed text|Updated/);
+      assert.deepEqual(await snapshot(), before);
+      await db.query("UPDATE pilot.occurrences SET timezone='Europe/Berlin' WHERE tenant_id=$1 AND id=$2", [a.tenant, summer]);
+      await db.query("UPDATE pilot.memberships SET role='Employee',version=version+1 WHERE tenant_id=$1 AND id=$2", [a.tenant, manager.membership]);
+      const afterDemotion = await snapshot();
+      assert.equal((await send(manager, previewPath)).status, 403);
+      assert.deepEqual(await snapshot(), afterDemotion);
     });
   } finally { server.closeAllConnections(); await new Promise<void>(r => server.close(() => r())); await db.end(); }
 });

@@ -60,6 +60,12 @@ Implemented/local evidence: current versions/expiry, synthetic MFA age/factor re
 
 ## Coverage
 
+### Proposed occurrence preview (#169)
+
+The existing protected occurrence GET reads the current revision, occurrence and destination in one PostgreSQL statement snapshot. A current Manager in the active tenant sees the proposed plain text and revision number with the stored occurrence destination, local time and UTC instant when the occurrence is `draft`, has no current approval and has no attempt. The draft's starting location does not determine the destination. A missing revision leaves the status view available. An unrenderable stored time follows the existing unavailable response. The GET retains existing customer authority checks and has no domain write or action controls.
+
+The [delivery checkpoint](../../handovers/sessions/2026-11-21-approval-preview.md) covers the isolated checks. Actual approval, reapproval and identity-backed MFA remain under #124 and #131.
+
 ### Synthetic business facts (#153)
 
 Employees and Managers can consult `GET /customer/facts` and `GET /customer/facts/:locationId`, linked from the workspace and draft list. The existing current identity/session/tenant/membership transaction remains mandatory. The server resolves locations in the active tenant only, even for an identity with another tenant membership. Foreign, unknown and malformed IDs receive the same generic denial. Own locations without facts and workspaces without locations have explicit empty states.
