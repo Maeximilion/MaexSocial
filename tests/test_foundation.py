@@ -13,6 +13,23 @@ from scripts import check_repo, project_sync
 
 
 class FoundationTests(unittest.TestCase):
+    def test_manual_orchestrator_wiring(self):
+        root = Path(__file__).resolve().parents[1]
+        skill = root / ".agents/skills/maexsocial-orchestrator"
+        self.assertTrue((skill / "SKILL.md").is_file())
+        targets = set(local_targets((skill / "SKILL.md").read_text(encoding="utf-8")))
+        for target in (
+            "../../../.codex/orchestration/START.md",
+            "../coordinate-project-chats/SKILL.md",
+            "../../../.codex/orchestration/README.md",
+            "../../../.codex/orchestration/CURRENT.md",
+        ):
+            with self.subTest(target=target):
+                self.assertIn(target, targets)
+                self.assertTrue((skill / target).resolve().is_file())
+        policy = (skill / "agents/openai.yaml").read_text(encoding="utf-8")
+        self.assertRegex(policy, r"(?m)^policy:\n  allow_implicit_invocation: false$")
+
     def test_manual_anatomy_command_wiring(self):
         root = Path(__file__).resolve().parents[1]
         skill = root / ".agents/skills/source-command-anatomy"

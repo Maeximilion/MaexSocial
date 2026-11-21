@@ -25,6 +25,8 @@ Claude memory/skills/rules behavior: [memory and imports](https://code.claude.co
 
 Codex is the primary programmer here. Request [source-command-anatomy](../../.agents/skills/source-command-anatomy/SKILL.md) for a read-only overview or name a reader path, issue or PR. The wrapper resolves the worktree root and uses the [shared procedure](../../.claude/commands/anatomy.md). Claude Code reads that same file as `/anatomy`. In a Claude-first repository, start with its local instructions and map its own sources.
 
+For an explicitly requested coordinator startup, invoke [$maexsocial-orchestrator](../../.agents/skills/maexsocial-orchestrator/SKILL.md) or use the [full startup prompt](../../.codex/orchestration/START.md). The thin Codex entry reuses the coordination contract, is explicit-only and does not invoke `/start` advisories or change Claude configuration. Ownership transfer and product-work resume remain separate decisions.
+
 ## Normal task flow
 
 1. Read the issue, check branch/dirty state, fetch, then use a task worktree. Run `/start` or `/task` and their Codex equivalents only when explicitly invoked; they alone trigger the advisory GitHub check.
@@ -48,7 +50,7 @@ Owner decision, 2026-11-17 ([#125](https://github.com/Maeximilion/MaexSocial/iss
 
 The hook performs only the cheap links/JSON/TOML/SVG check. It does not format files, commit, publish, contact providers or replace full tests. Failed checks, startup errors and timeouts emit only a user-visible `systemMessage` warning with a manual follow-up command; they do not block task completion or force another agent turn. Invalid/oversized input, unrelated events and repeated Stop invocations are skipped without running validation. A warning or skipped callback is not evidence of a passing check. The checker itself and required CI still reject invalid repository content.
 
-Owner preference, 2026-11-05: workflow reminders and quality-check hooks are advisory by default. The model-routing hook keeps its explicit decision pause. Secret-prevention Git hooks and product acceptance gates are separate controls. The inspected active Ponytail session/prompt hooks already supply context without task-blocking decisions; disabled legacy hooks remain disabled. This inventory covers the inspected local Codex configuration and MaexSocial registrations, not all hooks in other repositories or future plugin versions.
+Owner preference: workflow reminders, quality-check hooks and model-routing recommendations are advisory; they do not pause authorized work. Secret-prevention Git hooks and product acceptance gates are separate controls. The inspected active Ponytail session/prompt hooks already supply context without task-blocking decisions; disabled legacy hooks remain disabled. This inventory covers the inspected local Codex configuration and MaexSocial registrations, not all hooks in other repositories or future plugin versions.
 
 Claude runs Python directly with its project-directory argument. Codex resolves the Git root from the session directory before running the same script, including nested working directories. Python and Git must be available. Check the script/configuration and tests together after changes. [Claude hooks](https://code.claude.com/docs/en/hooks), [Codex hooks](https://learn.chatgpt.com/docs/hooks)
 
