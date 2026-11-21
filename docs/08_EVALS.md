@@ -99,12 +99,10 @@ npm run pilot:build
 node --test dist/pilot/tests/pilot/video-replay.test.js
 ```
 
-Both scenarios passed locally on Windows on 2026-11-21.
-
 | Sequence | Observed result |
 | --- | --- |
-| Submit, lose the reply, reopen and replay the same job, stop, try a new job, reconcile the original twice | One fake acceptance. The original outcome and charge stayed unknown and its reservation stayed held. The new job acquired no reservation. Reconciliation left the database bytes unchanged. |
-| Stop before the first submission, reopen, submit and reconcile | Zero fake acceptances and no reservation. The stop persisted. |
+| Submit, lose the reply, reopen and replay the same job, reconcile, stop, try a new job, reconcile again | One fake acceptance. The original outcome and charge stayed unknown and its reservation stayed held. The new job acquired no reservation. Repeated reconciliation left the database bytes unchanged both while running and while stopped. |
+| Stop before the first submission, submit in two separate processes, then reconcile | Zero fake acceptances and no reservation. The stop persisted. |
 
 This [#198 fixture](https://github.com/Maeximilion/MaexSocial/issues/198) runs offline with fictional identifiers. Actual provider behavior and charges require the [#11 spike](https://github.com/Maeximilion/MaexSocial/issues/11). [G4 acceptance](https://github.com/Maeximilion/MaexSocial/issues/17) remains open.
 

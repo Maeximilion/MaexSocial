@@ -37,6 +37,11 @@ test('lost reply, reopened replay and read-only reconciliation keep one actual s
   assert.deepEqual(f.acceptedJobs(), [f.job]);
   const attempt = { job: f.job, outcome: 'unknown', charge: 'unknown', reservation: 'held' };
   assert.deepEqual(f.read('submit', f.job), { stopped: false, attempt });
+  const runningDatabase = readFileSync(f.database);
+  for (let i = 0; i < 2; i++) assert.deepEqual(f.read('reconcile', f.job), { stopped: false, attempt });
+  assert.deepEqual(f.read('reconcile', 'fictional-second'), { stopped: false, attempt: null });
+  assert.deepEqual(readFileSync(f.database), runningDatabase);
+  assert.deepEqual(f.acceptedJobs(), [f.job]);
   assert.deepEqual(f.read('stop'), { stopped: true });
   assert.deepEqual(f.read('submit', 'fictional-second'), { stopped: true, attempt: null });
   const before = readFileSync(f.database);
@@ -48,6 +53,7 @@ test('lost reply, reopened replay and read-only reconciliation keep one actual s
 test('stop before dispatch survives reopening with no accepted job or reservation', t => {
   const f = fixture(t);
   assert.deepEqual(f.read('stop'), { stopped: true });
+  assert.deepEqual(f.read('submit', f.job), { stopped: true, attempt: null });
   assert.deepEqual(f.read('submit', f.job), { stopped: true, attempt: null });
   assert.deepEqual(f.read('reconcile', f.job), { stopped: true, attempt: null });
   assert.deepEqual(f.acceptedJobs(), []);
