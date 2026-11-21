@@ -38,11 +38,11 @@ test('protected text editing preserves tenant, revision and approval boundaries'
   const employee = await actor('Employee'), manager = await actor('Manager');
   type Actor = typeof employee;
   const send = async (who: Actor, path: string, body?: Record<string, string> | string, origin = 'https://customer:8443', cookie?: string, type = 'application/x-www-form-urlencoded') =>
-    new Promise<{ status: number; text: string; location: string | undefined }>((resolve, reject) => {
+    new Promise<{ status: number; text: string; location: string | undefined; contentType: string | undefined }>((resolve, reject) => {
       const req = request({ hostname: '127.0.0.1', servername: 'customer', port: address.port, path, method: body === undefined ? 'GET' : 'POST', ca,
         headers: { host: 'customer:8443', origin, cookie: cookie ?? `__Host-session=${who.token}; __Host-csrf=${who.csrf}`, 'content-type': type } }, res => {
         let text = ''; res.setEncoding('utf8'); res.on('data', chunk => text += chunk);
-        res.on('end', () => resolve({ status: res.statusCode!, text, location: res.headers.location }));
+        res.on('end', () => resolve({ status: res.statusCode!, text, location: res.headers.location, contentType: res.headers['content-type'] }));
       }); req.on('error', reject); req.end(typeof body === 'string' ? body : body ? new URLSearchParams(body).toString() : undefined);
     });
   const path = `/customer/drafts/${a.draft}`;
@@ -88,9 +88,12 @@ test('protected text editing preserves tenant, revision and approval boundaries'
         for (const field of ['tenantId', 'role', 'identityId', 'draftId', 'revisionId', 'revision', 'schedule', 'dueAt', 'approvalId', 'occurrenceId', 'attachment', 'upload', 'mediaUrl', 'objectReference']) {
           assert.equal((await send(who, '/customer/drafts', { ...valid, [field]: b.location })).status, 400);
         }
-        for (const text of ['', '\u0000', '😀'.repeat(1501), '\r\n' + 'x'.repeat(1500), 'x'.repeat(22000)]) {
-          assert.equal((await send(who, '/customer/drafts', { ...valid, text })).status, 400);
+        for (const text of ['', '\u0000', '😀'.repeat(1501), '\r\n' + 'x'.repeat(1500)]) {
+          const invalid = await send(who, '/customer/drafts', { ...valid, text });
+          assert.equal(invalid.status, 400); assert.match(invalid.contentType!, /^text\/html\b/i);
         }
+        const oversized = await send(who, '/customer/drafts', { ...valid, text: 'x'.repeat(22000) });
+        assert.equal(oversized.status, 400); assert.match(oversized.contentType!, /^text\/plain\b/i);
         assert.equal((await send(who, '/customer/drafts', { text: 'Missing location', csrf: who.csrf })).status, 400);
         assert.equal((await send(who, '/customer/drafts', `text=one&text=two&csrf=${who.csrf}`)).status, 400);
         assert.equal((await send(who, '/customer/drafts', '{}', undefined, undefined, 'application/json')).status, 400);
@@ -271,6 +274,14 @@ test('protected text editing preserves tenant, revision and approval boundaries'
       const otherDraft = (await db.query('INSERT INTO pilot.drafts(tenant_id) VALUES($1) RETURNING id', [a.tenant])).rows[0].id;
       await occurrence(db, { ...a, draft: otherDraft }); await occurrence(db, independent);
       const before = await snapshot();
+      const sessionActivity = () => db.query('SELECT last_seen_at::text FROM pilot.sessions WHERE token_hash=$1', [tokenHash(employee.token)]);
+      const lastSeen = (await sessionActivity()).rows;
+      const invalidText = 'x'.repeat(1501);
+      const invalid = await send(employee, path, { text: invalidText, revisionId: old.id, csrf: employee.csrf });
+      assert.equal(invalid.status, 400); assert.match(invalid.contentType!, /^text\/html\b/i);
+      assert.ok(invalid.text.includes(`name="revisionId" value="${old.id}"`));
+      assert.deepEqual(await snapshot(), before);
+      assert.deepEqual((await sessionActivity()).rows, lastSeen);
       assert.equal((await send(manager, path, { text: 'New revision requiring fresh approval', revisionId: old.id, csrf: manager.csrf })).status, 303);
       const after = await snapshot();
       for (const table of ['approvals', 'attempts', 'locations', 'audit', 'budget_reservations', 'drafts']) assert.deepEqual(after[table], before[table], table);
@@ -285,8 +296,11 @@ test('protected text editing preserves tenant, revision and approval boundaries'
       assert.deepEqual(sort(after.occurrences as { row: Record<string, unknown> }[]), sort(expected));
       assert.equal((after.draft_revisions as unknown[]).length, (before.draft_revisions as unknown[]).length + 1);
       const unchanged = await snapshot();
-      const stale = await send(employee, path, { text: 'Overwrite', revisionId: old.id, csrf: employee.csrf });
-      assert.equal(stale.status, 409); assert.match(stale.text, /reload/i); assert.deepEqual(await snapshot(), unchanged);
+      for (const text of [invalidText.slice(0, -1), invalidText]) {
+        const stale = await send(employee, path, { text, revisionId: old.id, csrf: employee.csrf });
+        assert.equal(stale.status, 409); assert.match(stale.contentType!, /^text\/plain\b/i); assert.match(stale.text, /reload/i);
+      }
+      assert.deepEqual(await snapshot(), unchanged);
     });
     await t.test('two actual editors block on the same draft and exactly one revision wins', async () => {
       const old = await latest(), before = await snapshot();

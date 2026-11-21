@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Website and stagger rule delivered · 2026-11-21 17:39 UTC
+
+[Website #186](https://github.com/Maeximilion/MaexSocial/pull/186) and [worker intake #188](https://github.com/Maeximilion/MaexSocial/pull/188) merged individually from native stack #189. Canonical main is clean at `bf879e69193be6ea1f10fe27ede482d47e2904b2`. The coordinator checkout now includes both deliveries and the prior customer and operating-cost work. The final #188 commit shares tree `379ffa4b503e4738e67384ad1d9c25cd2d68adda` with its verified integration candidate. The final [Claude API receipt](https://github.com/Maeximilion/MaexSocial/pull/188#issuecomment-7066552498) reported zero findings. Four earlier threads were resolved and [Pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44930523281) passed 29/29 before and after a retained restart. The active stagger applies to independent ticks, open PRs and unused merge/archive pairs, including across handover.
+
+The website work chat completed recovery and archival. Its offline HTML, mobile and desktop captures, unique Git state and completed transcript were verified. The published website implementation and customization guidance are in the [website handover](../../docs/handovers/sessions/2026-11-21-local-website-entry.md).
+
+Only [#187](https://github.com/Maeximilion/MaexSocial/issues/187) was admitted in the 17:30 UTC window, over sixteen minutes after #185's actual start. It owns the read-only two-editor conflict recovery. No second slot was reserved. #185 is in closeout following the verified merge. Reconcile the actual roster and approvals before the next admission; retain the previously configured provider follow-up.
+
 ## Local website integrated · 2026-11-21 17:29 UTC
 
 [Website PR #186](https://github.com/Maeximilion/MaexSocial/pull/186) merged as `11920eec675699fda6fa233bf1ae2ea7396dbf22`. The checked candidate and actual main commit share tree `97763a9f3cf0e3f4a970bdf3e734c983aabb481a`. [Pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44929580382) passed 29/29 before and after the retained-volume restart. The [current Claude API review](https://github.com/Maeximilion/MaexSocial/pull/186#issuecomment-7066423321) covered the actual base and head with zero findings. #183 is closed and Done. The website preview, desktop and mobile images are available privately; the [task handover](https://github.com/Maeximilion/MaexSocial/blob/11920eec675699fda6fa233bf1ae2ea7396dbf22/docs/handovers/sessions/2026-11-21-local-website-entry.md) locates the source and customization points on the integrated revision. The website stays local to the pilot.
