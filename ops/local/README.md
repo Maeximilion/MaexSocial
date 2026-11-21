@@ -27,7 +27,16 @@ Docker 29.9.2 on the development host accepted internal-network port declaration
 
 Application login is a non-superuser with no role/database creation, bypass-RLS or identity-database access. It receives explicit table/column privileges, including generated-only occurrence IDs and no delete permission. Composite keys prevent cross-tenant references; they do not replace the later API's active-tenant and role checks. Approval/revision/audit snapshots are immutable. Membership and grant changes advance a version. Later tasks must atomically check current versions and serialize approval, hold/export/claim, revocation and audit. This delivery does not claim those transitions or tenant row-level read authorization.
 
-`work/pilot/provider-state/` is reserved separately from both database volumes for the future counting fake. It is retained by down/restart; no provider is implemented here. Task 5 must exclude that independent state from application restore. Remaining local secrets/fixtures stay isolated and untracked; publish only sanitized results.
+`work/pilot/provider-state/` holds the [local GBP counting fake](../../tests/pilot/fake-gbp.ts) separately from both database volumes. Each accepted `create` commits one SQLite row, even when its reply is lost. Reopening the directory retains counts and scripted observations. Task 5 must exclude this independent state from application restore.
+
+From the worktree root with the pinned Node 24.22.2 and dependencies installed, run:
+
+```text
+npm run pilot:build
+node --test dist/pilot/tests/pilot/fake-gbp.test.js
+```
+
+The focused tests use fresh temporary directories and invented identifiers. The default adapter directory is created by `pilot:up`. A scenario supplies timed frames relative to acceptance, each with zero, one or several candidate states. Polling selects a frame using the injected clock and the original attempt identifiers, plus the resource name when known. The fake returns observations for worker tests. Real Manager approval, provider access and publication decisions remain separate.
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
