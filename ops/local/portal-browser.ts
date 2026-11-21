@@ -21,8 +21,9 @@ async function serve(): Promise<void> {
   console.log('Portal browser ready.');
 }
 
-export async function runPortalBrowserTest(suite: 'portal' | 'oidc' | 'oidc-step-up' = 'portal'): Promise<string> {
-  if (!['portal', 'oidc', 'oidc-step-up'].includes(suite)) throw new Error('Unknown browser test suite');
+export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 'oidc-step-up' = 'portal'): Promise<string> {
+  if (!['entry', 'portal', 'oidc', 'oidc-step-up'].includes(suite)) throw new Error('Unknown browser test suite');
+  const needsKeycloak = suite === 'oidc' || suite === 'oidc-step-up';
   const f = await loadFixture(); verifyContainers(f);
   const alias = `portal-browser-${randomBytes(4).toString('hex')}`;
   const name = `${f.project}-${alias}`;
@@ -35,7 +36,7 @@ export async function runPortalBrowserTest(suite: 'portal' | 'oidc' | 'oidc-step
     '--tmpfs', '/tmp:rw,exec,nosuid,size=1g', '-e', 'HOME=/tmp', '-e', 'PORTAL_BROWSER_TOKEN', '-w', '/workspace',
     '-v', `${resolve('node_modules')}:/workspace/node_modules:ro`, '-v', `${resolve('dist/pilot')}:/workspace/dist/pilot:ro`,
     '-v', `${resolve('work/pilot/customer.crt')}:/customer.crt:ro`,
-    ...(suite !== 'portal' ? ['-v', `${resolve('work/pilot/keycloak.crt')}:/keycloak.crt:ro`, '-e', 'OIDC_BROWSER=1'] : []),
+    ...(needsKeycloak ? ['-v', `${resolve('work/pilot/keycloak.crt')}:/keycloak.crt:ro`, '-e', 'OIDC_BROWSER=1'] : []),
     browserImage, 'node', 'dist/pilot/ops/local/portal-browser.js'],
   { ...process.env, PORTAL_BROWSER_TOKEN: token });
   try {
