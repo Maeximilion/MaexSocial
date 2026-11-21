@@ -8,7 +8,7 @@ Foundation CI validates repository artifacts and automation. It does not measure
 |---|---|---|
 | `foundation` (required) | Markdown links, JSON/TOML syntax, narrow repository SVG policy, Python hook/artwork regressions and executable Node metadata/maintenance tests | No deployed application, upload sanitizer or provider behavior |
 | `metadata` (required) | Conventional Commit title and task reference; authenticated same-repository Dependabot PRs may be their own maintenance task | No code correctness claim |
-| CodeQL default setup | Static analysis of Python tooling and GitHub Actions | Findings require triage; not login, isolation or penetration testing |
+| CodeQL default setup | Static analysis of JavaScript/TypeScript, Python and GitHub Actions | Findings require triage; not login, isolation or penetration testing |
 | Secret scanning + push protection | Supported secret patterns and supported pushes | Does not detect every credential or replace credential handling |
 | Dependabot | Pinned Actions updates and vulnerability alerts | Updates still require compatibility review and green checks |
 | Maintenance / Project reconciliation | Assignment, task metadata and board status | Green automation does not approve a product gate |
@@ -41,7 +41,7 @@ Use the [accepted G2 stack and test values](superpowers/specs/2026-11-06-g2-acce
 
 ## CD plan
 
-The accepted MS-009 plan authorizes isolated local synthetic implementation. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains staging access/security and recovery evidence, and [#163](https://github.com/Maeximilion/MaexSocial/issues/163) owns the staging entry. A separately authorized staging run requires synthetic data, reproducible build artifacts, least-privilege deployment identity, migration checks and health probes. Record the deployment SHA, rollback artifact and procedure, and database restore/migration strategy. Verify rollback in staging before external customer access. Production promotion requires release authorization and protected-environment checks.
+The [G2 decision record](superpowers/specs/2026-11-06-g2-acceptance-packet.md) records the owner's acceptance of MS-009 and separate authorization for isolated local synthetic implementation after the record merged. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains staging access/security and recovery evidence, and [#163](https://github.com/Maeximilion/MaexSocial/issues/163) owns the staging entry. A separately authorized staging run requires synthetic data, reproducible build artifacts, least-privilege deployment identity, migration checks and health probes. Record the deployment SHA, rollback artifact and procedure, and database restore/migration strategy. Verify rollback in staging before external customer access. Production promotion requires release authorization and protected-environment checks.
 
 ## Gate mapping
 
