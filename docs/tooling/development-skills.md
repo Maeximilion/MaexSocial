@@ -10,7 +10,10 @@ Owner decision, 2026-11-05; [maintenance issue #56](https://github.com/Maeximili
 | PR review | [Claude API review policy](agent-workflow.md#pr-review-policy) | Correctness/security/test coverage; actual complete API result, no additional Codex review loop |
 | Requested repository audit | Ponytail audit | Stay within the requested repository and action scope |
 | Larger coupled changes, design and implementation plans | Superpowers | Relevant discovery/design/planning/execution/TDD/debugging skills; do not load the entire library |
-| Every coordinator action, including status/pause/resume | Superpowers plus [coordinate-project-chats](../../.agents/skills/coordinate-project-chats/SKILL.md) | Explicit startup uses [$maexsocial-orchestrator](../../.agents/skills/maexsocial-orchestrator/SKILL.md) and the [full prompt](../../.codex/orchestration/START.md); takeover does not resume paused work |
+| Coordination planning | Superpowers | Plan bounded work; reuse accepted plans without repeating planning for status, questions or pause/resume |
+| Coordination operating loop | Personal `$orchestrator` plus [MaexSocial adapter](../../.agents/skills/coordinate-project-chats/SKILL.md) | Use the [short start prompt](../../.codex/orchestration/START.md); Main decides routine questions and preserves current owner controls |
+
+Owner update, 2026-11-21: use Ponytail for the quality check before PR creation. The subsequent Claude API PR review and its settings remain unchanged; this does not authorize a duplicate Codex review of an open PR.
 
 Use one primary workflow for a task. Code Autopilot supplies execution discipline, Caveman reply style; they do not launch competing workflows. Ponytail's small-change principles still apply within a large Superpowers plan. When a task grows materially, explain the change and use the appropriate planning depth. Save tokens through focused reads, small diffs, reuse and avoiding duplicate investigations; never trade away security, verification or clarity. No fixed savings percentage is claimed.
 

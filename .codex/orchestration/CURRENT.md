@@ -1,5 +1,7 @@
 # Current coordinator handover
 
+This is dated recovery evidence, not the live queue or a fresh authorization. Before acting, reconcile the latest owner instructions, native chat roster, private ledger and actual GitHub state under the [current startup procedure](START.md). Historical pause, quota, admission and backup rules below cannot override newer owner decisions. Preserve these entries as history; do not replay their actions automatically.
+
 ## Manual successor bootstrap and preserved product pause · 2026-11-21
 
 The owner requested only [issue #160](https://github.com/Maeximilion/MaexSocial/issues/160)'s reusable orchestrator skill and full [startup prompt](START.md) from this coordinator. The owner will create the successor manually. The transition reply leaves PR #157 to the new coordinator; this bootstrap delivery is the one-time independent exception to the new concurrent-stack rule, not permission to resume #157 here. Actual delivery merge/review receipts belong in issue #160 and its PR; a committed design or this checkpoint alone proves no merge.
