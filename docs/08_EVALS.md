@@ -54,13 +54,13 @@ There is no deployment pipeline or production application yet. MS-009 must defin
 
 ## Test data
 
-Apply PLAN-01/03/04 and the ADS-01 disabled-path control under the accepted pilot. For later separately approved media, recurrence or advertising, map the applicable MEDIA-01–04, PLAN-02 and ADS-02–04 cases in the [media-library proposal](18_MEDIA_LIBRARY.md) to executable tasks. They cover asset isolation, billable-job recovery, recurrence, approval/stop races and separate advertising authority. These cases are specifications only; no application/provider test has been run for them.
+Apply PLAN-01/03/04 and the ADS-01 disabled-path control under the accepted pilot. For later separately approved media, recurrence or advertising, map the applicable MEDIA-01–04, PLAN-02 and ADS-02–04 cases in the [media-library proposal](18_MEDIA_LIBRARY.md) to executable tasks. They cover asset isolation, billable-job recovery, recurrence, approval/stop races and separate advertising authority. Use the dated case-specific receipts to distinguish completed local tests from planned provider or release evidence.
 
 Use synthetic businesses, accounts and content. Authorized test-account identifiers stay out of public fixtures. Provider fakes test deterministic behavior. Live provider tests must be labeled with environment, date and permission scope. A fake success does not establish live API availability.
 
 ## Report format
 
-Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds at G2 before interpreting a pilot as passing.
+Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds before interpreting the applicable pilot as passing.
 
 A failed gate remains open. Fixes add regression coverage for the failing scenario. The [MaexSocial PR review policy](tooling/agent-workflow.md#pr-review-policy) requires actual complete Claude API evidence for the current head/base and applicable integration checks.
 
