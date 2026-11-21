@@ -1,39 +1,48 @@
 # Handover 2026-11-21 — maintenance #201
 
-## Result and scope
+## Status
 
-[Issue #201](https://github.com/Maeximilion/MaexSocial/issues/201) replaces duplicated repository orchestration procedures with the personal `$orchestrator` skill and a small [MaexSocial adapter](../../../.agents/skills/coordinate-project-chats/SKILL.md). The [start prompt](../../../.codex/orchestration/START.md) loads both. The personal skill and its UI metadata are installed in the owner's Codex skills directory; they are not distributed by this repository or reviewed by its PR workflow.
+Checkpoint (UTC) — 2026-11-21T23:00:40Z. Implementation is pushed in open PR #202; the latest review findings are being resolved in this same maintenance session. Product orchestration remains cancelled by the owner's newer instruction; this delivery does not restart it.
 
-Reviewed personal edition: `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`; UI metadata `orchestrator/agents/openai.yaml` SHA-256 `835543744a0ab20e9eb2ce7e3e98f509ba8e49641421cb7bd94b9b4b58eb8db8`. The explicit MaexSocial entry checks the hash before loading the personal body; implicit personal invocation is disabled. A changed edition stays inactive until a maintenance PR with personal-skill review evidence and the updated hash is merged. Local self-approval cannot change the pin. Personal-skill review is distinct from Claude's repository PR review.
+Codex implemented the personal skill and repository adapter. The separate fresh-context Ponytail reviewer used `gpt-6-astra` / High. Its initial combined review found missing stop propagation in both the personal skill and adapter (fixed), and redundant routine planning in the repository skill-role table (fixed). Its subsequent review of the full personal body and UI metadata found zero defects. The final targeted recheck of explicit invocation and UI policy also returned Ship, with zero findings at the exact personal hashes below. Main did not supply these independent reviews.
 
-The final personal edition was reviewed by a separate fresh-context Ponytail reviewer using `gpt-6-astra` / High, including the actual body and UI metadata. Its exact-hash targeted recheck returned Ship with no remaining findings. Main implemented the files and did not supply that review. Both files and the complete two-file set are verified before use; future pin changes require the same independent actual-content review and a merged maintenance PR. This is procedural evidence, not a claim that the desktop loader is technically constrained.
+Local checks passed after each correction: `python scripts/check_repo.py`, `python -m unittest tests.test_foundation` (12 tests), and `git diff --check`. The exact personal two-file inventory and both hashes passed a local assertion. A fresh evaluator exercised nine instruction cases plus a missing-acknowledgment pause case before later Claude corrections; these were hypothetical decisions, not native execution. Earlier broad local results (129 Python tests, one platform skip; 20 Node tests) predate this final documentation change. Final candidate CI must provide current coverage.
 
-The latest owner direction cancelled the replacement product coordinator and its work chats. This maintenance chat handles this delivery only. No product task is resumed. The historical [CURRENT](../../../.codex/orchestration/CURRENT.md) remains recovery evidence and now explicitly defers to current owner control and live state.
+Claude API executed on work head `6f0d8efc2c788354dee9ae99e8227391bc65e5e1` against base `adbcb9c264e207bed7b5a98a269f0c5951ec44b4`: [run](https://github.com/Maeximilion/MaexSocial/actions/runs/44959396129), [result](https://github.com/Maeximilion/MaexSocial/pull/202#issuecomment-7070556373). Its two handover findings are addressed by this revision; a review for the new head is pending. The unchanged client requests `claude-opus-5-5`, effort `high`, speed `standard`, `service_tier=standard_only` and validates the returned model. No Claude configuration or reviewer client changed.
 
-## Operating decisions
+## Artifacts
 
-- Superpowers plans bounded work. Main decides routine technical questions autonomously. At most five worker slots are occupied; actual new starts are at least 600 seconds apart, with no accumulated missed intervals or predecessor-PR admission tokens.
-- Prefer authorized `send_message_to_thread` in both directions for concise questions, decisions, milestones and completion reports. If sending is unavailable, blocked or uncertain, preserve the report in its own chat and use bounded status/readback. A receipt, actual delivery and acknowledgment are distinct.
-- Normal local chats request High/Standard. Effective runtime rights and messaging-tool approval are separate observations; prompts and global settings cannot guarantee either. Do not invent permission parameters or bypass native approvals.
-- The owner explicitly requested unrestricted native chats on 2026-11-21. This changes the recommended operating profile, not configuration files; the adapter documents the reduced command/filesystem protection when full access is effective. External content remains untrusted evidence. The standing 7% intake cutoff and unknown-reading hold remain until an explicit owner change.
-- Ponytail reviews before PR creation under the latest owner instruction. The existing Claude API review still covers each repository PR afterwards. Claude settings, workflow/client, budgets, access configuration and product gates are unchanged.
-- After verified serial merge, remote revision and handover, close the owned task worktree and archive its chat automatically. Verify both outcomes separately. Preserve needed unpublished material selectively; create no routine recovery packages, transcript copies or fixture backups.
+- Repository — [Maeximilion/MaexSocial](https://github.com/Maeximilion/MaexSocial).
+- Task and issue — [maintenance #201](https://github.com/Maeximilion/MaexSocial/issues/201).
+- Branch — `dev-codex/201-orchestrator-autonomy`.
+- Work head before this handover commit — `6f0d8efc2c788354dee9ae99e8227391bc65e5e1`.
+- PR — [#202](https://github.com/Maeximilion/MaexSocial/pull/202), open; use its actual final head/review/CI before integration.
+- Entry and adapter — [START](../../../.codex/orchestration/START.md), [MaexSocial adapter](../../../.agents/skills/coordinate-project-chats/SKILL.md).
+- Personal edition — installed outside the repository, not distributed by this PR or reviewed by its Claude workflow. Historical review hashes: `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`; `orchestrator/agents/openai.yaml` SHA-256 `835543744a0ab20e9eb2ce7e3e98f509ba8e49641421cb7bd94b9b4b58eb8db8`. The adapter's current table is the sole authoritative pin.
 
-## Verification evidence
+## Decisions
 
-A new normal local desktop test chat recognized the personal skill and reported `danger-full-access` with `never`. Main read a technical question, decided it, and sent the answer. The worker executed `Get-Location` successfully with exit code 0. A subsequent single direct worker-to-Main message was received in Main; the worker reported no permission dialog. These observations cover that test chat, not every future chat or worktree archival.
+Use Superpowers for planning, one Main for decisions, at most five workers and at least 600 seconds between actual starts. Prefer authorized `send_message_to_thread` both ways; bounded readback is fallback. Workers verify incoming coordinator identity, assignment and latest owner control. Preserve stop propagation, acknowledgment tracking, live resume reconciliation, the standing 7%/unknown-reading intake hold, product gates and serial stacked integration.
 
-Historical read-only evidence confirms earlier workers used the same native creation and MCP messaging tools. The reason an earlier test chat requested a messaging permission remains unknown; it is not evidence of a changed transport or an automatic rights-inheritance guarantee.
+Start MaexSocial with its repository entry. Verify the personal two-file inventory and both hashes before loading its body; implicit personal invocation is disabled. Changed editions require independent actual-content review evidence and a merged maintenance pin-update PR, not Main self-review or a private-ledger edit. This is procedural verification, not technical enforcement of the desktop loader.
 
-The final simplification passed `python scripts/check_repo.py`, `python -m unittest tests.test_foundation` (12 tests), and `git diff --check`. A fresh evaluator exercised nine instruction cases plus the missing-acknowledgment pause case; these are hypothetical decisions, not native execution. The requested Ponytail pre-PR review used `gpt-6-astra` with High effort. Its two findings were fixed and the targeted recheck returned Ship: restore stop propagation/acknowledgment tracking and remove redundant planning from routine coordination.
+The owner explicitly requested unrestricted normal native chats on 2026-11-21. This changes the desired access recommendation, not configuration files; the adapter records the security tradeoff. External content stays untrusted, and Graphify use authorizes no private-data upload or paid rebuild. Ponytail runs before PR creation; existing Claude API PR review remains mandatory. After verified merge, remote delivery and handover, close the owned worktree and archive its work chat, checking both outcomes and preserving only genuinely needed unpublished work. No routine backup packages.
 
-The prior narrow revision also passed 129 Python tests with one platform skip and 20 Node tests. Those broad results predate the final documentation simplification; final candidate CI must supply current coverage. The Python test child excluded only verified host-injected credential/url/http Git overrides and retained configured Gitleaks. Subsequent Claude API/candidate-CI evidence belongs with the actual delivery revision in the PR. No access configuration, product code or dependency changed.
+## Gate
 
-## Delivery and continuation
+Maintenance only; no product gate acceptance, deployment, real customer operation or new provider service is authorized. Current [CURRENT](../../../.codex/orchestration/CURRENT.md) entries remain dated recovery evidence. The owner deleted the replacement product coordinator and its work chats; future product ownership must be reconciled against a fresh owner instruction. Required final-head Claude coverage and current candidate CI remain outstanding at this checkpoint.
 
-- Branch: `dev-codex/201-orchestrator-autonomy`.
-- Superseded published revision: `518962c398e58543b0bd781a22ecad4e331bc24e`; use the PR's final head and evidence, not this old checkpoint.
-- Remaining at this checkpoint: normal PR, unchanged Claude API review and required candidate CI, then serial merge and closeout within the owner's maintenance authorization.
-- Private machine paths, chat identifiers and live queue observations stay in the private coordinator record. No product dispatch, new provider cost or deployment is authorized by this handover.
+## Open
 
-To continue, read issue #201, this handover and the live PR. Reconcile the actual head/base, review and checks, complete only this maintenance delivery, and preserve the owner's latest controls. The next product coordinator starts only under its actual owner authorization.
+Complete the actual final-head Claude review and candidate CI for PR #202, resolve confirmed findings, then merge within the existing maintenance authority, synchronize clean canonical main and close out the owned worktree. Preserve the original Main and the requested test chat as such; do not start product tasks.
+
+- Console — PowerShell.
+- Folder/worktree — `Join-Path $env:USERPROFILE '.codex/worktrees/201-orchestrator-autonomy/MaexSocial'`; the resolved machine-specific path is retained in the private coordinator record.
+- Full start command — `Set-Location (Join-Path $env:USERPROFILE '.codex/worktrees/201-orchestrator-autonomy/MaexSocial'); git status --short; git branch --show-current; git rev-parse HEAD`.
+- First message — "Continue maintenance #201 from docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md and live PR #202. Verify actual head/base, complete unchanged Claude API and candidate CI, then integrate and close out only this maintenance delivery. Preserve latest owner controls and do not resume product orchestration."
+
+## Lessons
+
+The new normal local test chat exposed `gpt-6.2-astra` / High, `danger-full-access` / `never`; `Get-Location` exited 0 and real messages were delivered in both directions without a dialog. It also checked the personal hash, explicit-only metadata and documented adapter-first order. These observations do not prove every future chat, the host's actual loading sequence or worktree archival. The earlier messaging-permission popup's cause remains unknown; historical calls used the same MCP transport.
+
+Code Autopilot and Caveman remain enabled. Superpowers plans; Ponytail reviews before PR creation. Keep the personal and repository review scopes distinct. No access configuration, product code or dependency was changed. Private paths, chat identities and live queue details stay in the private coordinator record; GitHub delivery evidence is sufficient for routine closeout.
