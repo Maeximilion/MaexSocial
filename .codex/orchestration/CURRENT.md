@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Local project chats and staggered admission
+
+Start assigned workers in the local project and use a separate named Git worktree from the canonical clone. Read ordinary progress in each worker chat. The three existing workers on #198, #199 and #200 finish in place. Observe the effective permission profile at the next eligible start. At the serial threshold, drain admitted workers through verified archive without backfill, then run one at a time. The ten-minute spacing and the full-stop threshold still apply.
+
 ## Local delivery during external waits · 2026-11-21
 
 The owner reopened independent implementation across the next gate. [#198](https://github.com/Maeximilion/MaexSocial/issues/198) has the first work chat and will count actual local video submissions across restart. The next staggered starts are [#199](https://github.com/Maeximilion/MaexSocial/issues/199) for the local GBP test adapter and [#200](https://github.com/Maeximilion/MaexSocial/issues/200) for the offline media-library preview. All three are native sub-issues with no open blocking edge. The real trial in #11, current MFA evidence in #131 and release acceptance still require their respective inputs. The decision packet reached main in [#197](https://github.com/Maeximilion/MaexSocial/pull/197). #167 remains open for the owner's dated choice.

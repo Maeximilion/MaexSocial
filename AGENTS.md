@@ -1,6 +1,6 @@
 # MaexSocial agent instructions
 
-For project-chat coordination or recovery after compaction, read [the coordinator record](.codex/orchestration/README.md) and its current handover first. Work chats send checkpoints to the authorized coordinator.
+For project-chat coordination or recovery after compaction, read [the coordinator record](.codex/orchestration/README.md) and its current handover first. Work chats record checkpoints in their own chat for the coordinator to read.
 
 Read `CLAUDE.md`, `docs/00_PCF.md`, `docs/01_STATUS.md` and the current issue before work. These rules apply to Codex, Claude Code and other agents. Current user instructions take precedence.
 
