@@ -4,11 +4,24 @@ import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
-import { createDraft, editDraft, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
+import { createDraft, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 import { renderFacts } from '../routes/facts.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
+
+class DraftCorrection extends Error {
+  constructor(readonly page: string) { super('Invalid request'); }
+}
+
+async function saveDraft<T>(save: () => Promise<T>, render: (invalidText: string) => Promise<string>): Promise<T> {
+  try { return await save(); }
+  catch (error) {
+    // Render under the checked locks, then roll back before sending the correction.
+    if (error instanceof InvalidDraftText) throw new DraftCorrection(await render(error.text));
+    throw error;
+  }
+}
 
 export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity,
   privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string }): express.Express {
@@ -77,7 +90,12 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.post('/customer/drafts', async (request, response) => {
     const binding = customerRequest(request, ['text', 'locationId', 'csrf']);
-    const draftId = await transaction(async db => createDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.body.locationId, request.body.text));
+    const { text, locationId } = request.body;
+    const draftId = await transaction(async db => {
+      const context = await requireCustomerRequest(db, binding, () => new Date(), inspect);
+      return saveDraft(() => createDraft(db, context, locationId, text),
+        invalidText => renderNewDraft(db, context, binding.csrf, { text: invalidText, locationId }));
+    });
     response.redirect(303, `/customer/drafts/${draftId}`);
   });
   app.get('/customer/drafts/:draftId', async (request, response) => {
@@ -92,8 +110,14 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.post('/customer/drafts/:draftId', async (request, response) => {
     const binding = customerRequest(request, ['text', 'revisionId', 'csrf']);
-    await transaction(async db => editDraft(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.draftId, request.body.revisionId, request.body.text));
-    response.redirect(303, `/customer/drafts/${request.params.draftId}`);
+    const { draftId } = request.params;
+    const { text, revisionId } = request.body;
+    await transaction(async db => {
+      const context = await requireCustomerRequest(db, binding, () => new Date(), inspect);
+      return saveDraft(() => editDraft(db, context, draftId, revisionId, text),
+        invalidText => renderDraft(db, context, draftId, binding.csrf, invalidText));
+    });
+    response.redirect(303, `/customer/drafts/${draftId}`);
   });
   app.post('/customer/logout', async (request, response) => {
     const binding = customerRequest(request, ['csrf']); const { token } = binding;
@@ -108,6 +132,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.use((_request, response) => { response.status(404).type('text').send('Not found.'); });
   app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    if (error instanceof DraftCorrection) { response.status(400).type('html').send(error.page); return; }
     if (error.message === 'Revision conflict') { response.status(409).type('text').send('This draft changed. Reload the draft before editing again. Your text was not saved.'); return; }
     const status = error.message === 'Denied' ? 403 : error.message === 'Invalid request' || 'type' in error ? 400 : 503;
     response.status(status).type('text').send(status === 503 ? 'Temporarily unavailable. Please try again.' : 'Request could not be completed.');
