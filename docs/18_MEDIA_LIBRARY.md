@@ -98,4 +98,6 @@ The [accepted pilot evidence map](superpowers/plans/2026-11-05-ms-009-pilot-evid
 
 ## Decisions for later media and operation
 
+The [2026-11-21 API candidate comparison](research/2026-11-21-g4-video-candidate-terms.md) records public terms, a common five-second price example and the prerequisites for an operator-only trial.
+
 Record the candidate and permitted data, cost and evaluation scope in [#167](https://github.com/Maeximilion/MaexSocial/issues/167). Use #11's separately authorized spike for final provider/model selection. Resolve media formats, storage/processing region and retention before media release with #99. Keep recurrence and catch-up policy under #12, and obtain separate approval for advertising scope and budget.
