@@ -1,5 +1,9 @@
 # Current coordinator handover
 
+## Local coordinator handover
+
+At the owner's request, coordination transfers to a fresh local project chat. The existing ten-minute heartbeat follows the successor. The private ownership record identifies the sole writer. Issues #198, #199 and #200 retain their assigned workers, worktrees and publication order. The prior coordinator has no pending dispatch or merge.
+
 ## Local project chats and staggered admission
 
 Start assigned workers in the local project and use a separate named Git worktree from the canonical clone. Read ordinary progress in each worker chat. The three existing workers on #198, #199 and #200 finish in place. Observe the effective permission profile at the next eligible start. At the serial threshold, drain admitted workers through verified archive without backfill, then run one at a time. The ten-minute spacing and the full-stop threshold still apply.
