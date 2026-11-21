@@ -1,4 +1,5 @@
 approvals_reviewer = "auto_review"
+model_reasoning_effort = "high"
 
 [plugins."superpowers@openai-curated-remote"]
 enabled = true

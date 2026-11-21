@@ -2,6 +2,8 @@
 
 ### Project operations and downloads
 
+Use High reasoning for the coordinator and its named work chats. Pass `thinking: high` explicitly when creating a work chat or requesting a new turn, so an unrelated user-wide default cannot silently select a higher effort. Inspect the actual turn before reporting the setting as effective. Claude PR review follows its separate existing configuration.
+
 The owner has authorized routine MaexSocial operations within an assigned task, including worktree setup, Git, tests and the agreed PR workflow. Carry this authorization into each assignment. For eligible command requests, the trusted project configuration selects Codex auto-review, which preserves the current sandbox and evaluates each request independently. The desktop client may select a different reviewer for a particular chat. Verify the effective setting on a real turn. The desktop's **Approve for me** control can select auto-review for subsequent turns of that chat. [Codex permission modes](https://learn.chatgpt.com/docs/permission-modes)
 
 Obtain the owner's confirmation before a large external file download. Until the owner specifies a size, use 100 MiB for the total related transfer, including split parts. For an unknown size, use a verified upper bound or enforce the cap before accepting more bytes. Keep downloaded files in quarantine until an isolated antivirus scan with current signatures completes. Verify the scanned file's SHA-256 before opening, extracting, installing or executing it. A detection, incomplete scan, stale database or checksum mismatch keeps the file in quarantine. Use locally verified copies while waiting for download approval.
