@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Local delivery and maintenance checkpoint · 2026-11-21 14:37 UTC
+
+[PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) is the single open delivery. Its originating #169 chat owns the frozen preview head `4765fa1b9863b63a9e455ad497c5183fdecb8fa1` on base `d2332feeda90f2d19f580cbaa66fa2dd78c8b0a5`. The [complete Claude result](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) has zero findings. The synthetic candidate `0e52c5019175a6b2382e71b4c52b3fa62a06ed82` has those ordered base/head parents. Hosted pilot CI was still running at this checkpoint. The local fresh run passed 27/27; the retained run passed 26/27. [Issue #155](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910) records the distinct elapsed-time assertion and a paired control. It remains open.
+
+[#168's synthetic comparison](https://github.com/Maeximilion/MaexSocial/issues/168#issuecomment-7064158170) is complete. A fresh extraction matched all 601 evidence files. The coordinator also recovered the full original worktree and task Git metadata, archived the completed evidence chat and verified its saved transcript. The issue remains open for native callback attribution and actual routing evidence. This no-PR closeout supplies no admission pair. One delivery chat is occupied and no creation is pending.
+
+The retained timing recurrence gives #155 a concrete test-only follow-up at the next eligible admission. [#170](https://github.com/Maeximilion/MaexSocial/issues/170) tracks the audited guidance still missing from canonical main, including the stale direction to finish already merged #136. It has no reservation. The owner-set full stop at the weekly reserve remains in force.
+
 ## Autonomous local continuation · 2026-11-21 14:19 UTC
 
 Maxi authorized unattended continuation with a new weekly reserve. The coordinator and assigned workers must pause all work at that boundary. The private ledger holds the exact threshold, owner message and latest account reading.
