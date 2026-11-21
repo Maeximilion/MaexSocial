@@ -1,15 +1,17 @@
 ---
 name: coordinate-project-chats
-description: Use when coordinating explicitly authorized MaexSocial project chats or established worker checkpoints. Project adapter for the personal orchestrator; not ordinary implementation or notifications.
+description: Use when coordinating authorized MaexSocial chats, handling assigned-worker checkpoints, applying owner pause/resume/deadline controls, or verifying coordinator relays inside a work chat. Ordinary implementation and unrelated notifications do not invoke this adapter.
 ---
 
 # MaexSocial orchestration adapter
+
+Assigned workers handling a checkpoint, control or relay apply the receiver checks and current controls below; they do not initialize the coordinator loop, load the personal coordinator skill or take ownership. Status-only requests inspect and report without dispatch. The personal-skill startup check below is for the acting coordinator's loop.
 
 Read this adapter first. Resolve and hash the owner's installed personal skill without loading its body; invoke it only after the check below passes. It owns the general worker/decision loop; this adapter supplies MaexSocial constraints. If it is genuinely unavailable, name the missing skill and affected capability rather than pretending the old repository system replaces it. Use the explicit [manual entry](../maexsocial-orchestrator/SKILL.md) when requested. Reading this adapter grants no new authority.
 
 On conflict, this adapter and MaexSocial policies override the personal skill, including review, stack, gate, pause and authority limits. Current owner instructions and host/system rules retain their precedence.
 
-Before reading or invoking the personal body, verify the installed skill contains exactly these two files and compare both SHA-256 values from [the reviewed edition](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md):
+Before reading or invoking the personal body, verify the installed skill contains exactly these two files and compare both SHA-256 values with this table. This table is the sole authoritative pin; [the dated review handover](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md) is historical evidence, not a second pin source. Future merged pin updates change this table and link their review evidence without rewriting old handovers.
 
 | File within `orchestrator/` | SHA-256 |
 | --- | --- |
