@@ -10,6 +10,7 @@ Owner decision, 2026-11-05; [maintenance issue #56](https://github.com/Maeximili
 | PR review | [Claude API review policy](agent-workflow.md#pr-review-policy) | Correctness/security/test coverage; actual complete API result, no additional Codex review loop |
 | Requested repository audit | Ponytail audit | Stay within the requested repository and action scope |
 | Larger coupled changes, design and implementation plans | Superpowers | Relevant discovery/design/planning/execution/TDD/debugging skills; do not load the entire library |
+| Every coordinator action, including status/pause/resume | Superpowers plus [coordinate-project-chats](../../.agents/skills/coordinate-project-chats/SKILL.md) | Explicit startup uses [$maexsocial-orchestrator](../../.agents/skills/maexsocial-orchestrator/SKILL.md) and the [full prompt](../../.codex/orchestration/START.md); takeover does not resume paused work |
 
 Use one primary workflow for a task. Code Autopilot supplies execution discipline, Caveman reply style; they do not launch competing workflows. Ponytail's small-change principles still apply within a large Superpowers plan. When a task grows materially, explain the change and use the appropriate planning depth. Save tokens through focused reads, small diffs, reuse and avoiding duplicate investigations; never trade away security, verification or clarity. No fixed savings percentage is claimed.
 
@@ -48,7 +49,7 @@ claude plugin list --json
 
 The owner-authorized canonical copies live in the user's `.agents/skills/code-autopilot` and `.agents/skills/caveman` directories. Codex enables automatic invocation for those copies; older synchronized and plugin duplicates remain disabled. Claude's user skill directories point to the same canonical sources. User instructions request their persistent use; they are not background processes.
 
-Code Autopilot originated in Claude Code. Its local Codex adaptation requires discovering available tools instead of assuming Claude-only slash commands, preserves the selected project stack, and treats imported iteration caps as scope guidance rather than arbitrary interruptions of authorized work. Host response rules, actual authorization, the model-routing pause and repository PR review policy take precedence. Caveman defaults to concise readable sentences rather than losing necessary information.
+Code Autopilot originated in Claude Code. Its local Codex adaptation requires discovering available tools instead of assuming Claude-only slash commands, preserves the selected project stack, and treats imported iteration caps as scope guidance rather than arbitrary interruptions of authorized work. Host response rules, actual authorization and repository PR review policy take precedence. Model-routing recommendations are optional and do not pause authorized work. Caveman defaults to concise readable sentences rather than losing necessary information.
 
 Enabling a skill does not authorize extra agents, new chats, external messages, merges, deployments or spending. Use normal PRs; drafts require an explicit request. Product design still requires G2 acceptance. Real secret guards and required CI stay in force.
 
