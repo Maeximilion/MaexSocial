@@ -87,7 +87,9 @@ def assess_job(record):
             incomplete.append("output_unconfirmed")
         if captured is not True:
             incomplete.append("private_capture_unconfirmed")
-    if outcome == "cancelled" and (reported is not False or captured is not False):
+    if cancellation == "confirmed" and (reported is True or captured is True):
+        failed.append("cancellation_output_conflict")
+    elif outcome == "cancelled" and (reported is not False or captured is not False):
         incomplete.append("cancelled_output_unresolved")
     if record["charge_minor"] is None:
         incomplete.append("charge_unmeasured")

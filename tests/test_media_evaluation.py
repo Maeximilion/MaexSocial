@@ -87,6 +87,21 @@ class MediaEvaluationTests(unittest.TestCase):
                 if finding is not None:
                     self.assertIn(finding, job["findings"])
 
+    def test_confirmed_cancellation_distinguishes_conflicting_output_from_missing_evidence(self):
+        cancelled = self.captured | {"outcome": "cancelled", "cancellation": "confirmed"}
+        for reported, captured, verdict, finding in (
+            (True, True, "failed", "cancellation_output_conflict"),
+            (True, False, "failed", "cancellation_output_conflict"),
+            (None, True, "failed", "cancellation_output_conflict"),
+            (None, False, "incomplete", "cancelled_output_unresolved"),
+            (False, None, "incomplete", "cancelled_output_unresolved"),
+        ):
+            with self.subTest(reported=reported, captured=captured):
+                observation = cancelled | {"output_reported": reported, "private_capture": captured}
+                job = evaluate({"schema_version": 1, "observations": [observation]})["jobs"]["captured"]
+                self.assertEqual(job["verdict"], verdict)
+                self.assertIn(finding, job["findings"])
+
     def test_repeating_an_observation_does_not_increase_the_job_sample(self):
         def report(*observations):
             return evaluate({"schema_version": 1, "observations": list(observations)})
