@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Owner scheduling update · 2026-11-21 14:59 UTC
+
+Maxi authorized starting the next eligible independent assignment as soon as its predecessor publishes a normal PR. This supersedes the earlier wait for predecessor merge plus archival before starting that successor. Record the verified source PR and one reservation before dispatch. The predecessor chat continues to count toward the cap until recovery and archive readback. Product dependencies, the weekly full stop, native stacking for concurrent PRs, current-base review/CI and serial merges still apply.
+
+[#155 / PR #172](https://github.com/Maeximilion/MaexSocial/pull/172) is the bottom and sole open PR, against main `4391dd4e774304f34f834d679201ad747dcbe15f` with head `6f8fe8d30933af894da363a837274fdb2ec9d93e`. The complete [Claude review](https://github.com/Maeximilion/MaexSocial/pull/172#issuecomment-7064512993) reports zero findings; the candidate pilot is running. [#170](https://github.com/Maeximilion/MaexSocial/issues/170#issuecomment-7064524169) was reserved and started while #172 was open. Two verified work chats, zero pending creations. #170 owns the canonical documentation layer and preserves #155's status change.
+
+The [#137 disposition](https://github.com/Maeximilion/MaexSocial/issues/137#issuecomment-7064444214) closed the original empty-title observation as not reproduced across six required browser runs on three candidates. Its cause remains unknown. The Project status is Done and its historical G5 edge remains.
+
 ## Preview delivered and elapsed-time follow-up · 2026-11-21 14:47 UTC
 
 [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged as `4391dd4e774304f34f834d679201ad747dcbe15f`. The coordinator verified that its tree equals the checked candidate and its parent equals the inspected main tip. The [hosted pilot](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) passed 27/27 before and after retained restart. All ten check contexts passed, the complete current Claude review had zero findings, and the canonical checkout was fast-forwarded. Issue #169 and the PR are Done. Recovery verified 3,950 source files, original task Git, a usable standalone clone and three volume archives. The two restored PostgreSQL databases opened; the Mailpit SQLite integrity check passed. The full restored Compose stack was not run. The completed native transcript matched the independent archived copy.
