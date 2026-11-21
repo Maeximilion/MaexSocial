@@ -10,6 +10,8 @@
 
 ## Current work
 
+November 21 test maintenance [#155](https://github.com/Maeximilion/MaexSocial/issues/155) corrects the two OIDC elapsed assertions while retaining their strict 6500 ms limit. The [delivery handover](handovers/sessions/2026-11-21-oidc-monotonic-time.md) preserves both historical observations and the closure rationale. The original host cause remains undetermined. G3 and G5 acceptance remain open.
+
 November 21 bounded content delivery [#169](https://github.com/Maeximilion/MaexSocial/issues/169) adds a read-only Manager preview in the existing occurrence detail. It shows the proposed current draft revision with the actual destination and both stored time interpretations. [Local evidence](handovers/sessions/2026-11-21-approval-preview.md) records a retained-volume run with the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). Integration and Claude API review remain pending at this checkpoint. #124/#131 and G3–G5 remain open.
 
 November 18 bounded Task 2A2 component [#154](https://github.com/Maeximilion/MaexSocial/issues/154) implements internal
