@@ -1,5 +1,20 @@
 # Current coordinator handover
 
+## Staggered admissions and local website · 2026-11-21 17:07 UTC
+
+The three workers for #177, #178 and #179 initially started within five minutes. The owner corrected that interpretation. Aim for five useful independent work chats above the parallel threshold, admitting **at most one new worker per ten-minute tick and never less than ten full minutes after the last actual worker start**. Earlier PR openings, multiple vacancies or missed ticks do not accelerate admission. Record the last actual native start, next eligible UTC time and at most one pending reservation in the private ledger. Reconcile uncertain creations before retrying. Continue existing work, reviews and serial merges between admissions. Lower gate caps, serial and full-pause boundaries still apply. The current heartbeat was updated and read back. [#185](https://github.com/Maeximilion/MaexSocial/issues/185) tracks the corresponding reusable startup guidance.
+
+The first staggered start was [#183](https://github.com/Maeximilion/MaexSocial/issues/183), over twelve minutes after #179. It owns the working local customer website entry, a keyboard-usable synthetic draft example, desktop/mobile presentation and a handoff for later customization. The existing signed-out confirmation still has to work. The local design can proceed while #163 retains actual hosting/staging and #131 retains identity assurance.
+
+| Issue | Current result |
+| --- | --- |
+| [#177](https://github.com/Maeximilion/MaexSocial/issues/177) | [PR #180](https://github.com/Maeximilion/MaexSocial/pull/180) merged as `a9c7083503dcb928609218a3f188546754cf336b`; the tested tree was preserved. Closed and Done, recovery and native archive verified. |
+| [#178](https://github.com/Maeximilion/MaexSocial/issues/178) | [PR #181](https://github.com/Maeximilion/MaexSocial/pull/181) promoted to main as the bottom open PR. Head `a3b1983814bfa1cc70105e67568f6dd1015a1b7d`; the promoted layer received complete Claude coverage and is undergoing integration CI. |
+| [#179](https://github.com/Maeximilion/MaexSocial/issues/179) | [PR #184](https://github.com/Maeximilion/MaexSocial/pull/184) follows #181 in [native stack #182](https://github.com/Maeximilion/MaexSocial/stack/182). Real keyboard correction now passes on both existing forms in the local test fixture; check the candidate again on promotion. |
+| [#183](https://github.com/Maeximilion/MaexSocial/issues/183) | Active on the separate local entry view. No PR yet. Actual browser presentation and the mobile and keyboard checks are pending. |
+
+At this checkpoint there are two open PRs, three occupied work chats and zero pending reservations. The posted operating-price research, website implementation and draft-editor work have distinct ownership. The native forum follow-up schedule and November 28 decision checkpoint remain in force.
+
 ## Independent work during an external wait · 2026-11-21 16:53 UTC
 
 The owner asked the coordinator to keep work moving while a prerequisite waits on an external answer. At a new material wait, identify the acceptance step that consumes the missing evidence. If an existing requirement has a concrete deliverable, an independent check, an identified consumer and its inputs already available, deliver it as a linked child. Give it only its actual prerequisites. Keep the unresolved proof, its owner, and the next decision date on the parent. Revisit this split when evidence or scope changes. A deadline triggers a decision and cannot substitute for a product, security or operating approval.
