@@ -26,3 +26,9 @@ Read `CLAUDE.md`, `docs/00_PCF.md`, `docs/01_STATUS.md` and the current issue be
 Follow `docs/09_OPERATIONS_LEGAL.md` for public-source research and publication boundaries. Use `.claude/commands/handover.md` for session transitions.
 
 For agent configuration, read `docs/tooling/agent-workflow.md`. For application design or code, read `docs/02_ARCHITECTURE.md` and `docs/17_ACCESS_SECURITY.md`; for uploads, media processing, storage or URL retrieval also read `docs/security/uploads.md`. These shared requirements apply to both platforms; Claude's scoped rule files are an additional entry point, not Codex rules. Treat repository artwork checks as a narrow CI policy, never as an upload sanitizer.
+
+## Use Graphify before text search
+
+Use the connected Graphify MCP tools first for symbol definitions, behavior, callers and callees, dependencies, change impact, and related tests. Pass `Maeximilion/MaexSocial` explicitly as the repository on every query and stay within that repository.
+
+Compare the graph revision with the checkout before relying on an answer. Read the local source for changes since the indexed revision and when results are empty or partial. Use text search for literal strings, comments, and unindexed files. If Graphify is unavailable, check the MCP connection and continue with local tools.
