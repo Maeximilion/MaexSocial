@@ -1,5 +1,11 @@
 # MaexSocial coordinator
 
+### Project operations and downloads
+
+The owner has authorized routine MaexSocial operations within an assigned task, including worktree setup, Git, tests and the agreed PR workflow. Carry this authorization into each assignment. For eligible command requests, the trusted project configuration selects Codex auto-review, which preserves the current sandbox and evaluates each request independently. The desktop client may select a different reviewer for a particular chat. Verify the effective setting on a real turn. The desktop's **Approve for me** control can select auto-review for subsequent turns of that chat. [Codex permission modes](https://learn.chatgpt.com/docs/permission-modes)
+
+Obtain the owner's confirmation before a large external file download. Until the owner specifies a size, use 100 MiB for the total related transfer, including split parts. For an unknown size, use a verified upper bound or enforce the cap before accepting more bytes. Keep downloaded files in quarantine until an isolated antivirus scan with current signatures completes. Verify the scanned file's SHA-256 before opening, extracting, installing or executing it. A detection, incomplete scan, stale database or checksum mismatch keeps the file in quarantine. Use locally verified copies while waiting for download approval.
+
 A replacement coordinator starts here. [Current handover](CURRENT.md) is the dated queue and next action. This page is the standing operating agreement. The [coordination skill](../../.agents/skills/coordinate-project-chats/SKILL.md) describes desktop tools and merge checks. [Project status](../../docs/01_STATUS.md), [work packages](../../docs/07_WORKPACKAGES.md), GitHub issues and PRs remain authoritative for product decisions, dependencies and live checks.
 
 Use the Superpowers entry skill `superpowers:using-superpowers` for every orchestration request in the MaexSocial coordinator chat, including status checks, assignments, pauses and resumptions. Use the Superpowers skill that fits the next action alongside `coordinate-project-chats` for the repository's queue and review rules. On startup and after a handover or context compaction, reread this agreement and the current handover before continuing. If a required skill is unavailable, tell the owner which step is affected.

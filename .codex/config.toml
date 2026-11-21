@@ -1,3 +1,5 @@
+approvals_reviewer = "auto_review"
+
 [plugins."superpowers@openai-curated-remote"]
 enabled = true
 
