@@ -112,6 +112,15 @@ class MediaEvaluationTests(unittest.TestCase):
         self.assertEqual(repeated["unique_jobs"], 1)
         self.assertEqual(repeated["jobs"], single["jobs"])
 
+        without_rights = self.captured.copy()
+        del without_rights["rights"]
+        for rights in (None, {}, dict.fromkeys(("state", "source_id", "revision_id"))):
+            with self.subTest(rights=rights):
+                repeated = report(without_rights, without_rights | {"rights": rights})
+                self.assertEqual(repeated["unique_jobs"], 1)
+                self.assertEqual(repeated["jobs"], report(without_rights)["jobs"])
+                self.assertEqual(repeated["jobs"]["captured"]["findings"], ["rights_missing"])
+
         changed = self.captured | {"charge_minor": 0}
         for observations in ((self.captured, changed), (changed, self.captured)):
             with self.subTest(observations=observations):

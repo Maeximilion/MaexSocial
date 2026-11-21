@@ -48,7 +48,8 @@ def normalize_observation(raw, index):
             raise ValueError(f"observation {index}: invalid rights state")
         if not all(optional_id(rights.get(field)) for field in TRACE_FIELDS):
             raise ValueError(f"observation {index}: invalid rights scope")
-        record["rights"] = {field: rights.get(field) for field in ("state", *TRACE_FIELDS)}
+        normalized_rights = {field: rights.get(field) for field in ("state", *TRACE_FIELDS)}
+        record["rights"] = normalized_rights if any(value is not None for value in normalized_rights.values()) else None
     return record
 
 

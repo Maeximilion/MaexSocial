@@ -6,7 +6,7 @@ The 2026-11-21T18:09:47Z pre-PR checkpoint covered five focused tests. The local
 
 On Windows with Python 3.14.7, `python scripts/check_repo.py` and `python -m unittest discover -s tests -p test_media_evaluation.py -v` passed. `node --test tests/*.test.cjs` passed 20 tests with Node 26.13.0. The combined Python suite hit an inherited Git environment error in the existing temporary-repository hook test. A fresh `python -m unittest discover -s tests -p <module>.py` process per test module passed 96 tests and skipped 32 that require unavailable Gitleaks.
 
-On evaluator revision `9eb61dc5f1850f8ee0c4d4c2fecfc4d5a7bc1145`, `python -m unittest discover -s tests -p test_media_evaluation.py -v` passed all six tests and `python scripts/check_repo.py` passed. The added regression shows that confirmed cancellation with reported output or private capture fails, while missing evidence leaves the record incomplete. See the [resolved finding](https://github.com/Maeximilion/MaexSocial/pull/193#discussion_r4654255365) and the [PR checks](https://github.com/Maeximilion/MaexSocial/pull/193/checks) for hosted evidence.
+After the cancellation and rights normalization fixes, `python -m unittest discover -s tests -p test_media_evaluation.py -v` passed all six tests and `python scripts/check_repo.py` passed. The regressions cover [output after confirmed cancellation](https://github.com/Maeximilion/MaexSocial/pull/193#discussion_r4654255365) and [equivalent snapshots with missing rights evidence](https://github.com/Maeximilion/MaexSocial/pull/193#discussion_r4654292006). See the [PR checks](https://github.com/Maeximilion/MaexSocial/pull/193/checks) for hosted evidence.
 
 ## Artifacts
 
