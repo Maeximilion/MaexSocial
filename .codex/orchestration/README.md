@@ -1,6 +1,6 @@
 # MaexSocial coordinator
 
-Use the personal `$orchestrator` skill for the general coordination loop and the [MaexSocial adapter](../../.agents/skills/coordinate-project-chats/SKILL.md) for project rules. Discover the personal skill by name or in the personal skill directory; do not copy it into this repository. Report a genuinely missing skill or native capability without claiming execution. The [short start prompt](START.md#complete-prompt-to-copy) and [manual entry](../../.agents/skills/maexsocial-orchestrator/SKILL.md) load this arrangement.
+Start with `$maexsocial-orchestrator`: read the [MaexSocial adapter](../../.agents/skills/coordinate-project-chats/SKILL.md) and verify the personal skill's pinned hash before loading its general loop. The personal skill remains outside the repository with implicit invocation disabled. Missing or changed editions follow the adapter's reviewed-update rule; never claim execution of unavailable capabilities. The [short start prompt](START.md#complete-prompt-to-copy) and [manual entry](../../.agents/skills/maexsocial-orchestrator/SKILL.md) load this arrangement.
 
 ## Current authority and records
 

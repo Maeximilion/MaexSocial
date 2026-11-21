@@ -5,11 +5,11 @@ description: Use when coordinating explicitly authorized MaexSocial project chat
 
 # MaexSocial orchestration adapter
 
-Load the personal `$orchestrator` skill from the current catalogue or the owner's personal skill directory. It owns the general worker/decision loop; this adapter supplies MaexSocial constraints. If it is genuinely unavailable, name the missing skill and affected capability rather than pretending the old repository system replaces it. Use the explicit [manual entry](../maexsocial-orchestrator/SKILL.md) when requested. Reading this adapter grants no new authority.
+Read this adapter first. Resolve and hash the owner's installed personal skill without loading its body; invoke it only after the check below passes. It owns the general worker/decision loop; this adapter supplies MaexSocial constraints. If it is genuinely unavailable, name the missing skill and affected capability rather than pretending the old repository system replaces it. Use the explicit [manual entry](../maexsocial-orchestrator/SKILL.md) when requested. Reading this adapter grants no new authority.
 
 On conflict, this adapter and MaexSocial policies override the personal skill, including review, stack, gate, pause and authority limits. Current owner instructions and host/system rules retain their precedence.
 
-Before using the personal loop, resolve the owner's installed `orchestrator/SKILL.md` and verify SHA-256 `e5d8cea4b7b40649599582267e0c1adeb79900e422bc9d6f272fe8cdeac0d3e4`, the locally reviewed edition recorded in [the delivery handover](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md). A missing or different edition is not silently trusted: Main performs the focused skill review under the owner's existing authority and records the reviewed hash before activating it. This needs no routine owner question and grants no permission to download or replace a global skill. A hash check is an instruction check, not a sandbox.
+Before reading or invoking the personal body, verify installed `orchestrator/SKILL.md` SHA-256 `80b821ca4f97a0801f213a975ec70e341b990f4106ecd91dbd5d303ab93ae22e`, the reviewed edition in [the delivery handover](../../../docs/handovers/sessions/2026-11-21-orchestrator-autonomy.md). Personal implicit invocation is disabled. Keep a missing or mismatching edition inactive: a changed hash requires a merged repository maintenance PR with focused personal-skill review evidence and the updated pin before activation. Main may handle that within existing maintenance authority; a local self-approval or ledger edit is insufficient. No remote download/replacement is authorized. This is an instruction check, not a sandbox.
 
 ## Establish ownership
 
