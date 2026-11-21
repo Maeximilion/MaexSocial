@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Blocker dispositions · 2026-11-21 15:59 UTC
+
+[Historical recovery #83](https://github.com/Maeximilion/MaexSocial/issues/83#issuecomment-7065264731) is closed and Done by explicit owner decision. All eleven Git revisions had been restored. Four original worktrees were absent from the earlier snapshots; the final ignored contents remain partially unknown. No native issue depended on #83. Keep existing recovery controls.
+
+[#131](https://github.com/Maeximilion/MaexSocial/issues/131) has eight closed prerequisites. Its body now records the outstanding provider guarantees, the delivered components and the precise criteria to resume. The coordinator owns follow-up on the requested provider clarification and will evaluate new evidence on each active scheduling cycle. Reference and response state are retained privately. #123, #124, #163, #10, G3 and G5 still have direct native dependencies on #131. The currently unmounted OIDC attempt store has no long-lived application process to own idle cleanup; retain that integration requirement before public operation.
+
+[Tooling #168](https://github.com/Maeximilion/MaexSocial/issues/168#issuecomment-7065228978) distinguishes the single installed Ponytail callback package from the package-wide mode marker and a chat-specific execution record. The observed WSL proxy reported zero recorded proxy requests at the measurement time. Actual native per-chat callback attribution and end-to-end routing/retention evidence remain open. [Audit tracker #162](https://github.com/Maeximilion/MaexSocial/issues/162) reflects the recovery and tooling outcomes. Nineteen issues and zero PRs open. Zero occupied or reserved work chats.
+
 ## Owner-directed ten-minute orchestration · 2026-11-21 15:38 UTC
 
 For the current run the owner authorized admitting independent, eligible local tasks at the ten-minute queue check, up to five occupied work chats in parallel mode, including outstanding reservations. Admission may precede a predecessor PR. A qualifying PR can also admit work between checks, with each reservation counted once. Keep the applicable lower cap for a large issue or gate. Continue serial merges, current-candidate CI and review, recovery and verified archive.
