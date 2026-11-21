@@ -31,6 +31,13 @@ function fixture(t: TestContext) {
   return { job, read, acceptAndLoseReply, acceptedJobs, database: join(directory, 'runner.sqlite') };
 }
 
+test('reconciliation before any writes leaves the fresh fixture empty', t => {
+  const f = fixture(t);
+  assert.deepEqual(f.read('reconcile', f.job), { stopped: false, attempt: null });
+  assert.equal(existsSync(f.database), false);
+  assert.deepEqual(f.acceptedJobs(), []);
+});
+
 test('lost reply, reopened replay and read-only reconciliation keep one actual submission', t => {
   const f = fixture(t);
   f.acceptAndLoseReply();

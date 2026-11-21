@@ -101,6 +101,7 @@ node --test dist/pilot/tests/pilot/video-replay.test.js
 
 | Sequence | Observed result |
 | --- | --- |
+| Reconcile before any writes | The fixture is unstopped and the job has no reservation. Neither the runner database nor a fake receipt is created. |
 | Submit, lose the reply, reopen and replay the same job, reconcile, stop, try a new job, reconcile again | One fake acceptance. The original outcome and charge stayed unknown and its reservation stayed held. The new job acquired no reservation. Repeated reconciliation left the database bytes unchanged both while running and while stopped. |
 | Stop before the first submission, submit in two separate processes, then reconcile | Zero fake acceptances and no reservation. The stop persisted. |
 

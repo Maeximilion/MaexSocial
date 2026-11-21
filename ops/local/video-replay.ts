@@ -1,4 +1,4 @@
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -9,9 +9,12 @@ function submitToFake(directory: string, job: string): never {
 }
 
 function run(directory: string, command: string, job = '') {
-  const db = new DatabaseSync(join(directory, 'runner.sqlite'), { readOnly: command === 'reconcile', timeout: 5000 });
+  const database = join(directory, 'runner.sqlite');
+  const readOnly = command === 'reconcile';
+  if (readOnly && !lstatSync(database, { throwIfNoEntry: false })) return { stopped: false, attempt: null };
+  const db = new DatabaseSync(database, { readOnly, timeout: 5000 });
   try {
-    if (command !== 'reconcile') {
+    if (!readOnly) {
       db.exec(`CREATE TABLE IF NOT EXISTS attempts (job TEXT PRIMARY KEY);
                CREATE TABLE IF NOT EXISTS stop (id INTEGER PRIMARY KEY CHECK (id = 1));`);
     }
