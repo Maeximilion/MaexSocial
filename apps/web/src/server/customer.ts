@@ -4,7 +4,7 @@ import type { InspectIdentity } from '../../../../packages/contracts/pilot.js';
 import { lockIdentities, rotateCustomerSession, tokenHash } from './session.js';
 import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './request.js';
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
-import { createDraft, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
+import { createDraft, DraftConflict, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 import { renderFacts } from '../routes/facts.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
@@ -133,7 +133,11 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   app.use((_request, response) => { response.status(404).type('text').send('Not found.'); });
   app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     if (error instanceof DraftCorrection) { response.status(400).type('html').send(error.page); return; }
-    if (error.message === 'Revision conflict') { response.status(409).type('text').send('This draft changed. Reload the draft before editing again. Your text was not saved.'); return; }
+    if (error instanceof DraftConflict) {
+      if (error.page !== undefined) response.status(409).type('html').send(error.page);
+      else response.status(409).type('text').send('This draft changed. Reload the draft before editing again. Your text was not saved.');
+      return;
+    }
     const status = error.message === 'Denied' ? 403 : error.message === 'Invalid request' || 'type' in error ? 400 : 503;
     response.status(status).type('text').send(status === 503 ? 'Temporarily unavailable. Please try again.' : 'Request could not be completed.');
   });

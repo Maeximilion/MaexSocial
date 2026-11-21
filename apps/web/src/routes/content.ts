@@ -10,6 +10,10 @@ export class InvalidDraftText extends Error {
   constructor(readonly text: string) { super('Invalid request'); }
 }
 
+export class DraftConflict extends Error {
+  constructor(readonly page?: string) { super('Revision conflict'); }
+}
+
 function draftText(text: string): string {
   text = text.replace(/\r\n?/g, '\n');
   const length = [...text].length;
@@ -89,6 +93,15 @@ ${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row 
 <p><a href="/customer/drafts">All text drafts</a></p>`);
 }
 
+function renderDraftConflict(draftId: string, saved: { revision: number; text: string }, submitted: string): string {
+  return page('This draft changed', `<p>Someone saved a newer revision. Your text was not saved. Copy any text you want to keep before opening the current draft.</p>
+<label for="saved-text">Saved text · Revision ${saved.revision}</label>
+<textarea id="saved-text" readonly>\n${html(saved.text)}</textarea>
+<label for="unsaved-text">Your unsaved text</label>
+<textarea id="unsaved-text" readonly>\n${html(submitted)}</textarea>
+<p><a href="/customer/drafts/${html(draftId)}">Open current draft</a></p>`);
+}
+
 export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
   if (!uuid(occurrenceId)) deny();
   // Read the proposal and its occurrence from the same statement snapshot.
@@ -129,11 +142,16 @@ export async function editDraft(db: Client, context: CustomerContext, draftId: s
   if (!uuid(revisionId)) throw new Error('Invalid request');
   const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [context.tenantId, draftId]);
   if (!draft.rowCount) deny();
-  const current = (await db.query(`SELECT id,revision FROM pilot.draft_revisions
+  const current = (await db.query<{ id: string; revision: number; text: string }>(`SELECT id,revision,text FROM pilot.draft_revisions
     WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision DESC LIMIT 1`, [context.tenantId, draftId])).rows[0];
-  if (!current) deny();
-  if (current.id !== revisionId) throw new Error('Revision conflict');
-  text = draftText(text);
+  if (!current) return deny();
+  const stale = current.id !== revisionId;
+  try { text = draftText(text); }
+  catch (error) {
+    if (stale && error instanceof InvalidDraftText) throw new DraftConflict();
+    throw error;
+  }
+  if (stale) throw new DraftConflict(renderDraftConflict(draftId, current, text));
   await db.query('SELECT id FROM pilot.occurrences WHERE tenant_id=$1 AND draft_id=$2 ORDER BY id FOR UPDATE', [context.tenantId, draftId]);
   await db.query('INSERT INTO pilot.draft_revisions(tenant_id,draft_id,revision,text) VALUES($1,$2,$3,$4)', [context.tenantId, draftId, current.revision + 1, text]);
   await db.query(`UPDATE pilot.occurrences o SET approval_id=NULL,state=CASE WHEN state='approved' THEN 'draft' ELSE state END

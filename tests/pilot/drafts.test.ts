@@ -295,40 +295,71 @@ test('protected text editing preserves tenant, revision and approval boundaries'
       const sort = (rows: { row: Record<string, unknown> }[]) => rows.sort((a, b) => String(a.row.id).localeCompare(String(b.row.id)));
       assert.deepEqual(sort(after.occurrences as { row: Record<string, unknown> }[]), sort(expected));
       assert.equal((after.draft_revisions as unknown[]).length, (before.draft_revisions as unknown[]).length + 1);
-      const unchanged = await snapshot();
-      for (const text of [invalidText.slice(0, -1), invalidText]) {
-        const stale = await send(employee, path, { text, revisionId: old.id, csrf: employee.csrf });
-        assert.equal(stale.status, 409); assert.match(stale.contentType!, /^text\/plain\b/i); assert.match(stale.text, /reload/i);
-      }
-      assert.deepEqual(await snapshot(), unchanged);
+      const maximum = invalidText.slice(0, -1);
+      const stale = await send(employee, path, { text: maximum, revisionId: old.id, csrf: employee.csrf });
+      assert.equal(stale.status, 409); assert.match(stale.contentType!, /^text\/html\b/i);
+      assert.ok(stale.text.includes(`${maximum}</textarea>`));
+      const staleInvalid = await send(employee, path, { text: invalidText, revisionId: old.id, csrf: employee.csrf });
+      assert.equal(staleInvalid.status, 409); assert.match(staleInvalid.contentType!, /^text\/plain\b/i);
+      assert.match(staleInvalid.text, /reload/i); assert.ok(!staleInvalid.text.includes(maximum));
+      assert.deepEqual(await snapshot(), after);
+      assert.deepEqual((await sessionActivity()).rows, lastSeen);
     });
-    await t.test('two actual editors block on the same draft and exactly one revision wins', async () => {
+    await t.test('two actual editors keep one saved revision and recover the other proposal', async () => {
       const old = await latest(), before = await snapshot();
+      const editors = [employee, manager];
+      const texts = ['Concurrent <Employee> & edits\nEmployee second line', 'Concurrent <Manager> & edits\nManager second line'];
+      const escaped = ['Concurrent &lt;Employee&gt; &amp; edits\nEmployee second line', 'Concurrent &lt;Manager&gt; &amp; edits\nManager second line'];
+      for (const who of editors) {
+        const editor = await send(who, path);
+        assert.equal(editor.status, 200);
+        assert.ok(editor.text.includes(`name="revisionId" value="${old.id}"`));
+      }
       const holder = await connectFixture();
-      let pending: Promise<{ status: number; text: string; location: string | undefined }>[] = [];
+      let pending: ReturnType<typeof send>[] = [];
       try {
         const holderPid = (await holder.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
         await holder.query('BEGIN');
         await holder.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [a.tenant, a.draft]);
         const start = pids.length;
-        pending = [send(employee, path, { text: 'Concurrent Employee', revisionId: old.id, csrf: employee.csrf }), send(manager, path, { text: 'Concurrent Manager', revisionId: old.id, csrf: manager.csrf })];
+        pending = editors.map((who, i) => send(who, path, { text: texts[i]!, revisionId: old.id, csrf: who.csrf }));
         let blocked = false;
         for (let i = 0; i < 200; i++) {
-          const editors = pids.slice(start);
-          if (editors.length === 2) {
-            const waits = (await db.query('SELECT pid,pg_blocking_pids(pid) AS blockers FROM pg_stat_activity WHERE pid=ANY($1::int[])', [editors])).rows;
-            if (waits.length === 2 && waits.every(row => row.blockers.some((pid: number) => [holderPid, ...editors].includes(pid)))) { blocked = true; break; }
+          const waitingPids = pids.slice(start);
+          if (waitingPids.length === 2) {
+            const waits = (await db.query('SELECT pid,pg_blocking_pids(pid) AS blockers FROM pg_stat_activity WHERE pid=ANY($1::int[])', [waitingPids])).rows;
+            if (waits.length === 2 && waits.every(row => row.blockers.some((pid: number) => [holderPid, ...waitingPids].includes(pid)))) { blocked = true; break; }
           }
           await setTimeout(10);
         }
         assert.ok(blocked, 'Both separate HTTPS transactions must visibly block on the held draft');
         await holder.query('COMMIT');
         const results = await Promise.all(pending); assert.deepEqual(results.map(r => r.status).sort(), [303, 409]);
-        const winner = results[0]!.status === 303 ? 'Concurrent Employee' : 'Concurrent Manager';
-        assert.equal((await latest()).text, winner); assert.equal((await latest()).revision, old.revision + 1);
+        const winner = results.findIndex(result => result.status === 303);
+        const loser = results.findIndex(result => result.status === 409);
+        const saved = await latest(), conflict = results[loser]!;
+        assert.equal(saved.text, texts[winner]); assert.equal(saved.revision, old.revision + 1);
+        assert.match(conflict.contentType!, /^text\/html\b/i); assert.equal(conflict.location, undefined);
+        assert.match(conflict.text, /<h1>This draft changed<\/h1>/);
+        assert.ok(conflict.text.includes(`Saved text · Revision ${saved.revision}</label>`));
+        assert.match(conflict.text, /<label for="unsaved-text">Your unsaved text<\/label>/);
+        const savedField = conflict.text.match(/<textarea id="saved-text" readonly>\n([\s\S]*?)<\/textarea>/)?.[1];
+        const unsavedField = conflict.text.match(/<textarea id="unsaved-text" readonly>\n([\s\S]*?)<\/textarea>/)?.[1];
+        assert.equal(savedField, escaped[winner]); assert.equal(unsavedField, escaped[loser]);
+        assert.doesNotMatch(conflict.text, /<Employee>|<Manager>|<form\b|<button\b/);
+        assert.ok(conflict.text.includes(`<a href="${path}">Open current draft</a>`));
         const after = await snapshot();
         assert.equal((after.draft_revisions as unknown[]).length, (before.draft_revisions as unknown[]).length + 1);
         assert.deepEqual(after.approvals, before.approvals); assert.deepEqual(after.attempts, before.attempts);
+        const first = editors[winner]!, second = editors[loser]!;
+        const reopened = await send(second, path); assert.equal(reopened.status, 200);
+        assert.ok(reopened.text.includes(`name="revisionId" value="${saved.id}"`));
+        assert.ok(reopened.text.includes(`${escaped[winner]}</textarea>`));
+        assert.equal((await send(first, path, { text: 'A further saved revision', revisionId: saved.id, csrf: first.csrf })).status, 303);
+        const advanced = await snapshot();
+        const retry = await send(second, path, { text: 'Manual edit from reopened draft', revisionId: saved.id, csrf: second.csrf });
+        assert.equal(retry.status, 409); assert.ok(retry.text.includes(`Saved text · Revision ${saved.revision + 1}</label>`));
+        assert.deepEqual(await snapshot(), advanced);
       } finally { await holder.query('ROLLBACK'); await Promise.allSettled(pending); await holder.end(); }
     });
   } finally { server.closeAllConnections(); await new Promise<void>(r => server.close(() => r())); await db.end(); }

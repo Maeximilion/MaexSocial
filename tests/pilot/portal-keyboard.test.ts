@@ -16,11 +16,22 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
   const db = await connectFixture(); const now = new Date();
   const status: IdentityStatus = { subject: randomUUID(),
     verified: true, enabled: true, requiredActions: [], credentials: [] };
-  const app = createCustomerApp(connectFixture, async () => status);
+  const otherStatus: IdentityStatus = { ...status, subject: randomUUID() };
+  const app = createCustomerApp(connectFixture, async subject => subject === otherStatus.subject ? otherStatus : status);
   const server = createServer({ cert: await readFile('work/pilot/customer.crt'), key: await readFile('work/pilot/customer.key') }, app);
   let browser: Browser | undefined;
   try {
-    browser = await chromium.connect(endpoint, { timeout: 5000 });
+    const connected = await chromium.connect(endpoint, { timeout: 5000 });
+    browser = connected;
+    const openEditorSession = async (identityId: string, tenantId: string, membershipId: string) => {
+      const token = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
+      await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
+        VALUES($1,$2,$3,1,$4,1,$5,1,'customer',$6,$6,$7)`, [tokenHash(token), tokenHash(csrf), identityId, tenantId, membershipId, now, new Date(now.getTime() + 28_800_000)]);
+      const context = await connected.newContext();
+      await context.addCookies([{ name: '__Host-session', value: token, url: 'https://customer:8443', secure: true, httpOnly: true, sameSite: 'Lax' },
+        { name: '__Host-csrf', value: csrf, url: 'https://customer:8443', secure: true, httpOnly: true, sameSite: 'Lax' }]);
+      return { context, token };
+    };
     const identity = (await db.query("INSERT INTO pilot.identities(subject,verified) VALUES($1,true) RETURNING id", [status.subject])).rows[0].id;
     const tenants: string[] = []; const memberships: string[] = [];
     for (const name of ['Keyboard A', 'Keyboard B']) {
@@ -28,13 +39,8 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
       const role = name === 'Keyboard A' ? 'Employee' : 'Manager';
       memberships.push((await db.query('INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,$3) RETURNING id', [tenant, identity, role])).rows[0].id);
     }
-    const token = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
-    await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
-      VALUES($1,$2,$3,1,$4,1,$5,1,'customer',$6,$6,$7)`, [tokenHash(token), tokenHash(csrf), identity, tenants[0], memberships[0], now, new Date(now.getTime() + 28_800_000)]);
     await new Promise<void>(r => server.listen(8443, '0.0.0.0', r));
-    const context = await browser.newContext();
-    await context.addCookies([{ name: '__Host-session', value: token, url: 'https://customer:8443', secure: true, httpOnly: true, sameSite: 'Lax' },
-      { name: '__Host-csrf', value: csrf, url: 'https://customer:8443', secure: true, httpOnly: true, sameSite: 'Lax' }]);
+    const { context, token } = await openEditorSession(identity, tenants[0]!, memberships[0]!);
     const page = await context.newPage();
     const requests: string[] = []; page.on('request', request => requests.push(new URL(request.url()).hostname));
     const navigation = await page.goto('https://customer:8443/customer');
@@ -112,14 +118,52 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     await page.waitForFunction(() => document.body.textContent?.includes('Revision 2.'), undefined, { timeout: 5000 });
     assert.equal(await page.locator('#text').inputValue(), originalText);
     assert.equal((await db.query('SELECT length(text) AS size FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 AND revision=2', [tenants[1], draft])).rows[0].size, 1500);
-    await page.locator('#text').focus(); await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('Keyboard edited <literal> text\nSecond line');
+    const otherIdentity = (await db.query('INSERT INTO pilot.identities(subject,verified) VALUES($1,true) RETURNING id', [otherStatus.subject])).rows[0].id;
+    const otherMembership = (await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Employee') RETURNING id", [tenants[1], otherIdentity])).rows[0].id;
+    const { context: otherContext } = await openEditorSession(otherIdentity, tenants[1]!, otherMembership);
+    const otherPage = await otherContext.newPage();
+    otherPage.on('request', request => requests.push(new URL(request.url()).hostname));
+    const draftUrl = `https://customer:8443${draftPath}`;
+    assert.equal((await otherPage.goto(draftUrl))?.status(), 200);
+    assert.equal(await otherPage.locator('[name="revisionId"]').inputValue(), await page.locator('[name="revisionId"]').inputValue());
+    const submittedText = '\n</textarea><script>literal</script>\nSecond editor 😀';
+    await otherPage.locator('#text').focus(); await otherPage.keyboard.press('ControlOrMeta+A'); await otherPage.keyboard.insertText(submittedText);
+    await otherPage.keyboard.press('Tab'); assert.equal(await otherPage.locator(':focus').textContent(), 'Save text');
+    const savedText = 'Keyboard edited <literal> text\nSecond line';
+    await page.locator('#text').focus(); await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type(savedText);
     await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Save text');
     const edited = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/customer/drafts/${draft}`, { timeout: 5000 });
     await page.keyboard.press('Enter'); assert.equal((await edited).status(), 303);
     await page.waitForFunction(() => document.body.textContent?.includes('Revision 3.'), undefined, { timeout: 5000 });
-    assert.equal(await page.locator('#text').inputValue(), 'Keyboard edited <literal> text\nSecond line');
+    assert.equal(await page.locator('#text').inputValue(), savedText);
+
+    const conflict = otherPage.waitForResponse(response => response.request().method() === 'POST' && response.url() === draftUrl, { timeout: 5000 });
+    await otherPage.keyboard.press('Enter'); const conflictResponse = await conflict;
+    assert.equal(conflictResponse.status(), 409);
+    assert.match((await conflictResponse.headerValue('content-type'))!, /^text\/html\b/i);
+    await otherPage.getByRole('heading', { name: 'This draft changed', exact: true }).waitFor({ timeout: 5000 });
+    const saved = otherPage.getByRole('textbox', { name: 'Saved text · Revision 3' });
+    const unsaved = otherPage.getByRole('textbox', { name: 'Your unsaved text' });
+    assert.equal(await saved.inputValue(), savedText);
+    assert.equal(await unsaved.inputValue(), submittedText);
+    assert.equal(await saved.isEditable(), false);
+    assert.equal(await unsaved.isEditable(), false);
+    assert.equal(await otherPage.locator('script, form').count(), 0);
+    await otherPage.keyboard.press('Tab'); assert.equal(await otherPage.locator(':focus').textContent(), 'Back to workspace');
+    await otherPage.keyboard.press('Tab'); assert.equal(await saved.evaluate(element => element === document.activeElement), true);
+    await otherPage.keyboard.press('Tab'); assert.equal(await unsaved.evaluate(element => element === document.activeElement), true);
+    await otherPage.keyboard.press('ControlOrMeta+A');
+    assert.equal(await unsaved.evaluate(element => element instanceof HTMLTextAreaElement
+      ? element.value.slice(element.selectionStart, element.selectionEnd) : null), submittedText);
+    await otherPage.keyboard.press('Tab'); assert.equal(await otherPage.locator(':focus').textContent(), 'Open current draft');
+    const reopened = otherPage.waitForResponse(response => response.request().method() === 'GET' && response.url() === draftUrl, { timeout: 5000 });
+    await otherPage.keyboard.press('Enter'); assert.equal((await reopened).status(), 200);
+    await otherPage.getByRole('heading', { name: 'Edit text draft', exact: true }).waitFor({ timeout: 5000 });
+    assert.equal(await otherPage.locator('#text').inputValue(), savedText);
+    assert.equal(await otherPage.locator('[name="revisionId"]').inputValue(), await page.locator('[name="revisionId"]').inputValue());
+    await otherContext.close();
     assert.deepEqual((await db.query('SELECT revision,text FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision', [tenants[1], draft])).rows,
-      [{ revision: 1, text: originalText }, { revision: 2, text: originalText }, { revision: 3, text: 'Keyboard edited <literal> text\nSecond line' }]);
+      [{ revision: 1, text: originalText }, { revision: 2, text: originalText }, { revision: 3, text: savedText }]);
     await page.screenshot({ path: '/artifacts/draft.png', fullPage: true });
     const occurrence = (await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
       VALUES($1,$2,$3,$4,'2030-01-01T12:00:00Z','Europe/Berlin') RETURNING id`, [tenants[1], draft, location, randomUUID()])).rows[0].id;
@@ -130,7 +174,7 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     await page.waitForURL(`https://customer:8443/customer/occurrences/${occurrence}`, { timeout: 5000 });
     assert.equal(await page.getByRole('heading', { name: 'Post occurrence details', exact: true }).count(), 1);
     const proposal = page.getByRole('region', { name: 'Proposed text · Revision 3' });
-    assert.ok((await proposal.textContent())!.includes('Keyboard edited <literal> text\nSecond line'));
+    assert.ok((await proposal.textContent())!.includes(savedText));
     assert.ok((await proposal.textContent())!.includes('Keyboard <location> & context'));
     assert.ok((await proposal.textContent())!.includes('1 January 2030 at 13:00:00'));
     assert.equal(await proposal.locator('time').getAttribute('datetime'), '2030-01-01T12:00:00.000Z');
