@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## GitHub-based handovers
+
+The owner retired routine per-task recovery packages. Verify the published GitHub revision and link the existing handover. If meaningful work exists only locally, identify it and preserve its original before archiving. A requested rollback can justify a targeted copy. [#192](https://github.com/Maeximilion/MaexSocial/issues/192) carries this rule into the project defaults.
+
+[#194](https://github.com/Maeximilion/MaexSocial/pull/194) merged at `17d906db997952140f4a9272e6c748cda35151e2` with the tested tree. The next publication belongs to #191, followed by #192.
+
 ## Work-chat permissions, reasoning and handover · 2026-11-21 18:39 UTC
 
 The owner authorized routine project operations, a separate approval for large downloads, isolated antivirus inspection of incoming files, and High reasoning for orchestration. The verified controls and a working offline scanner are in the private coordinator record. The short heartbeat still applies them between turns. [#192](https://github.com/Maeximilion/MaexSocial/issues/192) tracks the narrow project defaults. Candidate source commits `8224825fd0ad2c95acbd21ac18a6c674e0562888` and `bb6210f2f5a92467246f1f316e7b1768f5433935` resolved the configured reviewer and High effort in an independent configuration read without changing the resolved sandbox. Desktop turn settings remain separately observable. The current coordinator turn started on Ultra. The native desktop subsequently applied High to this coordinator chat as well. Both replacement workers and the latest [#191](https://github.com/Maeximilion/MaexSocial/issues/191) turn reported High.
