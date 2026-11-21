@@ -1,6 +1,6 @@
 # Customer media library, calendar and optional advertising
 
-Status — Requested product direction, recorded 2026-11-05 in [planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40). The workflow and safeguards below are proposals for G2. No application, provider integration, posting authority or advertising budget is approved or implemented by this document.
+Status — Requested product direction, recorded 2026-11-05 in [planning issue #40](https://github.com/Maeximilion/MaexSocial/issues/40). The [accepted G2 baseline](superpowers/specs/2026-11-06-g2-acceptance-packet.md) is one synthetic Google Business Profile text occurrence using a fake provider. Media is disabled for every role. The media-library journey and Meta-first approach below are historical proposals. [#167](https://github.com/Maeximilion/MaexSocial/issues/167) tracks future product AI candidate scope, #11/#99 retain media evidence, and #12 retains operating evidence. External operation and advertising each require separate authorization.
 
 ## Customer request and evidence boundary
 
@@ -21,7 +21,7 @@ Suggested dashboard areas are **Media library**, **Create**, **Calendar** and **
 
 Example: a local business uploads three product photos, requests two weekly social drafts and one short video, reviews the variants and places approved content in the calendar. An optional local advertising proposal has its own audience, budget and activation approval. This is a target scenario, not a claim that every format or channel is already supported.
 
-## Delivery approaches for G2
+## Delivery approaches considered before G2 acceptance
 
 | Approach | Benefit | Trade-off |
 |---|---|---|
@@ -29,7 +29,7 @@ Example: a local business uploads three product photos, requests two weekly soci
 | MaexSocial library/calendar with official publishing APIs | One customer workflow and explicit approval/retry controls | Requires account eligibility, permissions, app review and durable scheduling |
 | Third-party publishing service behind the same customer workflow | May cover additional channels through one vendor | Adds vendor cost, data processing and another capability/availability boundary |
 
-Recommendation for G2: own the library and calendar, start with one eligible Meta destination and one media-generation provider, then expand after a verified vertical slice. Meta Business Suite is a user interface, not the backend contract for this design. A third-party service remains a candidate only if it proves a needed capability. MCP may provide a tool interface, but does not replace the provider API contract, durable job handling or customer authorization.
+The 2026-11-05 proposal recommended owning the library and calendar and starting with one eligible Meta destination and one media-generation provider. G2 subsequently selected the local Google text path. Future integrations need a supported provider API contract, durable job handling and customer authorization. An MCP interface may supply tools or context for a selected workflow.
 
 ## Public API evidence — bounded check on 2026-11-05
 
@@ -47,7 +47,7 @@ These are documented capabilities and constraints, not successful live integrati
 
 The Postman material is published by [Meta's verified team](https://www.postman.com/meta). Direct Meta developer pages returned access/rate-limit barriers during this check. Current App Review/business-verification details, Facebook Story publishing, exact Page-post scheduling windows and a complete permission dependency tree remain verification items. No account was connected and no generation, publication, ad creation or spend occurred.
 
-Keep both media providers as candidates; the check does not establish a quality winner or website/API feature parity. Verify current API billing independently of consumer subscriptions. For commercial embedding, review the actual MaexSocial offer against provider terms, including Higgsfield's distinction between applications adding material functionality and restricted standalone resale. Sources: [Runway API FAQ](https://help.runwayml.com/hc/en-us/articles/50683115755155-Runway-API-FAQs), [Higgsfield API terms](https://open.higgsfield.ai/terms-of-service). Processing region, retention/deletion, data-use settings and the selected model's price remain G2/provider-spike decisions.
+This check left both media providers as candidates. Before a separately approved spike, verify current API billing, commercial terms, processing region, retention/deletion and data-use settings against the proposed service. The 2026-11-05 evidence includes the [Runway API FAQ](https://help.runwayml.com/hc/en-us/articles/50683115755155-Runway-API-FAQs) and [Higgsfield API terms](https://open.higgsfield.ai/terms-of-service).
 
 ## Contracts to settle before implementation
 
@@ -69,15 +69,17 @@ Customer audience controls should explain the chosen region and available eligib
 |---|---|
 | MS-005 / issue #5 | Provider API versus website parity, private input/output lifecycle, pricing, commercial embedding rights, account/format support, publishing permissions and separate Marketing API access |
 | MS-007 / issue #7 | Keep the owner-requested library/calendar/ads proposal distinct from observed SocialEdge capabilities; reconcile it with feasibility evidence |
-| MS-008–009 / issues #8–9 | Approve the first customer workflow, provider/channel, costs, storage/retention, approval modes and proposed contracts; turn accepted cases below into executable tasks |
-| MS-010 / issue #10 | Proposed first slice: private media upload → draft/review → one supported destination → schedule → confirmed result |
-| MS-011 / issue #11 | Add one approved media-generation workflow, cost reservation, durable output capture and recovery |
+| MS-008–009 / issues #8–9 | Accepted the bounded local text design and plan. External operating terms and evidence remain with #10/#82 |
+| MS-010 / issue #10 | Local synthetic organic text slice for one Google Business Profile occurrence. The actual Google result needs separate authorization and evidence |
+| MS-011 / issue #11 | After [#167](https://github.com/Maeximilion/MaexSocial/issues/167) establishes candidate scope, use the separately approved spike to choose a provider and verify one media-generation workflow, cost reservation, durable output capture and recovery. #99 retains format and upload-security evidence |
 | MS-012 / issue #12 | Verify recurring generation/publication and stop/reconciliation under an approved operating policy; optional paid-ad pilot requires its own authority and budget |
 | MS-013 / issue #30 | Extend tenant/admin boundaries to originals, derived media, generation jobs, schedules, advertising credentials and audit records |
 
-Paid advertising is a separate optional delivery package after G2 decides its priority. Creating these planning records does not approve unattended ads or expand the first slice to every social channel. The image-to-ad creative pipeline and paid distribution are different capabilities.
+Paid advertising remains a separate optional delivery with its own approval and budget. Creating advertising media grants no authority to activate paid distribution.
 
-## Proposed acceptance cases — not executed
+## Local pilot and later acceptance cases
+
+The [accepted pilot evidence map](superpowers/plans/2026-11-05-ms-009-pilot-evidence-map.md) assigns PLAN-01/03/04 and the ADS-01 disabled-path control to local synthetic verification. The other cases below describe future gated scope.
 
 | ID | Scenario and required evidence |
 |---|---|
@@ -94,6 +96,6 @@ Paid advertising is a separate optional delivery package after G2 decides its pr
 | ADS-03 | Concurrent requests respect internal spend reservations; platform budgets, delayed cost reports and pause failures are handled without claiming an unverified hard ceiling |
 | ADS-04 | Missing ad-account permission, unsupported targeting or policy rejection cannot fall back to a broader audience or automatic spend |
 
-## Open G2 decisions
+## Decisions for later media and operation
 
-Choose the first customer segment and eligible account, one generation provider/model, accepted upload/media formats, storage/processing region and retention, default recurrence/approval behavior, customer-visible cost model and whether paid advertising enters the initial roadmap or a later release. Use an explicitly authorized provider spike with a defined budget to verify the selected path. The current research does not settle those decisions.
+Record the candidate and permitted data, cost and evaluation scope in [#167](https://github.com/Maeximilion/MaexSocial/issues/167). Use #11's separately authorized spike for final provider/model selection. Resolve media formats, storage/processing region and retention before media release with #99. Keep recurrence and catch-up policy under #12, and obtain separate approval for advertising scope and budget.
