@@ -1,5 +1,13 @@
 # Current coordinator handover
 
+## Local website integrated · 2026-11-21 17:29 UTC
+
+[Website PR #186](https://github.com/Maeximilion/MaexSocial/pull/186) merged as `11920eec675699fda6fa233bf1ae2ea7396dbf22`. The checked candidate and actual main commit share tree `97763a9f3cf0e3f4a970bdf3e734c983aabb481a`. [Pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44929580382) passed 29/29 before and after the retained-volume restart. The [current Claude API review](https://github.com/Maeximilion/MaexSocial/pull/186#issuecomment-7066423321) covered the actual base and head with zero findings. #183 is closed and Done. The website preview, desktop and mobile images are available privately; the [task handover](https://github.com/Maeximilion/MaexSocial/blob/11920eec675699fda6fa233bf1ae2ea7396dbf22/docs/handovers/sessions/2026-11-21-local-website-entry.md) locates the source and customization points on the integrated revision. The website stays local to the pilot.
+
+The dependency and branch evidence for [stack #189](https://github.com/Maeximilion/MaexSocial/stack/189) was checked before the single bottom merge. [PR #188](https://github.com/Maeximilion/MaexSocial/pull/188) now targets main. The coordinator supplied a correction for the two initial source-guidance findings covering the explicitly authorized PR-based mode and unresolved worker creations. Its final candidate still needs current review and CI.
+
+[#187](https://github.com/Maeximilion/MaexSocial/issues/187) is ready for a later staggered admission. After #179, a concurrent saved edit still leaves the second editor with a plain-text conflict and no way to recover their submitted draft from the response. This child of #124 owns a read-only comparison and a way back to the existing revision-checked editor. Its sole native prerequisite #179 is closed. At this checkpoint #187 has no reservation or work chat. The 103-issue graph with 127 dependency edges is acyclic.
+
 ## Website preview and admission verification · 2026-11-21 17:18 UTC
 
 Two consecutive native worker starts respected the corrected rule. The interval from #179 to [#183](https://github.com/Maeximilion/MaexSocial/issues/183) was 12 minutes 45.864 seconds; from #183 to [#185](https://github.com/Maeximilion/MaexSocial/issues/185) it was 10 minutes 51.342 seconds. One worker was admitted at each opportunity, with no extra start for a PR opening or an intervening archive. The ten-minute heartbeat and sole coordinator binding were verified. The private ledger records actual starts and the earliest next intake.
