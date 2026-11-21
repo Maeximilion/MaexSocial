@@ -4,6 +4,8 @@
 
 [Issue #201](https://github.com/Maeximilion/MaexSocial/issues/201) replaces duplicated repository orchestration procedures with the personal `$orchestrator` skill and a small [MaexSocial adapter](../../../.agents/skills/coordinate-project-chats/SKILL.md). The [start prompt](../../../.codex/orchestration/START.md) loads both. The personal skill and its UI metadata are installed in the owner's Codex skills directory; they are not distributed by this repository or reviewed by its PR workflow.
 
+Reviewed personal edition: `orchestrator/SKILL.md` SHA-256 `e5d8cea4b7b40649599582267e0c1adeb79900e422bc9d6f272fe8cdeac0d3e4`; UI metadata `orchestrator/agents/openai.yaml` SHA-256 `27f5b06f44305793b627376ca15771dd99602f6575b2780e4a65076413d3f5ba`. The adapter verifies the entry before use and requires focused review of a changed local edition, not silent activation or a remote replacement. Personal-skill review is distinct from Claude's repository PR review.
+
 The latest owner direction cancelled the replacement product coordinator and its work chats. This maintenance chat handles this delivery only. No product task is resumed. The historical [CURRENT](../../../.codex/orchestration/CURRENT.md) remains recovery evidence and now explicitly defers to current owner control and live state.
 
 ## Operating decisions
