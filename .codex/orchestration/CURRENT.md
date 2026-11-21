@@ -1,5 +1,11 @@
 # Current coordinator handover
 
+## Preview delivered and elapsed-time follow-up · 2026-11-21 14:47 UTC
+
+[#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged as `4391dd4e774304f34f834d679201ad747dcbe15f`. The coordinator verified that its tree equals the checked candidate and its parent equals the inspected main tip. The [hosted pilot](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) passed 27/27 before and after retained restart. All ten check contexts passed, the complete current Claude review had zero findings, and the canonical checkout was fast-forwarded. Issue #169 and the PR are Done. Recovery verified 3,950 source files, original task Git, a usable standalone clone and three volume archives. The two restored PostgreSQL databases opened; the Mailpit SQLite integrity check passed. The full restored Compose stack was not run. The completed native transcript matched the independent archived copy.
+
+One dedicated work chat now owns [#155](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064365579). It will correct the duration measurement in the two existing test assertions, keep the strict 6,500 ms bound and preserve both observed failures. The verified #171 merge/archive pair is consumed once. No PRs are open at admission. [#170](https://github.com/Maeximilion/MaexSocial/issues/170) is the subsequent eligible documentation delivery. #168 awaits new native evidence; #131 remains the integrated product blocker.
+
 ## Local delivery and maintenance checkpoint · 2026-11-21 14:37 UTC
 
 [PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) is the single open delivery. Its originating #169 chat owns the frozen preview head `4765fa1b9863b63a9e455ad497c5183fdecb8fa1` on base `d2332feeda90f2d19f580cbaa66fa2dd78c8b0a5`. The [complete Claude result](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) has zero findings. The synthetic candidate `0e52c5019175a6b2382e71b4c52b3fa62a06ed82` has those ordered base/head parents. Hosted pilot CI was still running at this checkpoint. The local fresh run passed 27/27; the retained run passed 26/27. [Issue #155](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910) records the distinct elapsed-time assertion and a paired control. It remains open.
