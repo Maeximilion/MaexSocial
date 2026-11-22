@@ -8,11 +8,11 @@ import { compose, docker, loadFixture, usesLocalDocker, verifyContainers, type F
 import { initialize, postgresImage } from './stack.js';
 
 const directory = 'work/pilot/cold-backup';
-const databases = [
+export const databases = [
   { service: 'postgres', volume: 'app-data', archive: 'app-db.tar', owner: 'pilot_owner', database: 'pilot_fixture' },
   { service: 'identity-db', volume: 'identity-data', archive: 'identity-db.tar', owner: 'identity_owner', database: 'identity_fixture' },
 ] as const;
-type Database = typeof databases[number];
+export type Database = typeof databases[number];
 const digest = /^[a-f0-9]{64}$/;
 
 async function hashFile(path: string): Promise<string> {
@@ -21,17 +21,17 @@ async function hashFile(path: string): Promise<string> {
   return hash.digest('hex');
 }
 
-async function hashSources(paths: string[]): Promise<string> {
+export async function hashSources(paths: string[], locate = (path: string) => path): Promise<string> {
   const hash = createHash('sha256');
   for (const path of paths) {
-    const source = (await readFile(path, 'utf8')).replace(/\r\n/g, '\n');
+    const source = (await readFile(locate(path), 'utf8')).replace(/\r\n/g, '\n');
     hash.update(JSON.stringify([path, source]));
   }
   return hash.digest('hex');
 }
 
-function configuredKeycloak(f: Fixture): string {
-  const config = JSON.parse(compose(f, ['config', '--format', 'json'])) as { services: Record<string, { image: string }> };
+function configuredKeycloak(f: Fixture, envFile?: string): string {
+  const config = JSON.parse(compose(f, ['config', '--format', 'json'], envFile)) as { services: Record<string, { image: string }> };
   const image = config.services.keycloak?.image;
   if (!image || !/^quay\.io\/keycloak\/keycloak:[\w.-]+@sha256:[a-f0-9]{64}$/.test(image)) {
     throw new Error('A pinned Keycloak fixture image is required.');
@@ -39,18 +39,18 @@ function configuredKeycloak(f: Fixture): string {
   return image;
 }
 
-async function compatibility(f: Fixture) {
+export async function compatibility(f: Fixture, envFile?: string) {
   const migrations = (await readdir('db/migrations')).filter(name => name.endsWith('.up.sql')).sort();
   if (!migrations.length) throw new Error('AppDB migrations are missing.');
   return {
     appSchema: await hashSources(migrations.map(name => join('db/migrations', name).replace(/\\/g, '/'))),
     idpConfig: await hashSources(['ops/local/keycloak-realm.json', 'ops/local/keycloak-step-up.json', 'ops/local/stack.ts']),
     stack: await hashSources(['ops/local/compose.yaml', 'ops/local/start-postgres.sh', 'ops/local/pg_hba.conf']),
-    keycloakImage: configuredKeycloak(f),
+    keycloakImage: configuredKeycloak(f, envFile),
   };
 }
 
-type Pair = {
+export type Pair = {
   format: 1;
   fixtureId: string;
   revision: string;
@@ -58,6 +58,7 @@ type Pair = {
   appliedAppSchema: string;
   identitySchema: string;
   postgresImage: string;
+  effectiveIdentityConfig?: string;
   archives: Record<string, { sha256: string; systemId: string; catalogVersion: string }>;
 };
 
@@ -109,7 +110,7 @@ function containers(f: Fixture): Map<string, Container> {
   return services;
 }
 
-function volumeName(f: Fixture, db: Database): string {
+export function volumeName(f: Fixture, db: Database): string {
   return f.project + '_' + db.volume;
 }
 
@@ -175,7 +176,6 @@ function cleanRevision(): string {
 async function capture(): Promise<void> {
   const revision = cleanRevision();
   if (!usesLocalDocker()) throw new Error('Cold backup requires a local Docker socket.');
-
   const f = await initialize('backup');
   const expected = await compatibility(f);
   const imageId = (image: string) => docker(['image', 'inspect', '--format', '{{.Id}}', image]);
