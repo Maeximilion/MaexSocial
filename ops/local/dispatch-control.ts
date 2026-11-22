@@ -13,7 +13,7 @@ async function main(): Promise<void> {
   const db = await connectFixture(true);
   try {
     if (action === 'stop') {
-      // Future dispatch claims must lock this row before recording an attempt.
+      // Dispatch claims lock this row before recording an attempt.
       const result = await db.query('UPDATE pilot.dispatch_control SET stopped = true WHERE singleton');
       if (result.rowCount !== 1) throw new Error('Missing dispatch control');
     }

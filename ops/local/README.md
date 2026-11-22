@@ -58,6 +58,22 @@ On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurre
 including a deferred commit failure and a competing claim. The authenticated route, dispatch worker and
 integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Private synthetic dispatch claim (#253)
+
+The [private dispatch entry](../../apps/worker/src/dispatch.ts) takes a stored occurrence ID and the
+isolated fake's explicitly allowed organic-text policy. It locks current tenant and approving Manager
+authority, the draft, occurrence, destination and stop control. PostgreSQL checks whether the exact
+approved instant is due. One transaction records the attempt, state and audit before the winner can
+send the immutable text to the SQLite fake. The fake stores the request with its call count. The
+attempt remains in flight until the existing read-only reconciliation records a provider observation.
+
+On a fresh isolated fixture after the migration drill, run `npm run pilot:build` and
+`node --test dist/pilot/tests/pilot/dispatch.test.js`. The suite checks competing claims, both commit
+orders with terminal export, stop and rollback, pre-send process exit, lost reply, restart and
+zero budget reservations. Run `npm run pilot:down` after verification. The test creates its own
+synthetic authorities, provider state and content. Integrated service operation and gate evidence
+remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165) and [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
+
 ## Local readiness recovery (#219)
 
 Use a fresh task worktree without `work/pilot`, the pinned Node and npm, installed locked dependencies, and the pinned Compose images already present in the local Docker cache.
