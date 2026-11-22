@@ -3,10 +3,14 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { test } from 'node:test';
-import { previewEmployeeInvitation } from '../../apps/web/src/routes/employees.js';
-import { issueEmployeeInvitation } from '../../apps/web/src/server/invitation-issue.js';
+import { previewInvitation, renderInvitationPreview } from '../../apps/web/src/routes/employees.js';
+import { issueEmployeeInvitation, issueManagementInvitation,
+  type ManagementInvitationContext } from '../../apps/web/src/server/invitation-issue.js';
 import { requireCustomer, tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+import { createOrganization } from '../../packages/contracts/management-organization.js';
+import type { CustomerRole } from '../../packages/contracts/pilot.js';
+import { seedManagementSession } from './fixtures.js';
 
 interface MailpitMessage {
   From: { Address: string };
@@ -86,17 +90,17 @@ test('private Employee invitation issuance and resend use the current issuer and
   const initialAccess = await access();
   const initialMail = await countMail();
 
-  const latestToken = async (recipient = email) => {
+  const latestToken = async (recipient = email, role: CustomerRole = 'Employee') => {
     const message = await mailboxRead<MailpitMessage>(mailboxCa, '/api/v1/message/latest');
     assert.deepEqual(message.To.map(x => x.Address), [recipient]);
     assert.equal(message.Cc?.length ?? 0, 0);
     assert.equal(message.Bcc?.length ?? 0, 0);
     assert.equal(message.From.Address, 'invitations@example.invalid');
-    assert.equal(message.Subject, 'Employee invitation');
+    assert.equal(message.Subject, `${role} invitation`);
     const body = message.Text.replaceAll('\r\n', '\n').trim();
     const token = /#([a-f0-9]{64})$/.exec(body)?.[1];
     assert.ok(token, 'The isolated mailbox contains an opaque invitation');
-    assert.equal(body === `You have been invited as an Employee. The invitation expires after 24 hours.\n\nhttps://customer:8443/customer/invitations/preview#${token}`,
+    assert.equal(body === `You have been invited as ${role === 'Employee' ? 'an Employee' : 'a Manager'}. The invitation expires after 24 hours.\n\nhttps://customer:8443/customer/invitations/preview#${token}`,
       true, 'Captured message contains only the expected invitation text and link');
     return token;
   };
@@ -118,8 +122,8 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal(await countMail(), initialMail + 1);
   const firstToken = await latestToken();
   await assertBinding(first.id, 1, firstToken);
-  assert.equal(await previewEmployeeInvitation(db, firstToken, email), tenantName);
-  assert.equal(await previewEmployeeInvitation(db, firstToken, 'wrong@example.invalid'), undefined);
+  assert.deepEqual(await previewInvitation(db, firstToken, email), { name: tenantName, role: 'Employee' });
+  assert.equal(await previewInvitation(db, firstToken, 'wrong@example.invalid'), undefined);
   assert.equal((await invitations()).length, 1);
   assert.deepEqual(await access(), initialAccess);
 
@@ -153,8 +157,8 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal(firstToken !== replacementToken, true, 'Resend creates a different token');
   await assertBinding(winner.value.id, 2, replacementToken);
   assert.deepEqual((await invitations()).find(row => row.id === first.id)?.revoked_at, now);
-  assert.equal(await previewEmployeeInvitation(db, firstToken, email), undefined);
-  assert.equal(await previewEmployeeInvitation(db, replacementToken, email), tenantName);
+  assert.equal(await previewInvitation(db, firstToken, email), undefined);
+  assert.deepEqual(await previewInvitation(db, replacementToken, email), { name: tenantName, role: 'Employee' });
   assert.deepEqual(await access(), initialAccess);
 
   const exhaustedEmail = `exhausted-${email}`;
@@ -171,7 +175,7 @@ test('private Employee invitation issuance and resend use the current issuer and
   const unconfirmed = await issueEmployeeInvitation({ ...manager.issuer, mailboxCa: wrongCa }, email, winner.value.id);
   assert.deepEqual(unconfirmed, { id: unconfirmed.id, delivery: 'unconfirmed' });
   assert.equal(await countMail(), initialMail + 2);
-  assert.equal(await previewEmployeeInvitation(db, replacementToken, email), undefined);
+  assert.equal(await previewInvitation(db, replacementToken, email), undefined);
   assert.deepEqual((await invitations()).find(row => row.id === unconfirmed.id)?.revoked_at, null);
   const recovered = await issueEmployeeInvitation(manager.issuer, email, unconfirmed.id);
   assert.equal(recovered.delivery, 'captured');
@@ -187,11 +191,11 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal((await invitations()).filter(row => row.tenant_id === tenantA && row.email === contestedEmail).length, 1);
   assert.equal(await countMail(), initialMail + 4);
   const tenantAToken = await latestToken(contestedEmail);
-  assert.equal(await previewEmployeeInvitation(db, tenantAToken, contestedEmail), tenantName);
+  assert.deepEqual(await previewInvitation(db, tenantAToken, contestedEmail), { name: tenantName, role: 'Employee' });
   assert.equal((await issueEmployeeInvitation(managerB.issuer, contestedEmail)).delivery, 'captured');
   assert.equal(await countMail(), initialMail + 5);
-  assert.equal(await previewEmployeeInvitation(db, await latestToken(contestedEmail), contestedEmail), 'Invented studio B');
-  assert.equal(await previewEmployeeInvitation(db, tenantAToken, contestedEmail), tenantName);
+  assert.deepEqual(await previewInvitation(db, await latestToken(contestedEmail), contestedEmail), { name: 'Invented studio B', role: 'Employee' });
+  assert.deepEqual(await previewInvitation(db, tenantAToken, contestedEmail), { name: tenantName, role: 'Employee' });
 
   const closedEmail = `closed-${email}`;
   const expiredId = (await db.query<{ id: string }>(`INSERT INTO pilot.invitations
@@ -213,7 +217,7 @@ test('private Employee invitation issuance and resend use the current issuer and
   const beforeStaleRequests = await invitations();
   await assert.rejects(issueEmployeeInvitation(manager.issuer, email), { message: 'Denied' });
   await assert.rejects(issueEmployeeInvitation(manager.issuer, email, recovered.id), { message: 'Denied' });
-  assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
+  assert.equal(await previewInvitation(db, recoveredToken, email), undefined);
   assert.deepEqual(await invitations(), beforeStaleRequests);
   assert.deepEqual(await access(), afterDemotion);
   assert.equal(await countMail(), initialMail + 6);
@@ -234,7 +238,7 @@ test('private Employee invitation issuance and resend use the current issuer and
   for (const blockedEmail of [platformEmail, futureEmail]) {
     await assert.rejects(issueEmployeeInvitation(otherManager.issuer, blockedEmail), { message: 'Denied' });
   }
-  assert.equal(await previewEmployeeInvitation(db, futureToken, futureEmail), undefined);
+  assert.equal(await previewInvitation(db, futureToken, futureEmail), undefined);
   assert.deepEqual(await invitations(), beforeIssuerBoundaries);
   assert.equal(await countMail(), initialMail + 6);
 
@@ -242,17 +246,130 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal(fromNewIssuer.delivery, 'captured');
   assert.equal(await countMail(), initialMail + 7);
   const newIssuerToken = await latestToken();
-  assert.equal(await previewEmployeeInvitation(db, newIssuerToken, email), tenantName);
+  assert.deepEqual(await previewInvitation(db, newIssuerToken, email), { name: tenantName, role: 'Employee' });
   const newRow = (await invitations()).find(row => row.id === fromNewIssuer.id);
   assert.equal(newRow?.issuer_membership_id, otherManager.membershipId);
   assert.equal(newRow?.tenant_id, tenantA);
   assert.deepEqual((await invitations()).find(row => row.id === recovered.id),
     beforeIssuerBoundaries.find(row => row.id === recovered.id));
-  assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
+  assert.equal(await previewInvitation(db, recoveredToken, email), undefined);
   assert.deepEqual(await access(), accessBeforeNewIssuer);
 
   await db.query("UPDATE pilot.memberships SET role='Manager',version=version+1 WHERE tenant_id=$1 AND id=$2", [tenantA, manager.membershipId]);
-  assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
-  assert.equal(await previewEmployeeInvitation(db, newIssuerToken, email), tenantName);
-  assert.equal(await previewEmployeeInvitation(db, futureToken, futureEmail), tenantName);
+  assert.equal(await previewInvitation(db, recoveredToken, email), undefined);
+  assert.deepEqual(await previewInvitation(db, newIssuerToken, email), { name: tenantName, role: 'Employee' });
+  assert.deepEqual(await previewInvitation(db, futureToken, futureEmail), { name: tenantName, role: 'Employee' });
+
+  await t.test('private management invites either role with scoped authority and atomic audit', async () => {
+    const operator = await seedManagementSession(db, now, new Date(now.getTime() - 300_000));
+    const organization = 'Invented management studio';
+    const { tenantId } = await createOrganization(connectFixture, { ...operator, action: 'organization_create' },
+      organization, 'Local organization control', clock);
+    const reason = 'Authorized synthetic invitation';
+    const target = `management-${email}`;
+    const proof = (recipient = target, role: CustomerRole = 'Manager', tenant = tenantId): ManagementInvitationContext =>
+      ({ ...operator, tenantId: tenant, tenantVersion: 1, action: 'invitation_issue', recipient, role });
+    const invite = (context = proof(), replaces?: string, why = reason, ca = mailboxCa, at = clock) =>
+      issueManagementInvitation({ connect: connectFixture, clock: at, mailboxCa: ca }, context,
+        context.tenantId, context.recipient, context.role, why, replaces);
+    const before = await access();
+    const mailBefore = await countMail();
+    const audited = async () => (await db.query(`SELECT tenant_id,actor_id,device_id,reason,outcome,created_at FROM pilot.audit
+      WHERE actor_id=$1 AND action='invitation_issue' ORDER BY tenant_id,outcome`, [operator.identityId])).rows;
+    const issued = async () => (await db.query('SELECT * FROM pilot.invitations WHERE issuer_platform_grant_id=$1 ORDER BY id',
+      [operator.grantId])).rows;
+
+    for (const scope of [{ sessionId: randomUUID() }, { deviceVersion: 2 }, { grantVersion: 2 },
+      { tenantVersion: 2 }, { tenantId: randomUUID() }]) {
+      await assert.rejects(invite({ ...proof(), ...scope }), /Denied/);
+    }
+    await assert.rejects(invite(proof(), undefined, ' '), /Denied/);
+    await assert.rejects(invite(proof(), undefined, reason, mailboxCa, () => new Date(now.getTime() + 1)), /Denied/);
+    await assert.rejects(issueManagementInvitation({ connect: connectFixture, clock, mailboxCa }, proof(),
+      tenantA, target, 'Manager', reason), /Denied/);
+    await assert.rejects(issueManagementInvitation({ connect: connectFixture, clock, mailboxCa }, proof(),
+      tenantId, target, 'Employee', reason), /Denied/);
+    await assert.rejects(issueManagementInvitation({ connect: connectFixture, clock, mailboxCa }, proof(),
+      tenantId, email, 'Manager', reason), /Denied/);
+    assert.deepEqual(await issued(), []);
+    assert.deepEqual(await audited(), []);
+    assert.equal(await countMail(), mailBefore);
+
+    const managerInvitation = await issueManagementInvitation({ connect: connectFixture, clock, mailboxCa }, proof(),
+      tenantId, ` ${target.toUpperCase()} `, 'Manager', reason);
+    assert.equal(managerInvitation.delivery, 'captured');
+    const managerToken = await latestToken(target, 'Manager');
+    const managerPreview = await previewInvitation(db, managerToken, target);
+    assert.deepEqual(managerPreview, { name: organization, role: 'Manager' });
+    assert.match(renderInvitationPreview(managerPreview), /<dt>Role<\/dt><dd>Manager<\/dd>/);
+    assert.equal(await previewInvitation(db, managerToken, email), undefined);
+    const [pending] = await issued();
+    assert.deepEqual(pending, { tenant_id: tenantId, id: managerInvitation.id, email: target, role: 'Manager',
+      purpose: 'membership', issuer_membership_id: null, issuer_platform_grant_id: operator.grantId, issuer_version: 1,
+      grant_version: 1, token_hash: tokenHash(managerToken), created_at: now,
+      expires_at: new Date(now.getTime() + 86_400_000), consumed_at: null, revoked_at: null });
+    assert.deepEqual(await audited(), [{ tenant_id: tenantId, actor_id: operator.identityId, device_id: operator.deviceId,
+      reason, outcome: 'Manager', created_at: now }]);
+    await assert.rejects(invite(), /Denied/);
+    await assert.rejects(invite(proof(target, 'Employee'), managerInvitation.id), /Denied/);
+    await assert.rejects(invite(proof(target, 'Manager', tenantB), managerInvitation.id), /Denied/);
+
+    await db.query("ALTER TABLE pilot.audit ADD CONSTRAINT test_invitation_audit_failure CHECK (reason <> 'Fixture audit failure')");
+    try {
+      await assert.rejects(invite(proof(), managerInvitation.id, 'Fixture audit failure'),
+        { code: '23514', constraint: 'test_invitation_audit_failure' });
+    } finally {
+      await db.query('ALTER TABLE pilot.audit DROP CONSTRAINT test_invitation_audit_failure');
+    }
+    assert.deepEqual(await issued(), [pending]);
+    assert.deepEqual(await previewInvitation(db, managerToken, target), managerPreview);
+    assert.equal(await countMail(), mailBefore + 1);
+
+    const employeeInvitation = await invite(proof(target, 'Employee', tenantB));
+    assert.equal(employeeInvitation.delivery, 'captured');
+    const employeeToken = await latestToken(target);
+    const employeePreview = await previewInvitation(db, employeeToken, target);
+    assert.deepEqual(employeePreview, { name: 'Invented studio B', role: 'Employee' });
+    assert.match(renderInvitationPreview(employeePreview), /<dt>Role<\/dt><dd>Employee<\/dd>/);
+    assert.deepEqual(await previewInvitation(db, managerToken, target), managerPreview);
+
+    const uncertain = await invite(proof(), managerInvitation.id, reason, wrongCa);
+    assert.equal(uncertain.delivery, 'unconfirmed');
+    assert.equal(await countMail(), mailBefore + 2);
+    assert.equal(await previewInvitation(db, managerToken, target), undefined);
+    const afterResend = await issued();
+    assert.deepEqual(afterResend.find(row => row.id === managerInvitation.id)?.revoked_at, now);
+    assert.equal(afterResend.find(row => row.id === uncertain.id)?.grant_version, 2);
+    await assert.rejects(invite(), /Denied/);
+    const replacement = await invite(proof(), uncertain.id);
+    assert.equal(replacement.delivery, 'captured');
+    const replacementToken = await latestToken(target, 'Manager');
+    assert.equal((await issued()).find(row => row.id === replacement.id)?.grant_version, 3);
+
+    const contested = `two-paths-${email}`;
+    const contenders = await Promise.allSettled([
+      invite(proof(contested, 'Manager', tenantA)),
+      issueEmployeeInvitation(otherManager.issuer, contested)
+    ]);
+    assert.equal(contenders.filter(result => result.status === 'fulfilled').length, 1);
+    const refused = contenders.find(result => result.status === 'rejected');
+    assert.equal(refused?.reason?.message, 'Denied');
+    const contestedRole = contenders[0]!.status === 'fulfilled' ? 'Manager' : 'Employee';
+    const contestedToken = await latestToken(contested, contestedRole);
+    assert.deepEqual(await previewInvitation(db, contestedToken, contested), { name: tenantName, role: contestedRole });
+    assert.equal(await countMail(), mailBefore + 4);
+
+    await db.query('UPDATE pilot.invitations SET revoked_at=$3 WHERE tenant_id=$1 AND id=$2',
+      [tenantB, employeeInvitation.id, now]);
+    assert.equal(await previewInvitation(db, employeeToken, target), undefined);
+    assert.deepEqual(await previewInvitation(db, replacementToken, target), managerPreview);
+    await db.query('UPDATE pilot.platform_grants SET active=false,version=version+1 WHERE id=$1', [operator.grantId]);
+    assert.equal(await previewInvitation(db, replacementToken, target), undefined);
+    await assert.rejects(invite(), /Denied/);
+    await db.query('UPDATE pilot.platform_grants SET active=true,version=version+1 WHERE id=$1', [operator.grantId]);
+    assert.equal(await previewInvitation(db, replacementToken, target), undefined);
+    await assert.rejects(invite(), /Denied/);
+    assert.equal((await issueEmployeeInvitation(managerB.issuer, target)).delivery, 'captured');
+    assert.deepEqual(await access(), before);
+  });
 });

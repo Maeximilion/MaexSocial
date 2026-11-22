@@ -6,7 +6,7 @@ import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './req
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
 import { createDraft, DraftConflict, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 import { renderFacts } from '../routes/facts.js';
-import { invitationToken, previewEmployeeInvitation, renderInvitationPreview } from '../routes/employees.js';
+import { invitationToken, previewInvitation, renderInvitationPreview } from '../routes/employees.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -84,20 +84,20 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   if (privateInvitationPreview) app.get('/customer/invitations/preview', async (request, response) => {
     response.set('Referrer-Policy', 'no-referrer');
     const token = invitationToken(request.headers.cookie);
-    let tenantName: string | undefined;
+    let invitation: Awaited<ReturnType<typeof previewInvitation>>;
     if (token) {
       try {
         const binding = customerRequest(request);
-        tenantName = await transaction(async db => {
+        invitation = await transaction(async db => {
           const { subject } = await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only');
           const email = privateInvitationPreview.recipientBySubject.get(subject);
-          return email === undefined ? undefined : previewEmployeeInvitation(db, token, email);
+          return email === undefined ? undefined : previewInvitation(db, token, email);
         });
       } catch (error) {
         if (!(error instanceof Error) || error.message !== 'Denied') throw error;
       }
     }
-    response.status(tenantName === undefined ? 404 : 200).type('html').send(renderInvitationPreview(tenantName));
+    response.status(invitation === undefined ? 404 : 200).type('html').send(renderInvitationPreview(invitation));
   });
   app.get('/customer/drafts', async (request, response) => {
     const binding = customerRequest(request);

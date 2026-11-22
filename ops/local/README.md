@@ -455,9 +455,9 @@ After the strict build and fixture migration, run `node --test dist/pilot/tests/
 The private `issueEmployeeInvitation` operation runs in the isolated runner. Its server-owned callback
 validates and locks the current customer context on the operation's transaction. The operation checks
 fresh enrolled Manager MFA, binds the normalized recipient and current workspace and issuer, and stores a
-24-hour Employee invitation using only the token hash. An unexpired pending Employee invitation blocks
-a second issue for the same workspace and recipient. A membership-issued invitation stops blocking a
-new issue once the issuer membership version advances past the stored version. An explicit resend
+24-hour Employee invitation using only the token hash. An unexpired pending invitation blocks
+a second issue for the same workspace and recipient across both roles and issuer types. An invitation
+stops blocking a new issue once its issuer version advances past the stored version. An explicit resend
 supplies the previous ID and the same recipient. Resend retires the previous unconsumed invitation and advances the grant version
 in the same transaction. Concurrent operations for the same workspace and recipient are serialized.
 
@@ -467,6 +467,22 @@ returns the invitation ID and whether capture was confirmed. An unconfirmed repl
 explicitly replacing that ID. The test inspects the actual mailbox message, the preview lookup,
 both invitation generations and unchanged memberships.
 [#221](https://github.com/Maeximilion/MaexSocial/issues/221) owns authenticated link handling and acceptance.
+
+## Private DEV/Admin invitation issuance (#261)
+
+The same `invitation-issue.test.js` exercises the private management operation on a newly created
+organization and a control tenant. The trusted context binds the action, current organization,
+normalized recipient and intended Manager or Employee role. The operation checks the verified
+identity, device, platform grant and fresh phishing-resistant proof before committing the
+platform-bound pending invitation and audit together. The audit records the actor, device,
+organization, reason and selected role without storing the recipient address or invitation token.
+
+Mailpit capture follows commit. An unconfirmed capture leaves the invitation pending. An explicit
+resend with the same tenant, recipient, role and current issuer retires the previous ID in the
+transaction. The existing recipient-bound read-only preview displays the stored role and organization
+and requires a current issuing grant or Manager membership. Account provisioning and invitation
+acceptance remain with [#131](https://github.com/Maeximilion/MaexSocial/issues/131) and
+[#221](https://github.com/Maeximilion/MaexSocial/issues/221).
 
 ## Private Employee membership revocation (#210)
 
