@@ -1,9 +1,11 @@
-import { execFileSync } from 'node:child_process';
-import { createHash, randomUUID } from 'node:crypto';
+import { execFileSync, spawn } from 'node:child_process';
+import { createHash, randomUUID, type KeyObject } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { authenticateManifest, decryptArchive, encryptArchive, loadBackupKey, manifestAuthentication, sealManifest,
+  validEncryption, type ArchiveEncryption } from './backup-crypto.js';
 import { compose, docker, loadFixture, usesLocalDocker, verifyContainers, type Fixture } from './fixture.js';
 import { initialize, postgresImage } from './stack.js';
 
@@ -53,7 +55,7 @@ export async function compatibility(f: Fixture, envFile?: string) {
 
 export type Pair = (
   | { format: 1; capturedAt?: never; disposable?: never }
-  | { format: 2; capturedAt: string; disposable?: true }
+  | { format: 2 | 3; capturedAt: string; disposable?: true }
 ) & {
   fixtureId: string;
   revision: string;
@@ -63,14 +65,18 @@ export type Pair = (
   postgresImage: string;
   effectiveIdentityConfig?: string;
   historyAnchor?: { after: number; evidenceSha256: string };
-  archives: Record<string, { sha256: string; systemId: string; catalogVersion: string }>;
+  archives: Record<string, { sha256: string; systemId: string; catalogVersion: string; encryption?: ArchiveEncryption }>;
 };
+
+export function archiveFile(db: Database, format: Pair['format']): string {
+  return format === 3 ? db.archive + '.enc' : db.archive;
+}
 
 function pairExpired(pair: Pair): boolean {
   if (pair.format === 1 && pair.capturedAt === undefined && pair.disposable === undefined) return false;
   const now = Date.now();
   const captureTime = typeof pair.capturedAt === 'string' ? Date.parse(pair.capturedAt) : NaN;
-  if (pair.format !== 2 || !Number.isFinite(captureTime) || new Date(captureTime).toISOString() !== pair.capturedAt
+  if ((pair.format !== 2 && pair.format !== 3) || !Number.isFinite(captureTime) || new Date(captureTime).toISOString() !== pair.capturedAt
       || captureTime > now || (pair.disposable !== undefined && pair.disposable !== true)) {
     throw new Error('Backup pair has an invalid capture time or retention metadata.');
   }
@@ -92,7 +98,8 @@ const appSchemaBeforeApprovalTenantVersion = '3ae9f21ff752c8ddd96eb7a6d4186f454f
 const appSchemaWithApprovalTenantVersion = '4541e90e1700eeb4d33a2b6cccfec22a21b952fafa2fd924cdc5f9c527894b5e';
 const appSchemaWithApprovalWithdrawal = '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13';
 
-export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
+export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,
+  suppliedKey?: KeyObject): Promise<void> {
   const idpConfig = pair?.compatibility?.idpConfig;
   const compatible = { ...expected };
   if (idpConfig && compatibleIdpConfigs.has(expected.idpConfig) && compatibleIdpConfigs.has(idpConfig)) {
@@ -104,7 +111,7 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
     || (sourceAppSchema === appSchemaWithApprovalTenantVersion && expected.appSchema === appSchemaWithApprovalWithdrawal)) {
     compatible.appSchema = sourceAppSchema;
   }
-  if ((pair?.format !== 1 && pair?.format !== 2) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
+  if ((pair?.format !== 1 && pair?.format !== 2 && pair?.format !== 3) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
       || pair.postgresImage !== postgresImage
       || !isDeepStrictEqual(pair.compatibility, compatible)) {
@@ -115,17 +122,29 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
       || typeof pair.historyAnchor.evidenceSha256 !== 'string' || !digest.test(pair.historyAnchor.evidenceSha256))) {
     throw new Error('Backup history anchor is invalid.');
   }
+  const key = pair.format === 3 ? suppliedKey ?? await loadBackupKey(dirname(path)) : undefined;
+  if (key) await authenticateManifest(path, pair, key);
+  else if ((await readdir(path)).includes(manifestAuthentication)) throw new Error('Backup manifest format mismatch.');
   if (pairExpired(pair)) throw new Error('Backup pair has expired.');
   if (Object.keys(pair.archives ?? {}).length !== databases.length) throw new Error('Backup pair is incomplete.');
   const systemIds = new Set<string>();
-  for (const { archive } of databases) {
-    const record = pair.archives[archive];
-    const file = join(path, archive);
-    if (!record || !digest.test(record.sha256) || !/^\d{1,20}$/.test(record.systemId)
-        || !/^\d{9}$/.test(record.catalogVersion)) throw new Error('Backup archive metadata is incomplete.');
+  for (const db of databases) {
+    const record = pair.archives[db.archive];
+    const file = join(path, archiveFile(db, pair.format));
+    if (!record || typeof record.sha256 !== 'string' || !digest.test(record.sha256)
+        || typeof record.systemId !== 'string' || !/^\d{1,20}$/.test(record.systemId)
+        || typeof record.catalogVersion !== 'string' || !/^\d{9}$/.test(record.catalogVersion)) {
+      throw new Error('Backup archive metadata is incomplete.');
+    }
     const info = await lstat(file).catch(() => undefined);
-    if (!info?.isFile() || info.size === 0 || await hashFile(file) !== record.sha256) {
-      throw new Error('A backup archive is missing or failed its SHA-256 check.');
+    if (!info?.isFile() || info.size === 0) throw new Error('A backup archive is missing.');
+    if (key) {
+      if (!validEncryption(record.encryption) || record.encryption.bytes !== info.size) {
+        throw new Error('Encrypted archive metadata or length is invalid.');
+      }
+      await decryptArchive(file, record.encryption, record.sha256, key, fixtureId, db.archive);
+    } else if (record.encryption !== undefined || await hashFile(file) !== record.sha256) {
+      throw new Error('A legacy backup archive failed its format or SHA-256 check.');
     }
     systemIds.add(record.systemId);
   }
@@ -145,14 +164,17 @@ async function expire(): Promise<void> {
   }
   const fixture = await loadFixture(true);
   const pair: Pair = JSON.parse(await readFile(manifest, 'utf8'));
-  if (fixture.restoreTarget || pair?.format !== 2 || pair.disposable !== true || pair.fixtureId !== fixture.id) {
+  if (fixture.restoreTarget || (pair?.format !== 2 && pair?.format !== 3)
+      || pair.disposable !== true || pair.fixtureId !== fixture.id) {
     throw new Error('Expiry requires a disposable pair captured for this fixture.');
   }
+  if (pair.format === 3) await authenticateManifest(directory, pair, await loadBackupKey());
+  else if ((await readdir(directory)).includes(manifestAuthentication)) throw new Error('Backup manifest format mismatch.');
   if (!pairExpired(pair)) throw new Error('Backup pair has not expired.');
 
-  for (const { archive } of databases) {
-    const expected = pair.archives?.[archive]?.sha256;
-    const path = join(directory, archive);
+  for (const db of databases) {
+    const expected = pair.archives?.[db.archive]?.sha256;
+    const path = join(directory, archiveFile(db, pair.format));
     const info = await lstat(path).catch(error => {
       if (error.code !== 'ENOENT') throw error;
     });
@@ -162,7 +184,7 @@ async function expire(): Promise<void> {
     }
   }
   // Keep the manifest so expiry can be retried after either archive has been removed.
-  for (const { archive } of databases) await rm(join(directory, archive), { force: true });
+  for (const db of databases) await rm(join(directory, archiveFile(db, pair.format)), { force: true });
 }
 
 interface Container {
@@ -262,23 +284,40 @@ async function captureHistory(f: Fixture, app: Container): Promise<NonNullable<P
   return { after: through, evidenceSha256 };
 }
 
-function copyCluster(f: Fixture, db: Database, output: string): Pair['archives'][string] {
-  const control = docker(['run', '--rm', '--read-only', '--tmpfs', '/tmp', '--network', 'none', '--pull', 'never', '--entrypoint', 'sh',
-    '--mount', 'type=volume,src=' + volumeName(f, db) + ',dst=/source,readonly,volume-nocopy',
-    '--mount', 'type=bind,src=' + resolve(output) + ',dst=/output', postgresImage, '-eu', '-c',
+async function copyCluster(f: Fixture, db: Database, output: string, key: KeyObject): Promise<Pair['archives'][string]> {
+  const child = spawn('docker', ['run', '--rm', '--read-only', '--tmpfs', '/tmp', '--network', 'none', '--pull', 'never',
+    '--log-driver', 'none', '--label', 'org.maexsocial.fixture=' + f.id, '--entrypoint', 'sh',
+    '--mount', 'type=volume,src=' + volumeName(f, db) + ',dst=/source,readonly,volume-nocopy', postgresImage, '-eu', '-c',
     'export LC_ALL=C; test "$(cat /source/PG_VERSION)" = "$PG_MAJOR"; test ! -e /source/postmaster.pid; '
     + 'test -z "$(find /source -type l -print -quit)"; '
     + 'control=$(pg_controldata /source 2>/tmp/pg-control) && test ! -s /tmp/pg-control; '
     + 'printf "%s\\n" "$control" | grep -Eq "^Database cluster state:[[:space:]]+shut down$"; '
-    + 'umask 077; tar -cf "/output/$1" -C /source .; test ! -e /source/postmaster.pid; '
-    + 'test "$control" = "$(pg_controldata /source)"; chown "$2" "/output/$1"; '
-    + 'sha256sum "/output/$1"; printf "%s\\n" "$control"',
-    'copy-cluster', db.archive, (process.getuid?.() ?? 0) + ':' + (process.getgid?.() ?? 0)]);
-  const sha256 = control.split(/\s+/)[0]!;
+    + 'tar -cf - -C /source .; test ! -e /source/postmaster.pid; '
+    + 'test "$control" = "$(pg_controldata /source)"; printf "%s\\n" "$control" >&2'],
+  { stdio: ['ignore', 'pipe', 'pipe'], timeout: 180_000 });
+  let control = '';
+  let excessiveOutput = false;
+  child.stderr.setEncoding('utf8').on('data', (text: string) => {
+    if (control.length + text.length <= 8192) control += text;
+    else { excessiveOutput = true; child.kill(); }
+  });
+  const completed = new Promise<void>((resolve, reject) => {
+    const failed = () => reject(new Error('The cold cluster could not be read.'));
+    child.once('error', failed);
+    child.once('close', code => { if (code === 0 && !excessiveOutput) resolve(); else failed(); });
+  });
+  const file = join(output, archiveFile(db, 3));
+  const encrypted = encryptArchive(child.stdout, file, key, f.id, db.archive).catch(error => {
+    child.kill();
+    throw error;
+  });
+  const [processResult, archiveResult] = await Promise.allSettled([completed, encrypted]);
+  if (archiveResult.status === 'rejected') throw archiveResult.reason;
+  if (processResult.status === 'rejected') throw processResult.reason;
   const systemId = control.match(/^Database system identifier:\s+(\d+)$/m)?.[1];
   const catalogVersion = control.match(/^Catalog version number:\s+(\d+)$/m)?.[1];
-  if (!digest.test(sha256) || !systemId || !catalogVersion) throw new Error('The cold cluster could not be identified.');
-  return { sha256, systemId, catalogVersion };
+  if (!systemId || !catalogVersion) throw new Error('The cold cluster could not be identified.');
+  return { sha256: await hashFile(file), systemId, catalogVersion, encryption: archiveResult.value };
 }
 
 function cleanRevision(): string {
@@ -289,14 +328,17 @@ function cleanRevision(): string {
 
 export async function capture(disposable: boolean, seed?: (fixture: Fixture) => void): Promise<void> {
   const revision = cleanRevision();
+  const key = await loadBackupKey();
   if (!usesLocalDocker()) throw new Error('Cold backup requires a local Docker socket.');
   const f = await initialize('backup');
   const expected = await compatibility(f);
   const imageId = (image: string) => docker(['image', 'inspect', '--format', '{{.Id}}', image]);
   const postgresId = imageId(postgresImage);
   const keycloakId = imageId(expected.keycloakImage);
-  await mkdir(directory + '.pending', { mode: 0o700 });
+  const pending = directory + '.pending';
+  await mkdir(pending, { mode: 0o700 });
   let stopped = false;
+  let published = false;
   try {
     compose(f, ['up', '-d', '--pull', 'never', '--wait', '--wait-timeout', '120']);
     verifyContainers(f);
@@ -327,17 +369,21 @@ export async function capture(disposable: boolean, seed?: (fixture: Fixture) => 
     const before = stoppedState(f, sources);
     stopped = true;
     const capturedAt = new Date().toISOString();
-    const archives = Object.fromEntries(databases.map(db => [db.archive, copyCluster(f, db, directory + '.pending')]));
+    const archives: Pair['archives'] = {};
+    for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
     if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
-    const pair: Pair = { format: 2, capturedAt, ...(disposable ? { disposable: true } : {}),
+    const pair: Pair = { format: 3, capturedAt, ...(disposable ? { disposable: true } : {}),
       fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
       postgresImage, historyAnchor, archives };
-    await verifyPair(directory + '.pending', f.id, await compatibility(f), pair);
+    await sealManifest(pending, pair, key);
+    await verifyPair(pending, f.id, await compatibility(f), pair, key);
     if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
-    await writeFile(join(directory + '.pending', 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
-    await rename(directory + '.pending', directory);
+    await writeFile(join(pending, 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
+    await rename(pending, directory);
+    published = true;
   } finally {
-    if (!stopped) compose(f, ['stop']);
+    try { if (!stopped) compose(f, ['stop']); }
+    finally { if (!published) await rm(pending, { recursive: true, force: true }); }
   }
 }
 

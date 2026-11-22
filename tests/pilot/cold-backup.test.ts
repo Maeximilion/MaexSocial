@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, createSecretKey, randomBytes } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { Readable, Writable } from 'node:stream';
 import { test } from 'node:test';
-import { hashSources, verifyPair } from '../../ops/local/backup.js';
+import { decryptArchive, encryptArchive, sealManifest } from '../../ops/local/backup-crypto.js';
+import { archiveFile, databases, hashSources, verifyPair, type Pair } from '../../ops/local/backup.js';
 import { postgresImage } from '../../ops/local/stack.js';
 
-const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 
 test('cold pair verification refuses mixed, incomplete, altered and incompatible backups', async t => {
   const path = await mkdtemp(join(tmpdir(), 'maex-cold-pair-'));
@@ -72,7 +74,7 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
     await assert.rejects(verifyPair(path, fixtureId, compatibility, { ...dated, capturedAt: invalid }), /invalid capture time/);
   }
 
-  const unsupported = { ...pair, format: 3 } as unknown as typeof pair;
+  const unsupported = { ...pair, format: 4 } as unknown as typeof pair;
   await assert.rejects(verifyPair(path, fixtureId, compatibility, unsupported), /unknown identity/);
   await assert.rejects(verifyPair(path, 'c'.repeat(32), compatibility, pair), /unknown identity/);
   await assert.rejects(verifyPair(path, fixtureId, { ...compatibility, appSchema: sha256('other schema') }, pair), /incompatible/);
@@ -85,6 +87,81 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   await assert.rejects(verifyPair(path, fixtureId, compatibility, pair), /SHA-256/);
   await rename(identityPath, join(path, 'missing-identity.tar'));
   await assert.rejects(verifyPair(path, fixtureId, compatibility, pair), /missing/);
+});
+
+test('encrypted pairs bind metadata, ciphertext, source and role before import completion', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'maex-encrypted-pair-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const path = join(root, 'source', 'cold-backup');
+  await mkdir(path, { recursive: true });
+  const key = createSecretKey(randomBytes(32));
+  const wrong = createSecretKey(randomBytes(32));
+  const fixtureId = 'a'.repeat(32);
+  const compatibility = {
+    appSchema: sha256('app schema'), idpConfig: sha256('identity config'), stack: sha256('stack'),
+    keycloakImage: 'quay.io/keycloak/keycloak:26.8.2@sha256:' + sha256('identity image'),
+  };
+  const pair: Pair = {
+    format: 3, capturedAt: new Date().toISOString(), fixtureId, revision: 'b'.repeat(40), compatibility,
+    postgresImage, appliedAppSchema: sha256('applied schema'), identitySchema: sha256('identity schema'),
+    historyAnchor: { after: 1, evidenceSha256: sha256('capture history') }, archives: {},
+  };
+  const [app, idp] = databases;
+  const appPath = join(path, archiveFile(app, 3));
+  const identityPath = join(path, archiveFile(idp, 3));
+  const plaintext = 'synthetic physical AppDB test content';
+  for (const db of databases) {
+    const file = join(path, archiveFile(db, 3));
+    const encryption = await encryptArchive(Readable.from([Buffer.from(plaintext)]), file, key, fixtureId, db.archive);
+    pair.archives[db.archive] = {
+      encryption, sha256: sha256(await readFile(file)), catalogVersion: '202406281',
+      systemId: db === app ? '123' : '456',
+    };
+  }
+  await sealManifest(path, pair, key);
+  const verify = (manifest: Pair, useKey = key) => verifyPair(path, fixtureId, compatibility, manifest, useKey);
+  await verify(pair);
+  await assert.rejects(verify(pair, wrong), /manifest authentication/);
+  for (const modified of [
+    { ...pair, revision: 'c'.repeat(40) },
+    { ...pair, disposable: true as const },
+    { ...pair, capturedAt: '2025-01-01T00:00:00.000Z' },
+    { ...pair, historyAnchor: { ...pair.historyAnchor!, after: 2 } },
+  ]) await assert.rejects(verify(modified), /manifest authentication/);
+  const downgraded = { ...pair, format: 2 as const };
+  await assert.rejects(verify(downgraded), /format mismatch/);
+  assert.deepEqual((await readdir(path)).sort(), ['app-db.tar.enc', 'identity-db.tar.enc', 'pair.auth']);
+  const appBytes = await readFile(appPath);
+  const identityBytes = await readFile(identityPath);
+  assert.equal(appBytes.includes(Buffer.from(plaintext)), false);
+  assert.equal(appBytes.equals(identityBytes), false);
+
+  const appRecord = pair.archives[app.archive]!;
+  const idpRecord = pair.archives[idp.archive]!;
+  const trailer = async (file: string, record: typeof idpRecord) => {
+    const chunks: Buffer[] = [];
+    const output = new Writable({ write(chunk, _encoding, callback) { chunks.push(chunk); callback(); } });
+    const stream = decryptArchive(file, record.encryption!, record.sha256, key, fixtureId, idp.archive, output);
+    return { stream, data: () => Buffer.concat(chunks).toString('ascii') };
+  };
+  const complete = await trailer(identityPath, idpRecord);
+  await complete.stream;
+  assert.equal(complete.data(), plaintext + sha256(plaintext));
+
+  const mixed = { ...pair, archives: { [app.archive]: appRecord, [idp.archive]: { ...appRecord, systemId: idpRecord.systemId } } };
+  await writeFile(identityPath, appBytes);
+  await assert.rejects(verify(pair), /authentication or SHA-256/);
+  await rm(join(path, 'pair.auth'));
+  await sealManifest(path, mixed, key);
+  await assert.rejects(verify(mixed), /archive authentication/);
+  const unchecked = await trailer(identityPath, mixed.archives[idp.archive]!);
+  await assert.rejects(unchecked.stream, /archive authentication/);
+  assert.ok(unchecked.data().length <= plaintext.length);
+
+  await writeFile(identityPath, identityBytes.subarray(0, -1));
+  await rm(join(path, 'pair.auth'));
+  await sealManifest(path, pair, key);
+  await assert.rejects(verify(pair), /length is invalid/);
 });
 
 test('backup expiry CLI removes only the opted-in pair archives at the UTC deadline', async t => {
@@ -153,5 +230,65 @@ test('backup expiry CLI removes only the opted-in pair archives at the UTC deadl
     assert.deepEqual((await readdir(own.backup)).sort(), ['kept.txt', 'pair.json']);
     assert.equal(await readFile(join(own.backup, 'pair.json'), 'utf8'), own.manifest);
     assert.equal(await readFile(join(own.backup, 'kept.txt'), 'utf8'), 'preserved');
+  }
+});
+
+test('encrypted expiry authenticates the disposable deadline and permits a partial retry', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'maex-encrypted-expiry-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const cwd = join(root, 'source');
+  const pilot = join(cwd, 'work', 'pilot');
+  const backup = join(pilot, 'cold-backup');
+  await mkdir(backup, { recursive: true });
+  const keyPath = join(root, 'synthetic-key');
+  const wrongPath = join(root, 'wrong-key');
+  const keyBytes = randomBytes(32);
+  const key = createSecretKey(keyBytes);
+  await writeFile(keyPath, keyBytes, { mode: 0o600 });
+  await writeFile(wrongPath, randomBytes(32), { mode: 0o600 });
+  keyBytes.fill(0);
+  const capturedAt = '2026-10-20T12:30:00.000Z';
+  const expires = Date.parse('2026-11-19T12:30:00.000Z');
+  const fixtureId = 'a'.repeat(32);
+  const password = 'b'.repeat(64);
+  await writeFile(join(pilot, 'fixture.json'), JSON.stringify({
+    schema: 1, id: fixtureId, project: 'maex-pilot-' + fixtureId, expiresAt: Date.parse(capturedAt),
+    ownerPassword: password, appPassword: password, identityPassword: password, keycloakPassword: password,
+  }));
+  const archives: Record<string, { sha256: string }> = {};
+  const files: string[] = [];
+  for (const db of databases) {
+    const file = join(backup, archiveFile(db, 3));
+    files.push(file);
+    await encryptArchive(Readable.from([Buffer.from('synthetic test contents')]), file, key, fixtureId, db.archive);
+    archives[db.archive] = { sha256: sha256(await readFile(file)) };
+  }
+  const pair = { format: 3, fixtureId, capturedAt, disposable: true, archives };
+  const manifest = join(backup, 'pair.json');
+  const clock = join(root, 'clock.cjs');
+  const cli = resolve('dist/pilot/ops/local/backup.js');
+  await writeFile(join(backup, 'unrelated.txt'), 'preserved');
+  await writeFile(manifest, JSON.stringify({ ...pair, disposable: undefined }));
+  await sealManifest(backup, pair, key);
+  const run = async (now: number, file = keyPath) => {
+    await writeFile(clock, 'Date.now = () => ' + now + ';');
+    return spawnSync(process.execPath, ['--require', clock, cli, 'expire'], {
+      cwd, encoding: 'utf8', timeout: 10000, env: { ...process.env, MAEX_COLD_BACKUP_KEY_FILE: file },
+    });
+  };
+  assert.match((await run(expires)).stderr, /requires a disposable pair/);
+  await writeFile(manifest, JSON.stringify({ ...pair, capturedAt: '2025-10-20T12:30:00.000Z' }));
+  assert.match((await run(expires)).stderr, /manifest authentication/);
+  await writeFile(manifest, JSON.stringify(pair));
+  assert.match((await run(expires, '')).stderr, /private, external 32-byte/);
+  assert.match((await run(expires, wrongPath)).stderr, /manifest authentication/);
+  assert.match((await run(expires - 1)).stderr, /has not expired/);
+  assert.equal((await readdir(backup)).length, 5);
+  await rm(files[0]!);
+  for (const now of [expires, expires + 1]) {
+    const result = await run(now);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual((await readdir(backup)).sort(), ['pair.auth', 'pair.json', 'unrelated.txt']);
+    assert.equal(await readFile(join(backup, 'unrelated.txt'), 'utf8'), 'preserved');
   }
 });

@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { claimExport } from '../../apps/web/src/server/occurrence-export.js';
 import type { CustomerRequest } from '../../apps/web/src/server/request.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
+import { loadBackupKey } from '../../ops/local/backup-crypto.js';
 import { capture, type Pair } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
 import { restore } from '../../ops/local/restore.js';
@@ -165,6 +166,7 @@ async function drill(targetDir: string) {
   assert.notEqual(source.toLowerCase(), target.toLowerCase());
   const revision = await freshWorktree(source);
   assert.equal(await freshWorktree(target), revision, 'Source and target builds must use the same revision');
+  await loadBackupKey(target);
   const input = { a: binding(), b: binding(), cases: [] as HistoryCase[] };
   const fakeDir = resolve('work/restore-before-effects-fake');
   const save = (flag: 'w' | 'wx') => writeFile(inputPath, JSON.stringify(input), { flag, mode: 0o600 });
@@ -186,7 +188,8 @@ async function drill(targetDir: string) {
     await save('w');
     const pair = await readFile(pairPath);
     const captureHistory = await readFile(captureHistoryPath);
-    const { historyAnchor, fixtureId } = JSON.parse(pair.toString()) as Pair;
+    const { format, historyAnchor, fixtureId } = JSON.parse(pair.toString()) as Pair;
+    assert.equal(format, 3);
     const f = await loadFixture();
     assert.ok(historyAnchor);
     const { after: snapshotSequence, evidenceSha256 } = historyAnchor;
