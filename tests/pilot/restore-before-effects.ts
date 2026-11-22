@@ -10,7 +10,7 @@ import { requireCustomerRequest, type CustomerRequest } from '../../apps/web/src
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { capture } from '../../ops/local/backup.js';
-import { compose, connectFixture, loadFixture, runIsolatedFixture, type Fixture } from '../../ops/local/fixture.js';
+import { compose, connectFixture, loadFixture, runIsolatedFixture, safeDiagnostics, type Fixture } from '../../ops/local/fixture.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
 import { FakeGbp } from './fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
@@ -253,6 +253,8 @@ if (!argument || extra.length || (inRunner && !['seed', 'deliver', 'source', 'ta
   throw new Error('Run from a fresh built source worktree with one fresh built target worktree path.');
 }
 (inRunner ? runStage(argument) : drill(argument)).catch(error => {
-  console.error(error instanceof assert.AssertionError ? error.message.slice(0, 200) : 'Restore drill failed.');
+  const detail = error instanceof Error
+    ? safeDiagnostics(String((error as { stderr?: string }).stderr || error.message)) : 'Unknown drill failure.';
+  console.error(detail);
   process.exitCode = 1;
 });
