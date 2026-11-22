@@ -346,7 +346,9 @@ Windows entry and integrated acceptance.
 requires current DEV/Admin session, device, grant and phishing-resistant proof bound to the
 revocation action and exact tenant and membership versions. The trusted private caller resolves
 the locked identity's subject through the fixture recipient binding. Either role can be revoked,
-including the last Manager or an Employee in an organization without an active Manager.
+including the last Manager or an Employee in an organization without an active Manager. The exact
+membership remains revocable if the target lost verification or has no trusted recipient binding.
+Recipient-based invitation cancellation requires a canonical address from that binding.
 
 The transaction deactivates the membership, advances its version, revokes old customer sessions
 and pending invitations issued by that membership, and revokes pending tenant invitations to

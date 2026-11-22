@@ -208,7 +208,6 @@ test('private membership role changes invalidate the selected grant and commit t
         a.tenant, foreignMembership, 'Synthetic control', clock, recipientBySubject), /Denied/);
       await assert.rejects(revoke({}, ''), /Denied/);
       await assert.rejects(revoke({}, 'Synthetic control', () => new Date(now.getTime() + 1)), /Denied/);
-      await assert.rejects(revoke({}, 'Synthetic control', clock, new Map()), /Denied/);
 
       await owner.query("ALTER TABLE pilot.audit ADD CONSTRAINT test_revocation_audit_failure CHECK (reason <> 'Fail revocation audit')");
       try {
@@ -252,6 +251,9 @@ test('private membership role changes invalidate the selected grant and commit t
       await owner.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [employee.identity_id]);
       const employeeSession = await seedSession(a.tenant, employee.id, 1, employee.identity_id);
       assert.equal((await readCustomer(employeeSession.binding)).customer.role, 'Employee');
+      await owner.query('UPDATE pilot.identities SET verified=false,version=version+1 WHERE id=$1', [employee.identity_id]);
+      await assert.rejects(changeMembershipRole(connectFixture, { ...operator, membershipId: employee.id, membershipVersion: 1,
+        role: 'Manager' }, a.tenant, employee.id, 'Manager', 'Synthetic control', clock), /Denied/);
       const pendingEmployee = await adminInvite(a.tenant, email, 'Employee');
       assert.equal(pendingEmployee.delivery, 'captured');
       assert.ok(!(await members()).some(m => m.active && m.role === 'Manager'));
@@ -262,6 +264,21 @@ test('private membership role changes invalidate the selected grant and commit t
       await assert.rejects(readCustomer(employeeSession.binding), /Denied/);
       assert.equal((await audit()).filter(row => row.action === 'membership_revoked').length, 2);
       assert.deepEqual(await rows('SELECT revoked_at FROM pilot.invitations WHERE id=$1', [pendingEmployee.id]), [{ revoked_at: now }]);
+
+      const unbound = await seedTenant(owner);
+      const unboundInvited = await adminInvite(unbound.tenant, recipient, 'Manager');
+      assert.equal(unboundInvited.delivery, 'captured');
+      const unverifiedOperator = await seedManagementContext(owner, unbound.tenant, now, stepUp);
+      await owner.query('UPDATE pilot.identities SET verified=false,version=version+1 WHERE id=$1', [unverifiedOperator.identityId]);
+      await owner.query('UPDATE pilot.sessions SET identity_version=2 WHERE id=$1', [unverifiedOperator.sessionId]);
+      const unboundProof = { ...proof, tenantId: unbound.tenant, membershipId: unbound.membership, membershipVersion: 1 };
+      await assert.rejects(revokeManagementMembership(connectFixture, { ...unboundProof, ...unverifiedOperator },
+        unbound.tenant, unbound.membership, 'Synthetic control', clock, recipientBySubject), /Denied/);
+      assert.equal(await revokeManagementMembership(connectFixture, unboundProof,
+        unbound.tenant, unbound.membership, 'Remove unbound Manager', clock, recipientBySubject), true);
+      assert.deepEqual(await rows('SELECT active,version FROM pilot.memberships WHERE tenant_id=$1 AND id=$2',
+        [unbound.tenant, unbound.membership]), [{ active: false, version: 2 }]);
+      assert.deepEqual(await rows('SELECT revoked_at FROM pilot.invitations WHERE id=$1', [unboundInvited.id]), [{ revoked_at: null }]);
     });
   } finally {
     await owner.end();

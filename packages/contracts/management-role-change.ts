@@ -19,8 +19,8 @@ export async function changeMembershipRole(connect: () => Promise<Client>, proof
   const db = await connect();
   try {
     await db.query('BEGIN');
-    const { session, membership } = await lockManagementMembership(db, proof, membershipId);
-    if (!membership.active) deny();
+    const { session, membership, targetIdentity } = await lockManagementMembership(db, proof, membershipId);
+    if (!membership.active || !targetIdentity.verified) deny();
 
     if (membership.version !== proof.membershipVersion || membership.role === role) {
       requireFreshManagementProof(session, assertedAt, clock());
@@ -55,16 +55,16 @@ export async function lockManagementMembership(db: Client, proof: ManagementCont
     'SELECT identity_id FROM pilot.memberships WHERE tenant_id=$1 AND id=$2', [tenantId, membershipId])).rows[0] ?? deny();
   // Match customer and invitation lock order: sorted identities, tenant, then memberships.
   const identities = [...new Set([proof.identityId, target.identity_id])].sort();
-  const locked = (await db.query<{ id: string; subject: string }>(
-    'SELECT id,subject FROM pilot.identities WHERE id=ANY($1::uuid[]) AND verified ORDER BY id FOR UPDATE', [identities])).rows;
-  if (locked.length !== identities.length) deny();
+  const locked = (await db.query<{ id: string; subject: string; verified: boolean }>(
+    'SELECT id,subject,verified FROM pilot.identities WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE', [identities])).rows;
+  if (!locked.some(identity => identity.id === proof.identityId && identity.verified)) deny();
+  const targetIdentity = locked.find(identity => identity.id === target.identity_id) ?? deny();
   await db.query('SELECT id FROM pilot.tenants WHERE id=$1 FOR UPDATE', [tenantId]);
   const session = await lockManagementSession(db, proof);
   const membership = (await db.query<{ role: CustomerRole; version: number; active: boolean }>(`SELECT role,version,active
     FROM pilot.memberships WHERE tenant_id=$1 AND id=$2 AND identity_id=$3 FOR UPDATE`,
   [tenantId, membershipId, target.identity_id])).rows[0] ?? deny();
-  const subject = (locked.find(identity => identity.id === target.identity_id) ?? deny()).subject;
-  return { session, membership, subject };
+  return { session, membership, targetIdentity };
 }
 
 export async function lockMembershipApprovals(db: Client, tenantId: string, membershipId: string, version: number) {
