@@ -12,26 +12,27 @@ const entry = 'dist/pilot/ops/local/dispatch-control.js';
 const command = (action: string) =>
   JSON.parse(execFileSync(process.execPath, [entry, action], { encoding: 'utf8' }));
 
-test('reopen refuses restore, backup, drill and unknown manifests before Docker', async t => {
-  const root = await mkdtemp(join(tmpdir(), 'maex-reopen-target-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const dir = join(root, 'work', 'pilot');
-  await mkdir(dir, { recursive: true });
-  const id = 'a'.repeat(32);
-  const password = 'b'.repeat(64);
-  const fixture = { schema: 1, id, project: 'maex-pilot-' + id, expiresAt: Date.now() + 60_000,
-    ownerPassword: password, appPassword: password, identityPassword: password, keycloakPassword: password };
-  for (const marker of [{ purpose: 'backup' }, { purpose: 'readiness' },
-    { purpose: 'restore-target', restoreTarget: true }, { purpose: 'ordinary', restoreTarget: true },
-    { purpose: 'paired-restore', restoreTarget: true, pairedRestore: true }, {}, { purpose: 'unknown' }]) {
-    await writeFile(join(dir, 'fixture.json'), JSON.stringify({ ...fixture, ...marker }));
-    const result = spawnSync(process.execPath, [resolve(entry), 'reopen'], { cwd: root, encoding: 'utf8', timeout: 10_000 });
-    assert.equal(result.status, 1);
-    assert.equal(result.stdout, '');
-    assert.equal(result.stderr.trim(), marker.purpose === 'unknown'
-      ? 'Fixture dispatch command refused or failed.' : 'Dispatch reopen requires an ordinary fixture manifest.');
-  }
-});
+test('reopen refuses restore, backup, drill and unknown manifests before Docker',
+  { skip: process.env.PILOT_CONTAINER === '1' }, async t => {
+    const root = await mkdtemp(join(tmpdir(), 'maex-reopen-target-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const dir = join(root, 'work', 'pilot');
+    await mkdir(dir, { recursive: true });
+    const id = 'a'.repeat(32);
+    const password = 'b'.repeat(64);
+    const fixture = { schema: 1, id, project: 'maex-pilot-' + id, expiresAt: Date.now() + 60_000,
+      ownerPassword: password, appPassword: password, identityPassword: password, keycloakPassword: password };
+    for (const marker of [{ purpose: 'backup' }, { purpose: 'readiness' },
+      { purpose: 'restore-target', restoreTarget: true }, { purpose: 'ordinary', restoreTarget: true },
+      { purpose: 'paired-restore', restoreTarget: true, pairedRestore: true }, {}, { purpose: 'unknown' }]) {
+      await writeFile(join(dir, 'fixture.json'), JSON.stringify({ ...fixture, ...marker }));
+      const result = spawnSync(process.execPath, [resolve(entry), 'reopen'], { cwd: root, encoding: 'utf8', timeout: 10_000 });
+      assert.equal(result.status, 1);
+      assert.equal(result.stdout, '');
+      assert.equal(result.stderr.trim(), marker.purpose === 'unknown'
+        ? 'Fixture dispatch command refused or failed.' : 'Dispatch reopen requires an ordinary fixture manifest.');
+    }
+  });
 
 test('local dispatch stop persists across processes and reports only unresolved attempts', async () => {
   if (process.env.PILOT_CONTAINER !== '1') {
