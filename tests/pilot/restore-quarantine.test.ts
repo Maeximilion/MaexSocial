@@ -24,13 +24,17 @@ test('the restore quarantine command requires an offline restore target', async 
   }
   if (process.env.PILOT_CONTAINER !== '1') {
     console.log(await runIsolated(['--test', 'dist/pilot/tests/pilot/restore-quarantine.test.js']));
+    assert.deepEqual(JSON.parse((await runQuarantine()).stdout), {
+      quarantined: 0, stopped: true, applicationLogin: false,
+      topology: { internalNetworks: 2, publishedHostPorts: 0 },
+    });
     return;
   }
   const owner = await connectFixture(true);
   t.after(() => owner.end());
   const state = async () => (await owner.query('SELECT stopped FROM pilot.dispatch_control')).rows[0]!.stopped;
   const quarantined = async (count: number) => assert.deepEqual(JSON.parse((await runQuarantine()).stdout),
-    { quarantined: count, stopped: true, ingress: 'disabled' });
+    { quarantined: count, stopped: true, applicationLogin: false });
 
   const appAuthority = (await owner.query(`SELECT rolcanlogin,
     has_database_privilege('pilot_app', current_database(), 'CONNECT') AS can_connect

@@ -171,7 +171,7 @@ async function main(): Promise<void> {
   }
   compose(f, ['up', '-d', '--wait', '--wait-timeout', '120']);
   console.log(await runIsolated(['dist/pilot/ops/local/stack.js', 'check']));
-  console.log(restoreTarget ? 'Isolated restore target ready; application login disabled.'
+  console.log(restoreTarget ? 'Restore fixture services ready; use pilot:restore-quarantine to verify the target.'
     : 'Isolated fixture ready; no host ports or external runtime route.');
 }
 if (require.main === module) main().catch(async error => {

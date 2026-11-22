@@ -77,8 +77,8 @@ counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:
 ## Historical quarantine on a disposable restore target (#217)
 
 Use a fresh local worktree with no existing `work/pilot/`. This mode uses a new Docker project and an explicit
-restore marker in both the manifest and the AppDB. It has internal networks and no host ingress. The
-application role cannot log in or connect to the database. A normal fixture cannot be converted in place.
+restore marker in both the manifest and the AppDB. Its Docker networks are internal and the services publish
+no host ports. The application role cannot log in or connect to the database. A normal fixture cannot be converted in place.
 The regression below seeds invented historical rows into a fresh target. To use a separately seeded
 synthetic target, run the quarantine command directly after seeding as the fixture owner. Keep the
 independent fake provider ledger outside the database.
@@ -92,12 +92,15 @@ npm run pilot:restore-quarantine
 npm run pilot:down
 ```
 
-The quarantine command takes no target arguments. It verifies the marked, offline database, commits the
-dispatch stop, and sets every occurrence to `quarantined` in the same transaction. It records each prior
+The quarantine command takes no target arguments. The host verifies the fixture's internal Docker
+networks, attached containers and port mappings before starting the isolated runner. The runner verifies
+the database marker and application role, commits the dispatch stop, and sets every occurrence to
+`quarantined` in the same transaction. It records each prior
 state in the restore-only `restore_previous_state` column, including `exported`, and preserves existing
 approvals, attempts, and audit history. Every historical row is held even if independent history is
-incomplete or a provider lookup yields no match. The output reports rows quarantined by the invocation;
-a repeat on the same rows reports zero. The fixture remains offline.
+incomplete or a provider lookup yields no match. The output reports the observed Docker network and
+published-port counts, application login, dispatch stop and rows quarantined by the invocation. A repeat
+on the same rows reports zero. The fixture remains offline.
 
 The focused test invokes the command against an empty and a populated scratch database. It covers all
 occurrence states, two tenants, a missing attempt after a fake acceptance, a negative worker readback,

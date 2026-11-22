@@ -62,40 +62,59 @@ export async function databaseConfig(f: Fixture, owner = false): Promise<ClientC
 }
 
 interface ContainerInfo {
+  Id: string;
   Config: { Labels: Record<string, string> };
   NetworkSettings: { Ports: Record<string, unknown>; Networks: Record<string, { NetworkID: string }> };
 }
-interface NetworkInfo { Id: string; Name: string; Internal: boolean; Labels: Record<string, string> }
-export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks: NetworkInfo[]): void {
+interface NetworkInfo {
+  Id: string;
+  Name: string;
+  Internal: boolean;
+  Labels: Record<string, string>;
+  Containers?: Record<string, unknown>;
+}
+
+export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks: NetworkInfo[]) {
   const services = new Map([['postgres', 'application'], ['identity-db', 'identity'], ['keycloak', 'identity'], ['mailbox', 'identity']]);
   if (containers.length !== services.size || networks.length !== 2) throw new Error('Incomplete fixture topology');
+  if (f.restoreTarget && networks.flatMap(network => Object.keys(network.Containers ?? {})).length !== containers.length) {
+    throw new Error('Unexpected restore network attachments');
+  }
+  let publishedHostPorts = 0;
   for (const container of containers) {
     const labels = container.Config.Labels;
     const service = labels['com.docker.compose.service']!;
     const networkName = services.get(service);
     const expected = networks.find(n => n.Name === `${f.project}_${networkName}`);
     const attachments = Object.entries(container.NetworkSettings.Networks);
+    const portMappings = Object.values(container.NetworkSettings.Ports).flatMap(value => Array.isArray(value) ? value : []);
+    publishedHostPorts += portMappings.length;
     if (!networkName || !expected || expected.Internal !== true || expected.Labels['com.docker.compose.project'] !== f.project
         || labels['org.maexsocial.fixture'] !== f.id || labels['com.docker.compose.project'] !== f.project
         || attachments.length !== 1 || attachments[0]![0] !== expected.Name || attachments[0]![1].NetworkID !== expected.Id
-        || Object.values(container.NetworkSettings.Ports).some(value => Array.isArray(value) && value.length)) {
+        || (f.restoreTarget && !Object.hasOwn(expected.Containers ?? {}, container.Id)) || portMappings.length) {
       throw new Error('Fixture service is not isolated');
     }
     services.delete(service);
   }
+  return { internalNetworks: networks.filter(network => network.Internal).length, publishedHostPorts };
 }
 
-export function verifyContainers(f: Fixture): void {
+export function verifyContainers(f: Fixture) {
   const ids = compose(f, ['ps', '-q']).split(/\s+/).filter(Boolean);
   if (ids.length !== 4) throw new Error('Fixture services are not running');
-  verifyTopology(f, JSON.parse(docker(['inspect', ...ids])),
+  return verifyTopology(f, JSON.parse(docker(['inspect', ...ids])),
     JSON.parse(docker(['network', 'inspect', `${f.project}_application`, `${f.project}_identity`])));
 }
 
+export function runIsolatedFixture(f: Fixture, args: string[]) {
+  const topology = verifyContainers(f);
+  const output = compose(f, ['run', '--rm', '--no-deps', 'runner', 'node', ...args]);
+  return { topology, output };
+}
+
 export async function runIsolated(args: string[]): Promise<string> {
-  const f = await loadFixture();
-  verifyContainers(f);
-  return compose(f, ['run', '--rm', '--no-deps', 'runner', 'node', ...args]);
+  return runIsolatedFixture(await loadFixture(), args).output;
 }
 
 export async function connectFixture(owner = false): Promise<Client> {
