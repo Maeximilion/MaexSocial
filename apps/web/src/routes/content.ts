@@ -248,6 +248,74 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
   finally { await db.end(); }
 }
 
+interface OccurrenceSchedule {
+  draftId: string;
+  occurrenceId: string;
+  locationId: string;
+  timezone: string;
+  localTime: string;
+  dueAt: string;
+}
+
+const wallTime = /^(\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d)(?::([0-5]\d)(?:\.(\d{1,6}))?)?$/;
+
+function validateSchedule(timezone: string, localTime: string, dueAt: string): void {
+  const utc = typeof dueAt === 'string' && dueAt.endsWith('Z') ? wallTime.exec(dueAt.slice(0, -1)) : null;
+  const local = typeof localTime === 'string' ? wallTime.exec(localTime) : null;
+  if (!utc || !local || typeof timezone !== 'string' || timezone.length > 100 || !/^[A-Za-z]/.test(timezone)) return deny();
+  const utcSeconds = `${utc[1]}:${utc[2] ?? '00'}`;
+  const instant = new Date(`${utcSeconds}Z`);
+  if (utcSeconds.startsWith('0000') || !Number.isFinite(instant.getTime()) || !instant.toISOString().startsWith(utcSeconds)
+    || (utc[3] ?? '').padEnd(6, '0') !== (local[3] ?? '').padEnd(6, '0')) return deny();
+
+  // Convert the supplied instant to wall time using the same time-zone implementation as the occurrence view.
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', era: 'short',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+    });
+  } catch { return deny(); }
+  const parts = Object.fromEntries(formatter.formatToParts(instant).map(({ type, value }) => [type, value]));
+  const actual = `${parts.year!.padStart(4, '0')}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+  if (parts.era !== 'AD' || actual !== `${local[1]}:${local[2] ?? '00'}`) return deny();
+}
+
+// Private entry point for the isolated pilot, with no HTTP mount.
+export async function rescheduleOccurrence(connect: () => Promise<Client>, binding: CustomerRequest, schedule: OccurrenceSchedule,
+  clock: () => Date, inspect: InspectIdentity): Promise<boolean> {
+  const { draftId, occurrenceId, locationId, timezone, localTime, dueAt } = schedule;
+  binding = { ...binding };
+  if (!uuid(draftId) || !uuid(occurrenceId) || !uuid(locationId)) return deny();
+  validateSchedule(timezone, localTime, dueAt);
+
+  const db = await connect();
+  try {
+    await db.query('BEGIN');
+    const { tenantId } = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [tenantId, draftId]);
+    if (!draft.rowCount) return deny();
+    const target = await db.query(`SELECT id FROM pilot.occurrences WHERE tenant_id=$1 AND draft_id=$2 AND id=$3
+      AND state IN ('draft','approved','held','quarantined') FOR UPDATE`, [tenantId, draftId, occurrenceId]);
+    if (!target.rowCount) return deny();
+
+    // Read attempts after acquiring the lock so a claim that committed while we waited is visible.
+    const attempt = await db.query('SELECT 1 FROM pilot.attempts WHERE tenant_id=$1 AND occurrence_id=$2', [tenantId, occurrenceId]);
+    if (attempt.rowCount) return deny();
+    const location = await db.query('SELECT id FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR KEY SHARE', [tenantId, locationId]);
+    if (!location.rowCount) return deny();
+    await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+
+    const updated = await db.query(`UPDATE pilot.occurrences
+      SET location_id=$3,due_at=$4,timezone=$5,approval_id=NULL,state=CASE WHEN state='approved' THEN 'draft' ELSE state END
+      WHERE tenant_id=$1 AND id=$2 AND ROW(location_id,due_at,timezone) IS DISTINCT FROM ROW($3::uuid,$4::timestamptz,$5::text)`,
+    [tenantId, occurrenceId, locationId, dueAt, timezone]);
+    await db.query('COMMIT');
+    return updated.rowCount === 1;
+  } catch (error) { await db.query('ROLLBACK'); throw error; }
+  finally { await db.end(); }
+}
+
 // Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.
 export async function editDraft(db: Client, context: CustomerContext, draftId: string, revisionId: string, text: string): Promise<void> {
   if (!uuid(draftId) || !['Employee', 'Manager'].includes(context.role)) deny();

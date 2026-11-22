@@ -74,6 +74,14 @@ A first valid confirmation creates one immutable approval and binds it to the ex
 
 [Delivery evidence](../../handovers/sessions/2026-11-22-private-manager-approval.md) covers synthetic authority and PostgreSQL transactions. [#223](https://github.com/Maeximilion/MaexSocial/issues/223) retains the authenticated preview-to-approval and reapproval path through [#131](https://github.com/Maeximilion/MaexSocial/issues/131). The public approval input remains closed. No approval path invokes a provider, creates an attempt or reserves spend.
 
+### Private occurrence reschedule (#211)
+
+The unmounted `rescheduleOccurrence` transaction resolves the active tenant through the existing customer session and CSRF binding. It locks the tenant's draft and selected occurrence in that order, checks attempts in a separate statement after locking, and verifies the destination is a stored location in that tenant. An inactive Google grant is compatible with preparing a draft for the later export workflow. Current customer authority is checked again after waiting for the domain locks.
+
+The operation accepts a named time zone, an explicit local wall time and a matching UTC instant ending in `Z`. Times use ISO calendar notation with minutes and optional seconds and up to six fractional digits. Both instants in a fold can be selected by their respective UTC values. A gap or a mismatch is denied. The occurrence stores the exact PostgreSQL instant and submitted zone. Equal destination, instant and zone return a no-op and preserve eligibility. Changes clear the current approval link, move `approved` to `draft`, and preserve `held` and `quarantined`. Occurrence identity and immutable approval history are retained. Attempts and delivery states prevent modification.
+
+After the strict build and fixture migrations, run `node --test dist/pilot/tests/pilot/occurrence-reschedule.test.js` for the synthetic domain checks. [#223](https://github.com/Maeximilion/MaexSocial/issues/223) retains authenticated integration and reapproval after [#131](https://github.com/Maeximilion/MaexSocial/issues/131). Dispatch, export and provider execution remain outside this delivery.
+
 ### Synthetic business facts (#153)
 
 Employees and Managers can consult `GET /customer/facts` and `GET /customer/facts/:locationId`, linked from the workspace and draft list. The existing current identity/session/tenant/membership transaction remains mandatory. The server resolves locations in the active tenant only, even for an identity with another tenant membership. Foreign, unknown and malformed IDs receive the same generic denial. Own locations without facts and workspaces without locations have explicit empty states.
