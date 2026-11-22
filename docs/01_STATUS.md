@@ -73,6 +73,11 @@ in their active workspace. Local HTTPS and browser checks cover missing and conf
 UTC timestamps, keyboard navigation and read-only access. [#165](https://github.com/Maeximilion/MaexSocial/issues/165)
 retains integrated Task 4 acceptance.
 
+Bounded Task 4 delivery [#252](https://github.com/Maeximilion/MaexSocial/issues/252) commits a
+[private terminal export](../ops/local/README.md#private-terminal-text-export-252) of the exact approved
+revision when Google access is missing. The isolated fixture covers authorized repeats, rollback and a competing
+attempt. The authenticated route, dispatch worker and integrated acceptance remain in [#165](https://github.com/Maeximilion/MaexSocial/issues/165).
+
 November 21 bounded content delivery [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged at `4391dd4`. The read-only Manager preview shows the proposed current draft revision with the actual destination and both stored time interpretations. The [local handover](handovers/sessions/2026-11-21-approval-preview.md) preserves the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). The [Claude API receipt](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) and [candidate pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) record the later integration evidence. #124 retains actual approval and #131 retains identity and MFA. G3–G5 remain open.
 
 November 18 bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexSocial/pull/157) merged at `d2332fe` with internal
