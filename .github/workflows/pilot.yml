@@ -42,3 +42,21 @@ jobs:
           npm run pilot:test
       - if: always()
         run: npm run pilot:down
+      - name: Cold backup provenance and private archive access
+        run: |
+          test "$(id -u)" -ne 0
+          git rev-parse HEAD
+          mv work/pilot work/pilot-from-suite
+          printf '\n' >> ops/local/README.md
+          status=0
+          npm run pilot:backup -- capture > work/cold-dirty.log 2>&1 || status=$?
+          git restore -- ops/local/README.md
+          test "$status" -eq 1
+          grep -Fx 'Capture requires a clean source worktree.' work/cold-dirty.log
+          test ! -e work/pilot
+          printf 'throw new Error("Stale backup build executed");\n' > dist/pilot/ops/local/backup.js
+          npm run pilot:backup -- capture
+          npm run pilot:backup -- verify
+          for archive in work/pilot/cold-backup/app-db.tar work/pilot/cold-backup/identity-db.tar; do
+            test "$(stat -c '%u:%g:%a' "$archive")" = "$(id -u):$(id -g):600"
+          done
