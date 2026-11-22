@@ -40,6 +40,22 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Synthetic cold backup pair (#216)
+
+Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`.
+
+~~~text
+npm run pilot:backup -- capture
+npm run pilot:backup -- verify
+node --test dist/pilot/tests/pilot/cold-backup.test.js
+~~~
+
+The backup command builds the current source. Capture requires a clean worktree and checks the source revision again before publishing. It initializes its own disposable fixture, migrates AppDB, seeds an invented tenant and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
+
+The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
+
+Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. Starting a restore, rotating synthetic credentials, replaying independent history and measuring recovery remain part of Task 5.
+
 ## Local dispatch stop (#215)
 
 From the worktree root with a built and migrated fixture, run `npm run pilot:stop-dispatch` to persist
