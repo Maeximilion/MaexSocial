@@ -20,6 +20,14 @@ test('paired restore refuses an existing target before contacting its source or 
     assert.equal(result.status, 1);
     assert.equal(result.stdout, '');
     assert.match(result.stderr, /Paired restore requires a fresh worktree without work\/pilot/);
+    const imported = spawnSync(process.execPath, ['-e', `
+      const { restore } = require(process.argv[1]);
+      restore('missing-source', () => { throw new Error('Unexpected target ownership'); })
+        .catch(error => { console.error(error.message); process.exitCode = 1; });
+    `, restore], { cwd: root, encoding: 'utf8', timeout: 10000 });
+    assert.equal(imported.status, 1);
+    assert.equal(imported.stdout, '');
+    assert.match(imported.stderr, /^Paired restore requires a fresh worktree without work\/pilot\./);
     assert.equal(await readFile(join(target, marker), 'utf8'), 'preserve this target');
   }
   assert.deepEqual((await readdir(target)).sort(), ['fixture.json', 'nonempty-target']);

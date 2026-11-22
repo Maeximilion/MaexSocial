@@ -228,6 +228,26 @@ The [history replay](#offline-deletion-and-revocation-history-replay-241) uses t
 target contract. The full paired recovery drill, general credential invalidation, recovery targets
 and release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
+## Restore before dispatch and terminal export (#258)
+
+Use two clean, disposable worktrees at the same revision, each without `work/pilot`.
+Install from the lockfile and run `npm run pilot:build` in both. Use the existing pinned
+Docker images on a local socket. In the source worktree run:
+
+    node dist/pilot/tests/pilot/restore-before-effects.js <absolute-target-worktree>
+
+The drill seeds two approved occurrences before the cold pair, continues the source, then
+uses the normal private dispatch and export entries. A commits one attempt and one create
+in an independent SQLite fake. B commits one export audit and returns its approved text to
+the source caller. The drill compares both bindings with the offline restored rows and
+rechecks the original pair, source counts and fake after the target probes.
+
+The target uses outer PostgreSQL role and network controls. The normal application
+connector is refused before either private operation reaches its domain checks or returns
+text. Read-only fixture-owner queries independently verify snapshot state and counts.
+Repeated quarantine changes zero rows. Both stacks stop on exit. Fixture files, backup
+archives and the fake remain in the disposable worktrees' ignored directories.
+
 ## Offline deletion and revocation history replay (#241)
 
 Start a fresh marked target with `npm run pilot:up -- restore-target <snapshot-sequence>` and apply

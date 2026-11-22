@@ -53,15 +53,15 @@ function restoreCluster(f: Fixture, source: Fixture, pair: Pair, backupPath: str
     pair.historyAnchor ? String(pair.historyAnchor.after) : '', pair.historyAnchor?.evidenceSha256 ?? '']);
 }
 
-async function main(): Promise<void> {
-  if (process.argv.length !== 3 || process.env.PILOT_CONTAINER === '1') {
+export async function restore(sourceDir: string, ownTarget?: (fixture: Fixture) => void) {
+  if (process.env.PILOT_CONTAINER === '1') {
     throw new Error('Usage: npm run pilot:restore -- <private synthetic backup fixture directory>');
   }
   if (await lstat('work/pilot').catch(error => {
     if (error.code !== 'ENOENT') throw error;
   })) throw new Error('Paired restore requires a fresh worktree without work/pilot.');
   if (!usesLocalDocker()) throw new Error('Paired restore requires a local Docker socket.');
-  const { source, pair, backupPath } = await verifySource(resolve(process.argv[2]!));
+  const { source, pair, backupPath } = await verifySource(resolve(sourceDir));
   const f = await initialize('paired-restore');
   const services = databases.map(db => db.service);
   const volumes = docker(['volume', 'ls', '--format', '{{.Name}}']).split(/\s+/);
@@ -69,6 +69,7 @@ async function main(): Promise<void> {
       || docker(['ps', '-aq', '--filter', 'label=com.docker.compose.project=' + f.project])) {
     throw new Error('Paired restore target storage already exists.');
   }
+  ownTarget?.(f);
   let stage = 'target creation';
   let starting = false;
   try {
@@ -86,10 +87,10 @@ async function main(): Promise<void> {
         || quarantine.stopped !== true || quarantine.applicationLogin !== false) {
       throw new Error('Restore quarantine did not complete.');
     }
-    const result = JSON.stringify({ verifiedDatabases: 2, ...quarantine, topology });
-    await writeFile('work/pilot/restore-ready.pending', result + '\n', { mode: 0o600, flag: 'wx' });
+    const result = { verifiedDatabases: 2, ...quarantine, topology };
+    await writeFile('work/pilot/restore-ready.pending', JSON.stringify(result) + '\n', { mode: 0o600, flag: 'wx' });
     await rename('work/pilot/restore-ready.pending', 'work/pilot/restore-ready.json');
-    console.log(result);
+    return result;
   } catch {
     if (starting) {
       try { compose(f, ['stop', ...services]); }
@@ -99,7 +100,14 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(error => {
+async function main(): Promise<void> {
+  if (process.argv.length !== 3) {
+    throw new Error('Usage: npm run pilot:restore -- <private synthetic backup fixture directory>');
+  }
+  console.log(JSON.stringify(await restore(process.argv[2]!)));
+}
+
+if (require.main === module) main().catch(error => {
   const message = error instanceof Error && error.constructor === Error && !error.message.startsWith('Docker ')
     ? error.message : 'Paired restore refused before target import.';
   console.error(message);
