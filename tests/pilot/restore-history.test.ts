@@ -10,8 +10,8 @@ import { occurrence, seedTenant } from './fixtures.js';
 const command = 'dist/pilot/ops/local/recover.js';
 const testFile = 'dist/pilot/tests/pilot/restore-history.test.js';
 const input = 'work/pilot/restore-history.json';
-const run = (digest: string) => promisify(execFile)(process.execPath,
-  [command, 'replay-history', '10', '15', digest], { timeout: 45_000 });
+const run = (digest: string, after = 10) => promisify(execFile)(process.execPath,
+  [command, 'replay-history', String(after), '15', digest], { timeout: 45_000 });
 const sha = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
 
 if (process.env.PILOT_CONTAINER !== '1') {
@@ -32,8 +32,14 @@ if (process.env.PILOT_CONTAINER !== '1') {
 
       await writeFile(input, complete);
       await phase('mismarked');
+      await phase('unbound');
       await rm(input);
       await assert.rejects(run(sha(complete)), { code: 1 });
+      await phase('held');
+
+      const truncated = JSON.stringify({ ...history, after: 13, records: records.slice(3) });
+      await writeFile(input, truncated);
+      await assert.rejects(run(sha(truncated), 13), { code: 1 });
       await phase('held');
 
       for (const bad of [
@@ -78,6 +84,16 @@ if (process.env.PILOT_CONTAINER !== '1') {
     }
   });
 } else {
+  test('unbound', async () => {
+    const bytes = await readFile(input, 'utf8');
+    const owner = await connectFixture(true);
+    try {
+      await owner.query('ALTER TABLE public.fixture_identity RENAME COLUMN restore_history_after TO test_snapshot_sequence');
+      try { await assert.rejects(run(sha(bytes)), { code: 1, stdout: '' }); }
+      finally { await owner.query('ALTER TABLE public.fixture_identity RENAME COLUMN test_snapshot_sequence TO restore_history_after'); }
+    } finally { await owner.end(); }
+  });
+
   test('mismarked', async () => {
     const bytes = await readFile(input, 'utf8');
     const owner = await connectFixture(true);
@@ -147,6 +163,8 @@ if (process.env.PILOT_CONTAINER !== '1') {
         assert.deepEqual((await owner.query(`SELECT tgenabled FROM pg_trigger
           WHERE tgrelid='pilot.business_fact_revisions'::regclass AND tgname='immutable_business_facts'`)).rows,
         [{ tgenabled: 'O' }]);
+        assert.deepEqual((await owner.query(`SELECT restore_history_digest IS NOT NULL AS recorded
+          FROM public.fixture_identity`)).rows, [{ recorded: applied }]);
       } finally { await owner.end(); }
     });
   }

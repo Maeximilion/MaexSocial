@@ -36,6 +36,11 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       || !Number.isSafeInteger(after) || !Number.isSafeInteger(through) || after < 0 || through < after
       || !digest || !/^[a-f0-9]{64}$/.test(digest)) return incompatible();
 
+  const { rows: [anchor] } = await db.query<{ restore_history_digest: string | null }>(
+    `SELECT restore_history_digest FROM public.fixture_identity
+    WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
+  if (!anchor) return incompatible();
+
   const file = await open(historyPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let bytes: Buffer;
   try {
@@ -55,14 +60,8 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       || !Array.isArray(history.records) || history.records.length !== through - after) return incompatible();
   const events = history.records.map((row, i) => parseEvent(row, after + i + 1));
 
-  // Created only on a guarded restore target. Commit the receipt with every history effect.
-  await db.query(`CREATE TABLE IF NOT EXISTS public.fixture_history_replay (
-    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    digest text NOT NULL
-  )`);
-  const receipt = await db.query<{ digest: string }>('SELECT digest FROM public.fixture_history_replay');
-  if (receipt.rows[0]) {
-    if (receipt.rows[0].digest !== digest) return incompatible();
+  if (anchor.restore_history_digest !== null) {
+    if (anchor.restore_history_digest !== digest) return incompatible();
     return { applied: 0 };
   }
 
@@ -84,6 +83,6 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     }
   }
 
-  await db.query('INSERT INTO public.fixture_history_replay(digest) VALUES ($1)', [digest]);
+  await db.query('UPDATE public.fixture_identity SET restore_history_digest=$2 WHERE id=$1', [fixtureId, digest]);
   return { applied: events.length };
 }

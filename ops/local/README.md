@@ -173,10 +173,14 @@ and release authority remain in [Task 5](https://github.com/Maeximilion/MaexSoci
 
 ## Offline deletion and revocation history replay (#241)
 
-Use the marked, disposable restore target above. The operation accepts only this fixture's independently
-retained synthetic history. Supply the expected snapshot sequence, inclusive ending sequence and SHA-256
-from the independent fixture record. Keep that record outside the AppDB and its backup. Make the matching
-bytes available read-only to the runner at `work/pilot/restore-history.json`.
+Start a fresh marked target with `npm run pilot:up -- restore-target <snapshot-sequence>` and apply
+the fixture migrations. Use the sequence from the synthetic snapshot record when seeding the target.
+Bootstrap records it in the AppDB marker. The replay compares that marker with the requested sequence
+inside the guarded transaction. Keep the independently retained history and its SHA-256 outside the
+AppDB and its backup. Supply the expected interval and hash, and make the matching bytes available
+read-only to the runner at `work/pilot/restore-history.json`. Targets without a recorded snapshot sequence
+remain eligible for quarantine and fail replay. This includes existing paired archives that lack the
+snapshot sequence. Integrated sequence provenance remains in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 ```text
 npm run pilot:restore-quarantine -- replay-history <snapshot-sequence> <ending-sequence> <sha256>
@@ -198,8 +202,8 @@ The successful transaction stores a receipt with the data changes. An identical 
 applied records. A different receipt requires a fresh fixture. Ingress, dispatch and export stay
 unavailable throughout, including after a database restart.
 
-For the regression, start a fresh marked target with the cached, pinned fixture images, build and apply the
-migrations as above, then run `node --test dist/pilot/tests/pilot/restore-history.test.js`. The isolated
+For the regression, use snapshot sequence `10` with the cached, pinned fixture images, build and apply
+the migrations as above, then run `node --test dist/pilot/tests/pilot/restore-history.test.js`. The isolated
 test seeds an invented target and a control tenant, preserves the replay input for equality checks, and
 tests interruption, repeat execution and PostgreSQL restart. Run it on a separate fresh target from the
 populated #217 regression. The integrated archive, custody, rotation and release drill remains in

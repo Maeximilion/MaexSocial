@@ -8,7 +8,14 @@ import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixtur
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' | 'paired-restore' = 'ordinary'): Promise<Fixture> {
+export async function initialize(
+  purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' | 'paired-restore' = 'ordinary',
+  snapshotSequence?: number,
+): Promise<Fixture> {
+  if (snapshotSequence !== undefined
+    && (purpose !== 'restore-target' || !Number.isSafeInteger(snapshotSequence) || snapshotSequence < 0)) {
+    throw new Error('Invalid synthetic restore snapshot sequence');
+  }
   const forBackup = purpose === 'backup';
   const pairedRestore = purpose === 'paired-restore';
   const restoreTarget = purpose === 'restore-target' || pairedRestore;
@@ -102,7 +109,10 @@ ${restoreTarget ? '' : 'GRANT CONNECT ON DATABASE pilot_fixture TO pilot_app;'}
 REVOKE ALL ON DATABASE postgres, template1 FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE TABLE public.fixture_identity (id text PRIMARY KEY, restore_target boolean NOT NULL);
-INSERT INTO public.fixture_identity VALUES ('${f.id}', ${restoreTarget});\n`);
+INSERT INTO public.fixture_identity VALUES ('${f.id}', ${restoreTarget});
+${snapshotSequence === undefined ? '' : `ALTER TABLE public.fixture_identity
+  ADD COLUMN restore_history_after bigint NOT NULL DEFAULT ${snapshotSequence},
+  ADD COLUMN restore_history_digest text;`}\n`);
   await save('init-identity.sql', `CREATE ROLE keycloak LOGIN PASSWORD '${f.keycloakPassword}' VALID UNTIL '${expiry}';
 ALTER ROLE identity_owner VALID UNTIL '${expiry}';
 ALTER DATABASE identity_fixture OWNER TO keycloak;
@@ -154,15 +164,23 @@ async function main(): Promise<void> {
     console.log('Identity and mailbox TLS readiness verified.');
     return;
   }
-  const restoreTarget = action === 'up' && process.argv.length === 4 && process.argv[3] === 'restore-target';
+  const restoreTarget = action === 'up' && process.argv.length <= 5 && process.argv[3] === 'restore-target';
   if (!restoreTarget && (process.argv.length !== 3 || (action !== 'up' && action !== 'down'))) {
-    throw new Error('Usage: pilot:up [-- restore-target] or pilot:down');
+    throw new Error('Usage: pilot:up [-- restore-target [snapshot-sequence]] or pilot:down');
+  }
+  const snapshotArg = restoreTarget ? process.argv[4] : undefined;
+  const snapshotSequence = snapshotArg === undefined ? undefined : Number(snapshotArg);
+  if (snapshotArg !== undefined && snapshotArg !== String(snapshotSequence)) {
+    throw new Error('Invalid synthetic restore snapshot sequence');
   }
   let f: Fixture;
-  try { f = await loadFixture(action === 'down'); }
+  try {
+    f = await loadFixture(action === 'down');
+    if (snapshotSequence !== undefined) throw new Error('Snapshot sequence requires a fresh restore target');
+  }
   catch (error) {
     if (action !== 'up' || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    f = await initialize(restoreTarget ? 'restore-target' : 'ordinary');
+    f = await initialize(restoreTarget ? 'restore-target' : 'ordinary', snapshotSequence);
   }
   if (action === 'down') {
     compose(f, ['down']);
