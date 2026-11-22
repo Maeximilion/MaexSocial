@@ -140,21 +140,35 @@ The integrated ADS-01 receipt and external operating prerequisites remain under 
 
 ## Local dispatch stop (#215)
 
-From the worktree root with a built and migrated fixture, run `npm run pilot:stop-dispatch` to persist
-the stop and `npm run pilot:dispatch-status` to read it independently. Both report JSON with `stopped`
-and `outstandingAttempts`. The count includes stored `unknown` and `pending` attempts across the
-fixture. Confirmed and rejected attempts are terminal. The status command and existing read-only
-inspection remain available while stopped.
+From the worktree root with a built and migrated ordinary fixture, use these commands:
 
-Both commands accept only the validated local fixture. The stop commits before reporting status. If
-the command fails, use the status command to check whether the stop committed. A future claim must
-lock the same control row, check that dispatch is open and record its attempt in that transaction
-before any provider create. This slice adds no sender or reopen operation. The integrated stop and
-recovery drill remains in [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
+```sh
+npm run pilot:stop-dispatch
+npm run pilot:dispatch-status
+npm run pilot:reopen-dispatch
+```
 
-Run `node --test dist/pilot/tests/pilot/dispatch-stop.test.js` to check synthetic attempts and provider
-counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:down` and
-`npm run pilot:up` to verify that the stop and count survive a retained-volume restart.
+All three report JSON with `stopped` and `outstandingAttempts`. The count includes stored
+`unknown` and `pending` attempts. Stop commits on the control row used by the private claim.
+Already claimed work can settle and be reconciled by readback. New claims are denied while
+stopped, including after `pilot:down` and `pilot:up` with retained volumes.
+
+### Explicit reopen (#266)
+
+Use reopen deliberately after checking the status. It requires a local Docker socket, the
+expected internal services, both healthy PostgreSQL containers, working application DB login,
+the current pilot schema and Keycloak
+and mailbox TLS readiness. A fresh ordinary fixture records its purpose in the manifest and
+AppDB identity. Existing fixtures without both records, restore targets, backup sources and
+readiness drills cannot reopen. Keep their data and use a freshly initialized disposable
+fixture for ordinary dispatch. Reopen changes the control row only. Existing holds, quarantine,
+approvals and attempts retain their state, and the command never retries a create.
+
+On a running, migrated, stopped disposable ordinary fixture, run
+`node dist/pilot/tests/pilot/dispatch-recovery.js`. It asserts and reports the guarded refusal,
+post-commit stop and readback, retained restart and explicit reopen phases. A creates once,
+B stays unclaimed and unexported, and a new approved control creates once after reopening.
+The drill leaves dispatch stopped.
 
 ## Historical quarantine on a disposable restore target (#217)
 

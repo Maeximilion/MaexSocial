@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:f
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
-import { verifyPair } from '../../ops/local/backup.js';
+import { hashSources, verifyPair } from '../../ops/local/backup.js';
 import { postgresImage } from '../../ops/local/stack.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -34,6 +34,10 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   };
 
   await verifyPair(path, fixtureId, compatibility, pair);
+  const beforeReopen = '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5';
+  const withProvenance = await hashSources(['ops/local/keycloak-realm.json', 'ops/local/keycloak-step-up.json', 'ops/local/stack.ts']);
+  await verifyPair(path, fixtureId, { ...compatibility, idpConfig: withProvenance },
+    { ...pair, compatibility: { ...compatibility, idpConfig: beforeReopen } });
   const historyAnchor = { after: 1, evidenceSha256: sha256('independent source journal') };
   await verifyPair(path, fixtureId, compatibility, { ...pair, historyAnchor });
   for (const invalid of [{ ...historyAnchor, after: 0 }, { ...historyAnchor, after: 1.5 },

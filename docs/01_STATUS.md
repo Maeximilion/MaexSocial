@@ -10,6 +10,11 @@
 
 ## Current work
 
+Bounded Task 5 [#266](https://github.com/Maeximilion/MaexSocial/issues/266) adds
+[explicit ordinary-fixture dispatch reopen](../ops/local/README.md#explicit-reopen-266).
+The local drill covers a committed private claim, stop, readback, retained restart and a new
+claim after checked reopen. Broader Task 5 acceptance remains under #166.
+
 Bounded Task 5 [#258](https://github.com/Maeximilion/MaexSocial/issues/258) exercises a
 [cold pair taken before dispatch and terminal export](../ops/local/README.md#restore-before-dispatch-and-terminal-export-258).
 The [drill evidence](handovers/sessions/2026-11-22-restore-before-effects.md) records the original source outcomes,

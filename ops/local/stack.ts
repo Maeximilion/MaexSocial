@@ -3,13 +3,13 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixture } from './fixture.js';
+import { compose, docker, loadFixture, runIsolated, safeDiagnostics, validateFixture, type Fixture, type FixturePurpose } from './fixture.js';
 
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
 export async function initialize(
-  purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' | 'paired-restore' = 'ordinary',
+  purpose: FixturePurpose = 'ordinary',
   snapshotSequence?: number,
 ): Promise<Fixture> {
   if (snapshotSequence !== undefined
@@ -20,14 +20,15 @@ export async function initialize(
   const pairedRestore = purpose === 'paired-restore';
   const restoreTarget = purpose === 'restore-target' || pairedRestore;
   const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness';
-  await mkdir('work', { recursive: true });
-  // Exclusive directory creation preserves existing credentials and database volumes on failure.
-  await mkdir('work/pilot', { mode: 0o700 });
-  const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', expiresAt: Date.now() + 86_400_000,
+  const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', purpose, expiresAt: Date.now() + 86_400_000,
     ownerPassword: secret(), appPassword: secret(), identityPassword: secret(), keycloakPassword: secret() };
   if (restoreTarget) f.restoreTarget = true;
   if (pairedRestore) f.pairedRestore = true;
   f.project = `maex-pilot-${f.id}`;
+  validateFixture(f);
+  await mkdir('work', { recursive: true });
+  // Exclusive directory creation preserves existing credentials and database volumes on failure.
+  await mkdir('work/pilot', { mode: 0o700 });
   const save = (name: string, value: string) => writeFile(`work/pilot/${name}`, value, { mode: 0o600, flag: 'wx' });
   const expiry = new Date(f.expiresAt).toISOString();
   await save('fixture.json', JSON.stringify(f));
@@ -108,8 +109,8 @@ REVOKE ALL ON DATABASE pilot_fixture FROM PUBLIC;
 ${restoreTarget ? '' : 'GRANT CONNECT ON DATABASE pilot_fixture TO pilot_app;'}
 REVOKE ALL ON DATABASE postgres, template1 FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-CREATE TABLE public.fixture_identity (id text PRIMARY KEY, restore_target boolean NOT NULL);
-INSERT INTO public.fixture_identity VALUES ('${f.id}', ${restoreTarget});
+CREATE TABLE public.fixture_identity (id text PRIMARY KEY, restore_target boolean NOT NULL, purpose text NOT NULL);
+INSERT INTO public.fixture_identity (id, restore_target, purpose) VALUES ('${f.id}', ${restoreTarget}, '${purpose}');
 ${snapshotSequence === undefined ? '' : `ALTER TABLE public.fixture_identity
   ADD COLUMN restore_history_after bigint NOT NULL DEFAULT ${snapshotSequence},
   ADD COLUMN restore_history_digest text;`}\n`);

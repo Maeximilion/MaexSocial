@@ -1,30 +1,77 @@
-import { connectFixture, runIsolated } from './fixture.js';
+import type { Client } from 'pg';
+import { installedPilotSchema } from '../../scripts/pilot-db.js';
+import { connectFixture, loadFixture, runIsolatedFixture, usesLocalDocker } from './fixture.js';
+import { httpsReady } from './stack.js';
+
+async function status(db: Client) {
+  const { rows: [control] } = await db.query<{ stopped: boolean; outstandingAttempts: number }>(`
+    SELECT stopped, (SELECT count(*)::int FROM pilot.attempts WHERE outcome IN ('unknown', 'pending'))
+      AS "outstandingAttempts"
+    FROM pilot.dispatch_control WHERE singleton
+  `);
+  if (!control) throw new Error('Missing dispatch control');
+  return control;
+}
+
+async function reopen(db: Client, id: string) {
+  if (!(await Promise.all([httpsReady('keycloak', false), httpsReady('mailbox', false)])).every(Boolean)) {
+    throw new Error('Fixture HTTPS readiness failed');
+  }
+  const app = await connectFixture();
+  await app.end();
+
+  await db.query('BEGIN');
+  try {
+    // Use the migration lock while checking the schema that claims depend on.
+    await db.query('SELECT pg_advisory_xact_lock(114, 1)');
+    const ordinary = await db.query(`SELECT 1 FROM public.fixture_identity WHERE id=$1 AND NOT restore_target
+      AND purpose='ordinary' AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE`, [id]);
+    if (ordinary.rowCount !== 1 || !Object.values(await installedPilotSchema(db)).every(Boolean)) {
+      throw new Error('Current ordinary fixture database required');
+    }
+
+    // Stop, reopen and claims serialize on the same control row.
+    await db.query('UPDATE pilot.dispatch_control SET stopped=false WHERE singleton');
+    const result = await status(db);
+    await db.query('COMMIT');
+    return result;
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  }
+}
 
 async function main(): Promise<void> {
   const action = process.argv[2];
-  if ((action !== 'stop' && action !== 'status') || process.argv.length !== 3) {
-    throw new Error('Expected stop or status');
+  if ((action !== 'stop' && action !== 'status' && action !== 'reopen') || process.argv.length !== 3) {
+    throw new Error('Expected stop, status or reopen');
+  }
+  const fixture = await loadFixture();
+  if (action === 'reopen' && (fixture.purpose !== 'ordinary' || fixture.restoreTarget || fixture.pairedRestore)) {
+    console.error('Dispatch reopen requires an ordinary fixture manifest.');
+    process.exitCode = 1;
+    return;
   }
   if (process.env.PILOT_CONTAINER !== '1') {
-    console.log(await runIsolated(['dist/pilot/ops/local/dispatch-control.js', action]));
+    if (action === 'reopen' && !usesLocalDocker()) throw new Error('Reopen requires a local Docker socket');
+    const { output } = runIsolatedFixture(fixture, ['dist/pilot/ops/local/dispatch-control.js', action], action === 'reopen');
+    console.log(output);
     return;
   }
 
   const db = await connectFixture(true);
   try {
+    if (action === 'reopen') {
+      console.log(JSON.stringify(await reopen(db, fixture.id)));
+      return;
+    }
     if (action === 'stop') {
       // Dispatch claims lock this row before recording an attempt.
       const result = await db.query('UPDATE pilot.dispatch_control SET stopped = true WHERE singleton');
       if (result.rowCount !== 1) throw new Error('Missing dispatch control');
     }
     // A fresh snapshot includes attempts committed by a claim that held the stop row first.
-    const { rows } = await db.query<{ stopped: boolean; outstandingAttempts: number }>(`
-      SELECT stopped, (SELECT count(*)::int FROM pilot.attempts WHERE outcome IN ('unknown', 'pending'))
-        AS "outstandingAttempts"
-      FROM pilot.dispatch_control WHERE singleton
-    `);
-    if (!rows[0]) throw new Error('Missing dispatch control');
-    console.log(JSON.stringify(rows[0]));
+    console.log(JSON.stringify(await status(db)));
   } finally { await db.end(); }
 }
 

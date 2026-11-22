@@ -13,6 +13,7 @@
     "pilot:backup": "npm run pilot:build && node dist/pilot/ops/local/backup.js",
     "pilot:readiness": "node dist/pilot/ops/local/readiness.js",
     "pilot:stop-dispatch": "node dist/pilot/ops/local/dispatch-control.js stop",
+    "pilot:reopen-dispatch": "node dist/pilot/ops/local/dispatch-control.js reopen",
     "pilot:dispatch-status": "node dist/pilot/ops/local/dispatch-control.js status",
     "pilot:restore": "npm run pilot:build && node dist/pilot/ops/local/restore.js",
     "pilot:restore-quarantine": "node dist/pilot/ops/local/recover.js",
