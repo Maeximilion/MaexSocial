@@ -80,7 +80,7 @@ The unmounted `rescheduleOccurrence` transaction resolves the active tenant thro
 
 The operation accepts a named time zone, an explicit local wall time and a matching UTC instant ending in `Z`. Times use ISO calendar notation with minutes and optional seconds and up to six fractional digits. Both instants in a fold can be selected by their respective UTC values. A gap or a mismatch is denied. The occurrence stores the exact PostgreSQL instant and submitted zone. Equal destination, instant and zone return a no-op and preserve eligibility. Changes clear the current approval link, move `approved` to `draft`, and preserve `held` and `quarantined`. Occurrence identity and immutable approval history are retained. Attempts and delivery states prevent modification.
 
-After the strict build and fixture migrations, run `node --test dist/pilot/tests/pilot/occurrence-reschedule.test.js` for the synthetic domain checks. [#223](https://github.com/Maeximilion/MaexSocial/issues/223) retains authenticated integration and reapproval after [#131](https://github.com/Maeximilion/MaexSocial/issues/131). Dispatch, export and provider execution remain outside this delivery.
+After the strict build and fixture migrations, run `node --test dist/pilot/tests/pilot/occurrence-reschedule.test.js` for the synthetic domain checks. The [delivery checkpoint](../../handovers/sessions/2026-11-22-private-occurrence-reschedule.md) records local evidence. [#223](https://github.com/Maeximilion/MaexSocial/issues/223) retains authenticated integration and reapproval after [#131](https://github.com/Maeximilion/MaexSocial/issues/131). Dispatch, export and provider execution remain outside this delivery.
 
 ### Synthetic business facts (#153)
 
