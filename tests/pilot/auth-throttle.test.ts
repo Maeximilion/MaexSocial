@@ -125,7 +125,7 @@ test('durable independent account/source throttles in actual PostgreSQL', async 
         assert.ok(!serialized.includes('example.invalid') && !serialized.includes('192.0.2') && !serialized.includes(key));
         await reset();
       } catch (error) {
-        t.diagnostic(observed.failure() ?? (error instanceof DatabaseError ? databaseErrorClass(error)
+        t.diagnostic(observed.failure() ?? (error instanceof DatabaseError ? `fixture query: ${databaseErrorClass(error)}`
           : error instanceof Error && error.message === 'Throttle unavailable'
             ? 'application returned Throttle unavailable without an observed driver error'
             : 'test assertion or fixture operation failed'));

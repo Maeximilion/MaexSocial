@@ -240,7 +240,8 @@ With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate
 For an ordinary Windows `npm run pilot:test`, record `git rev-parse HEAD` and whether the fixture is fresh or
 restarted with retained volumes. If the `both dimensions charge on denial, absent accounts and separate flows`
 case fails, retain its name and fixed diagnostic. A database diagnostic identifies the connection, query or
-disconnect stage and includes the SQLSTATE when PostgreSQL supplied one. It identifies the future-attempt guard
+disconnect stage and includes the SQLSTATE when PostgreSQL supplied one. Errors in direct fixture queries carry
+the `fixture query` label. The diagnostic identifies the future-attempt guard
 when the driver context matches [migration 006](../../db/migrations/006_auth_throttle.up.sql). An application
 diagnostic means the app returned `Throttle unavailable` without a driver error captured by the test. If the
 isolated runner fails before the case reports a result, record the runner failure and leave the case unobserved.
