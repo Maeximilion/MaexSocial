@@ -14,6 +14,12 @@ November 22 bounded Task 5 delivery [#215](https://github.com/Maeximilion/MaexSo
 a [durable local dispatch stop and outstanding attempt count](../ops/local/README.md#local-dispatch-stop-215).
 The integrated sender and stop/restore drill remain under #165 and #166.
 
+Bounded Task 5 delivery [#255](https://github.com/Maeximilion/MaexSocial/issues/255) measures the
+[matched 010-to-009 rollback](handovers/sessions/2026-11-22-pilot-build-rollback.md) on freshly
+captured synthetic data. The 009 build rejected the 010 pair before target creation. Its own 009 pair
+restored offline in 19.352 seconds with both snapshot markers present. Integrated recovery and
+operating targets remain under #166 and #82.
+
 Bounded Task 5 delivery [#248](https://github.com/Maeximilion/MaexSocial/issues/248) binds a new
 synthetic cold pair to its [capture-time history position](../ops/local/README.md#history-from-a-cold-backup-pair-248).
 The importer checks the archived anchor and replay checks the source identity. Older pairs remain

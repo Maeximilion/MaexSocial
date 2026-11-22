@@ -36,6 +36,10 @@ Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues
 [local dispatch stop and outstanding attempt status](../ops/local/README.md#local-dispatch-stop-215).
 [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated stop and restore drill.
 
+[Matched-build rollback #255](handovers/sessions/2026-11-22-pilot-build-rollback.md) supplies local
+loss and recovery measurements for Task 5, including refusal of the unmodified 010 pair by build 009.
+The integrated replay and operating-target work remain under #166 and #82.
+
 Bounded Task 5 component [#241](https://github.com/Maeximilion/MaexSocial/issues/241) supplies
 [idempotent history replay on a disposable target](../ops/local/README.md#offline-deletion-and-revocation-history-replay-241).
 Incomplete history leaves the target quarantined. The integrated archive and release drill remains in #166.
