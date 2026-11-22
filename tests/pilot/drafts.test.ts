@@ -49,12 +49,13 @@ test('protected text editing preserves tenant, revision and approval boundaries'
   const latest = async () => (await db.query('SELECT * FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision DESC LIMIT 1', [a.tenant, a.draft])).rows[0];
   const snapshot = async () => {
     const result: Record<string, unknown> = {};
-    for (const table of ['drafts', 'draft_revisions', 'occurrences', 'approvals', 'attempts', 'locations', 'audit', 'budget_reservations']) {
+    for (const table of ['drafts', 'draft_revisions', 'occurrences', 'approvals', 'attempts', 'locations', 'audit', 'budgets', 'budget_reservations']) {
       result[table] = (await db.query(`SELECT to_jsonb(t) AS row FROM pilot.${table} t WHERE tenant_id=ANY($1::uuid[]) ORDER BY to_jsonb(t)::text`, [[a.tenant, b.tenant, independent.tenant]])).rows;
     }
     return result;
   };
   try {
+    await db.query('INSERT INTO pilot.budgets(tenant_id,synthetic_units) VALUES ($1,5)', [a.tenant]);
     await t.test('both roles create only a draft and revision one with stored own location, without a Google grant', async () => {
       assert.equal((await db.query('SELECT grant_active FROM pilot.locations WHERE tenant_id=$1 AND id=$2', [a.tenant, a.location])).rows[0].grant_active, false);
       const sessionCount = (await db.query('SELECT count(*) FROM pilot.sessions')).rows;
@@ -85,7 +86,7 @@ test('protected text editing preserves tenant, revision and approval boundaries'
       for (const who of [employee, manager]) {
         const valid = { text: 'Plain text', locationId: a.location, csrf: who.csrf };
         for (const locationId of [b.location, randomUUID(), a.draft, '']) assert.equal((await send(who, '/customer/drafts', { ...valid, locationId })).status, 403);
-        for (const field of ['tenantId', 'role', 'identityId', 'draftId', 'revisionId', 'revision', 'schedule', 'dueAt', 'approvalId', 'occurrenceId', 'attachment', 'upload', 'mediaUrl', 'objectReference']) {
+        for (const field of ['tenantId', 'role', 'identityId', 'draftId', 'revisionId', 'revision', 'schedule', 'dueAt', 'approvalId', 'occurrenceId', 'attachment', 'upload', 'mediaUrl', 'objectReference', 'paid', 'generate', 'recurring']) {
           assert.equal((await send(who, '/customer/drafts', { ...valid, [field]: b.location })).status, 400);
         }
         for (const text of ['', '\u0000', '😀'.repeat(1501), '\r\n' + 'x'.repeat(1500)]) {

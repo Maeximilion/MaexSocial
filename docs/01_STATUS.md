@@ -133,6 +133,10 @@ The owner configured the dedicated GitHub Project credential. Targeted API queri
 
 ## Delivered evidence and handovers
 
+[Task 6 budget fixture #218](https://github.com/Maeximilion/MaexSocial/issues/218) exercises concurrent reservation,
+atomic settlement and unresolved cost in the [isolated ADS-01 checks](../ops/local/README.md#synthetic-job-budget-218).
+The integrated Task 6 receipt and operating authority remain open under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
+
 [Session handovers](handovers/sessions/) record each session's stopping point and runnable restart instructions.
 
 - 2026-11-05 — [MS-015 / #49 repository anatomy assessment](superpowers/specs/2026-11-05-repository-anatomy-review.md) records verified reference facts, candidate recommendations and accepted owner decisions; this is maintenance assessment, not product-gate acceptance.

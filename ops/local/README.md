@@ -56,6 +56,18 @@ The verified pair appears under ignored `work/pilot/cold-backup/` with two archi
 
 Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. Starting a restore, rotating synthetic credentials, replaying independent history and measuring recovery remain part of Task 5.
 
+## Synthetic job budget (#218)
+
+Run `node --test dist/pilot/tests/pilot/budget.test.js` after building and migrating the isolated fixture.
+The test helpers lock the tenant's budget row before admitting new work. Reservations and unknown costs
+hold their full units. An atomic settlement fixes the first known cost and returns any unused units to
+available capacity. A repeated settlement leaves the stored result intact. A missing or zero budget
+admits zero work. The configured cap and reservation ledger stay in the existing tables.
+
+The draft and approval suites exercise organic text with a funded synthetic budget and verify that the
+budget and recorded reservations remain untouched. Synthetic accounting runs only inside the test fixture.
+The integrated ADS-01 receipt and external operating prerequisites remain under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
+
 ## Local dispatch stop (#215)
 
 From the worktree root with a built and migrated fixture, run `npm run pilot:stop-dispatch` to persist

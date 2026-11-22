@@ -24,6 +24,7 @@ test('private approval transaction preserves the exact proposal and refuses stal
   const owner = await connectFixture(true);
   try {
     const a = await seedTenant(owner), b = await seedTenant(owner);
+    await owner.query('INSERT INTO pilot.budgets(tenant_id,synthetic_units) VALUES ($1,5)', [a.tenant]);
     const foreign = await occurrence(owner, b);
     const actor = async (role: 'Manager' | 'Employee' = 'Manager', audience: 'customer' | 'management' = 'customer') => {
       const subject = randomUUID();
@@ -261,6 +262,8 @@ test('private approval transaction preserves the exact proposal and refuses stal
       }
     });
 
+    assert.deepEqual((await owner.query('SELECT synthetic_units FROM pilot.budgets WHERE tenant_id=$1',
+      [a.tenant])).rows, [{ synthetic_units: '5' }]);
     for (const table of ['attempts', 'budget_reservations']) {
       assert.equal((await owner.query(`SELECT count(*)::int AS n FROM pilot.${table}
         WHERE tenant_id=ANY($1::uuid[])`, [[a.tenant, b.tenant]])).rows[0].n, 0);
