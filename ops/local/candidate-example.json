@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "revision": "bb281b2c1ed3f181a3823ab183c9b6939dfd3b4b",
+  "migrationRevision": "008_attempt_resource",
+  "artifacts": {
+    "db/migrations/001_pilot.down.sql": {
+      "sha256": "a905639192c7cbbae3319b7cabe363c72467288fc042ccc6ea2d5a1e45bb263a"
+    },
+    "db/migrations/001_pilot.up.sql": {
+      "sha256": "9917f89815b72d598d9e546053faeea384c33ac5eaa387febae2ed0ac76ac7d6"
+    },
+    "db/migrations/002_customer_access.down.sql": {
+      "sha256": "b3835295d5ca24b46c981609d8e8a87e62456e1e30e9260fbb942f01ed68d2f7"
+    },
+    "db/migrations/002_customer_access.up.sql": {
+      "sha256": "5a876726776d77dc4a2e5b8ec610d0afa747c0a14ee1482aeeb294da4eb5b494"
+    },
+    "db/migrations/003_oidc_attempts.down.sql": {
+      "sha256": "d214d3ad7f0ac2cde50425c84b9cf414781fbeee46a2c788f9bee43ca28605d8"
+    },
+    "db/migrations/003_oidc_attempts.up.sql": {
+      "sha256": "26de652ed54207038b4c1cef61efe37cdc493252c599e053a943bd14e1baed8e"
+    },
+    "db/migrations/004_draft_initial_location.down.sql": {
+      "sha256": "abc1179e69811420914441f4e7df19a7e95f07b945b42aac7c6f98b1c38ea9e7"
+    },
+    "db/migrations/004_draft_initial_location.up.sql": {
+      "sha256": "6bd9cb7c66ec7431cefa797e3bed4893aea6046666090aab8ea1896e8c1ee5a1"
+    },
+    "db/migrations/005_business_facts.down.sql": {
+      "sha256": "a9e10631850ed3ee9e5a3ccd0bd95b0221e0718afc9b1b4373e37731539f70f1"
+    },
+    "db/migrations/005_business_facts.up.sql": {
+      "sha256": "b62735126aff3580a0e4296af9ad9ce46249d427d416d08f071e46847e67d5d9"
+    },
+    "db/migrations/006_auth_throttle.down.sql": {
+      "sha256": "2dec617bf8d36c8d4fe3b309226cd10b7ce2d379f37f5c8221f0c7ec16bc5f82"
+    },
+    "db/migrations/006_auth_throttle.up.sql": {
+      "sha256": "873c28f03267cb6bbad31e7c13ed36d629dc995ee07533d0877e7f0f6cccb23b"
+    },
+    "db/migrations/007_approval_destination.down.sql": {
+      "sha256": "1be310dd7bd441899c85873de8785822f592b91e6126a232862784e75be666ca"
+    },
+    "db/migrations/007_approval_destination.up.sql": {
+      "sha256": "979e9a6f1703f35656bc415d8dd81f7a3fee170d4749eb4c8be9822577ea2a94"
+    },
+    "db/migrations/008_attempt_resource.down.sql": {
+      "sha256": "ac7ae77349540ca82f7c12226f073a2a526fda70d9877b145732d11a8f1aae66"
+    },
+    "db/migrations/008_attempt_resource.up.sql": {
+      "sha256": "0a32d71b364f8ed4aaddce8f2199af26d5d51c9a5f8d5b05d63b358209bfb33c"
+    },
+    "ops/local/compose.yaml": {
+      "sha256": "43140250975765227e7e8135adf1586529098189dae6f59fb508ae47482ca938"
+    },
+    "ops/local/keycloak-realm.json": {
+      "sha256": "7eb79a69455a47269203d5cfa3d8c3e227d967843ac21c379e45d2c89b6bf464"
+    },
+    "ops/local/keycloak-step-up.json": {
+      "sha256": "99de790a09bea1805f932f466a8bf75ab237ff7ecf167d8509e9f9a7e2d2380a"
+    },
+    "ops/local/pg_hba.conf": {
+      "sha256": "51f0c418a0d73f9199861b3c9ab031b62666932ebc410c47ec8a8438854954ae"
+    },
+    "ops/local/stack.ts": {
+      "sha256": "9f66eaa38074f1c516d0edeac15cae8b8feb0bff4118ad2de44dac8a0389562c"
+    },
+    "ops/local/start-postgres.sh": {
+      "sha256": "57069c9364f9787a14ab3bfa71144326b27d1699924e4349c55f558877911ef2"
+    },
+    "package-lock.json": {
+      "sha256": "f19f6a5312e8429c20525cf3107db351c1f8d94fac797f827d9d641909a33150"
+    },
+    "package.json": {
+      "sha256": "8d8c8992060a2554ad4fe9921f8dc7df316e83e07a16f0cf41a2ea8623ec7f35"
+    },
+    "scripts/pilot-db.ts": {
+      "sha256": "5dae72dff0d54ca8669cf62584d229bd8a463caaa36221d42dd1cc1ae8ab4708"
+    },
+    "tsconfig.pilot.json": {
+      "sha256": "a1cb2fc63d708a89070ed5538fb8808d7f52207033e047a6315e7a1e4ffed75d"
+    }
+  },
+  "imagePins": {
+    "identity-db": {
+      "reference": "postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994"
+    },
+    "keycloak": {
+      "reference": "quay.io/keycloak/keycloak:26.8.2@sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b"
+    },
+    "mailbox": {
+      "reference": "axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231"
+    },
+    "postgres": {
+      "reference": "postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994"
+    },
+    "runner": {
+      "reference": "node:24.22.2-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9"
+    }
+  },
+  "evidence": {
+    "foundation": "https://github.com/Maeximilion/MaexSocial/actions/runs/45011395093/attempts/1",
+    "pilot": "https://github.com/Maeximilion/MaexSocial/actions/runs/45011395106/attempts/1"
+  },
+  "production": {
+    "authorizedTarget": null,
+    "promotionIdentity": null,
+    "deployableArtifactSha256": null,
+    "rollbackArtifactSha256": null,
+    "signatureEvidence": null,
+    "releaseApproval": null
+  }
+}

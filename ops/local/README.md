@@ -283,6 +283,36 @@ The protected HTTPS read denies the previous session for the removed membership.
 of the same identity remains usable. The [authenticated integration](https://github.com/Maeximilion/MaexSocial/issues/221)
 owns real identity/MFA and recipient binding, invitation redemption and the public Manager mutation.
 
+## Local pilot candidate manifest (#220)
+
+From the repository root, use Python 3.12+, Git with the candidate commit available locally,
+Docker Compose, and a GitHub CLI session with Actions read access. The [example record](candidate-example.json) covers
+commit `bb281b2c1ed3f181a3823ab183c9b6939dfd3b4b` and migration `008_attempt_resource`.
+Its [Foundation attempt](https://github.com/Maeximilion/MaexSocial/actions/runs/45011395093/attempts/1)
+and [pilot attempt](https://github.com/Maeximilion/MaexSocial/actions/runs/45011395106/attempts/1)
+both succeeded on that exact main push. The pilot includes the empty migration up/down/up drill,
+storage suite and retained-volume restart.
+
+Create the ignored `work/` directory if needed. Capture writes JSON to stdout after both checks pass.
+
+```text
+python scripts/pilot_candidate.py capture bb281b2c1ed3f181a3823ab183c9b6939dfd3b4b https://github.com/Maeximilion/MaexSocial/actions/runs/45011395093/attempts/1 https://github.com/Maeximilion/MaexSocial/actions/runs/45011395106/attempts/1 > work/pilot-candidate.json
+python scripts/pilot_candidate.py verify work/pilot-candidate.json
+python scripts/pilot_candidate.py verify ops/local/candidate-example.json
+python -m unittest discover -s tests -p test_pilot_candidate.py -v
+```
+
+The SHA-256 values cover committed Git blob bytes for the Node and Compose fixture inputs, the
+fixture setup and migration runner, and every paired up/down SQL file. Docker Compose renders the
+committed configuration to verify the digest-pinned image reference for each service, including
+the profiled runner. The final migration prefix and name identify the candidate schema. Verification
+fails for a changed digest or image pin, wrong migration revision, missing proof or proof for a
+different commit. An unavailable Actions attempt also fails verification.
+
+The format-1 record leaves the authorized target, promotion identity, deployable and rollback
+artifact digests, signature evidence and release approval as explicit nulls. [#82](https://github.com/Maeximilion/MaexSocial/issues/82)
+retains the separately authorized staged assessment and release decision.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.

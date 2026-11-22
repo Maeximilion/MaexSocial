@@ -43,6 +43,8 @@ November 22 bounded content delivery [#211](https://github.com/Maeximilion/MaexS
 
 Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues/213) records [private local GBP observations](../ops/local/README.md#private-gbp-reconciliation-213) for existing attempts. A single matching fake LIVE result confirms publication in the local fixture. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains dispatch, terminal export and integrated acceptance. G3 remains open.
 
+Bounded [#220](https://github.com/Maeximilion/MaexSocial/issues/220) supplies a [verifiable local candidate record](../ops/local/README.md#local-pilot-candidate-manifest-220) for the fixture inputs, migration revision and matching Foundation/pilot attempts. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains the staged assessment and release evidence.
+
 November 22 bounded Task 4 delivery [#214](https://github.com/Maeximilion/MaexSocial/issues/214) shows
 [stored publication outcomes](../ops/local/README.md#customer-publication-outcomes-214) to both customer roles
 in their active workspace. Local HTTPS and browser checks cover missing and conflicting evidence,
