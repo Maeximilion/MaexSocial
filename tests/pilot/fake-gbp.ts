@@ -1,15 +1,8 @@
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import type { GbpAttempt, GbpObservation, GbpProviderState, GbpReadback } from '../../packages/contracts/pilot.js';
 
-export interface FakeAttempt {
-  tenantId: string;
-  occurrenceId: string;
-  attemptId: string;
-  location: string;
-}
-
-type ProviderState = 'PROCESSING' | 'LIVE' | 'REJECTED';
-type Frame = { afterMs: number; candidates: readonly ProviderState[] };
+type Frame = { afterMs: number; candidates: readonly GbpProviderState[] };
 
 interface Scenario {
   clock?: () => number;
@@ -17,14 +10,7 @@ interface Scenario {
   loseReply?: boolean;
 }
 
-interface Observation {
-  location: string;
-  observedAt: number;
-  correlation: 'missing' | 'unique' | 'ambiguous';
-  candidates: { resourceName: string; state: ProviderState }[];
-}
-
-export class FakeGbp {
+export class FakeGbp implements GbpReadback {
   private readonly db: DatabaseSync;
   private readonly clock: () => number;
   private readonly framesJson: string;
@@ -46,7 +32,7 @@ export class FakeGbp {
     ) STRICT`);
   }
 
-  async create(intent: FakeAttempt) {
+  async create(intent: GbpAttempt) {
     const { tenantId, occurrenceId, attemptId, location } = intent;
     if (![tenantId, occurrenceId, attemptId, location].every(id => typeof id === 'string' && id.trim())) {
       throw new Error('Fake create requires tenant, occurrence, attempt and location identifiers');
@@ -65,7 +51,7 @@ export class FakeGbp {
     return Number(row.total);
   }
 
-  async readback(attempt: FakeAttempt & { resourceName?: string }): Promise<Observation> {
+  async readback(attempt: GbpAttempt & { resourceName?: string }): Promise<GbpObservation> {
     const { tenantId, occurrenceId, attemptId, location } = attempt;
     const observedAt = this.clock();
     const rows = this.db.prepare(`SELECT id, accepted_at, frames FROM calls
