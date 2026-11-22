@@ -10,6 +10,10 @@
 
 ## Current work
 
+November 22 bounded Task 3 delivery [#212](https://github.com/Maeximilion/MaexSocial/issues/212) adds an
+[atomic hold and audit for one occurrence](handovers/sessions/2026-11-22-operator-hold.md) in the isolated fixture.
+Integrated identity, device verification and private management acceptance remain in [#164](https://github.com/Maeximilion/MaexSocial/issues/164).
+
 Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
 [private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
 synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)
