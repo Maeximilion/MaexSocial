@@ -77,10 +77,13 @@ test('fixture validation rejects altered target, expired fixture and unknown sch
 test('runtime guard rejects an added external network on every fixture service', () => {
   const f = { id: 'a'.repeat(32), project: `maex-pilot-${'a'.repeat(32)}` } as Fixture;
   const networks = ['application', 'identity'].map(name => ({ Id: name, Name: `${f.project}_${name}`,
-    Internal: true, Labels: { 'com.docker.compose.project': f.project } }));
+    Internal: true, Labels: { 'com.docker.compose.project': f.project },
+    Containers: Object.fromEntries((name === 'application' ? ['postgres'] : ['identity-db', 'keycloak', 'mailbox'])
+      .map(service => [service, {}])) }));
   const containers = ['postgres', 'identity-db', 'keycloak', 'mailbox'].map(name => ({
+    Id: name,
     Config: { Labels: { 'org.maexsocial.fixture': f.id, 'com.docker.compose.project': f.project, 'com.docker.compose.service': name } },
-    NetworkSettings: { Ports: {}, Networks: { [`${f.project}_${name === 'postgres' ? 'application' : 'identity'}`]: { NetworkID: name === 'postgres' ? 'application' : 'identity' } } }
+    NetworkSettings: { Ports: {} as Record<string, unknown>, Networks: { [`${f.project}_${name === 'postgres' ? 'application' : 'identity'}`]: { NetworkID: name === 'postgres' ? 'application' : 'identity' } } }
   }));
   assert.doesNotThrow(() => verifyTopology(f, containers, networks));
   for (let index = 0; index < containers.length; index++) {
@@ -90,6 +93,16 @@ test('runtime guard rejects an added external network on every fixture service',
   }
   assert.throws(() => verifyTopology(f, containers.slice(1), networks));
   assert.throws(() => verifyTopology(f, containers, networks.map(n => ({ ...n, Internal: false }))));
+
+  const restore: Fixture = { ...f, restoreTarget: true };
+  assert.deepEqual(verifyTopology(restore, containers, networks), { internalNetworks: 2, publishedHostPorts: 0 });
+  const withExtraEndpoint = structuredClone(networks);
+  withExtraEndpoint[0]!.Containers = { postgres: {}, unexpected: {} };
+  assert.throws(() => verifyTopology(restore, containers, withExtraEndpoint), /Unexpected restore network attachments/);
+  withExtraEndpoint[0]!.Containers = { unexpected: {} };
+  assert.throws(() => verifyTopology(restore, containers, withExtraEndpoint), /Fixture service is not isolated/);
+  containers[0]!.NetworkSettings.Ports['5432/tcp'] = [{ HostPort: '5432' }];
+  assert.throws(() => verifyTopology(restore, containers, networks), /Fixture service is not isolated/);
 });
 
 test('diagnostics preserve failures without printing generated secrets or private keys', () => {

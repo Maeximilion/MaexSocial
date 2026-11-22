@@ -178,7 +178,7 @@ async function capture(): Promise<void> {
     || JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}']));
   if (typeof endpoint !== 'string' || !/^(unix|npipe):\/\//.test(endpoint)) throw new Error('Cold backup requires a local Docker socket.');
 
-  const f = await initialize(true);
+  const f = await initialize('backup');
   const expected = await compatibility(f);
   const imageId = (image: string) => docker(['image', 'inspect', '--format', '{{.Id}}', image]);
   const postgresId = imageId(postgresImage);

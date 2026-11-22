@@ -74,6 +74,40 @@ Run `node --test dist/pilot/tests/pilot/dispatch-stop.test.js` to check syntheti
 counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:down` and
 `npm run pilot:up` to verify that the stop and count survive a retained-volume restart.
 
+## Historical quarantine on a disposable restore target (#217)
+
+Use a fresh local worktree with no existing `work/pilot/`. This mode uses a new Docker project and an explicit
+restore marker in both the manifest and the AppDB. Its Docker networks are internal and the services publish
+no host ports. The application role cannot log in or connect to the database. A normal fixture cannot be converted in place.
+The regression below seeds invented historical rows into a fresh target. To use a separately seeded
+synthetic target, run the quarantine command directly after seeding as the fixture owner. Keep the
+independent fake provider ledger outside the database.
+
+```text
+npm run pilot:build
+npm run pilot:up -- restore-target
+npm run pilot:migrate -- up
+node --test dist/pilot/tests/pilot/restore-quarantine.test.js
+npm run pilot:restore-quarantine
+npm run pilot:down
+```
+
+The quarantine command takes no target arguments. The host verifies the fixture's internal Docker
+networks, attached containers and port mappings before starting the isolated runner. The runner verifies
+the database marker and application role, commits the dispatch stop, and sets every occurrence to
+`quarantined` in the same transaction. It records each prior
+state in the restore-only `restore_previous_state` column, including `exported`, and preserves existing
+approvals, attempts, and audit history. Every historical row is held even if independent history is
+incomplete or a provider lookup yields no match. The output reports the observed Docker network and
+published-port counts, application login, dispatch stop and rows quarantined by the invocation. A repeat
+on the same rows reports zero. The fixture remains offline.
+
+The focused test invokes the command against an empty and a populated scratch database. It covers all
+occurrence states, two tenants, a missing attempt after a fake acceptance, a negative worker readback,
+stable independent create counts, repeat execution, and refusal of an ordinary or mismarked database.
+The ordinary pilot suite exercises refusal only. Paired restore transport, deletion/revocation replay, and
+a separately authorized release decision remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
 ## Private GBP reconciliation (#213)
 
 The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.

@@ -8,12 +8,15 @@ import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixtur
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-export async function initialize(forBackup = false): Promise<Fixture> {
+export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' = 'ordinary'): Promise<Fixture> {
+  const forBackup = purpose === 'backup';
+  const restoreTarget = purpose === 'restore-target';
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
   const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', expiresAt: Date.now() + 86_400_000,
     ownerPassword: secret(), appPassword: secret(), identityPassword: secret(), keycloakPassword: secret() };
+  if (restoreTarget) f.restoreTarget = true;
   f.project = `maex-pilot-${f.id}`;
   const save = (name: string, value: string) => writeFile(`work/pilot/${name}`, value, { mode: 0o600, flag: 'wx' });
   const expiry = new Date(f.expiresAt).toISOString();
@@ -88,14 +91,15 @@ export async function initialize(forBackup = false): Promise<Fixture> {
   docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
     postgresImage, `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`, '/fixture/customer.key']);
   // Only generated hex values enter bootstrap SQL. No supplied SQL or connection URI is accepted.
-  await save('init-app.sql', `CREATE ROLE pilot_app LOGIN PASSWORD '${f.appPassword}' VALID UNTIL '${expiry}';
+  const appRole = restoreTarget ? 'NOLOGIN' : `LOGIN PASSWORD '${f.appPassword}' VALID UNTIL '${expiry}'`;
+  await save('init-app.sql', `CREATE ROLE pilot_app ${appRole};
 ALTER ROLE pilot_owner VALID UNTIL '${expiry}';
 REVOKE ALL ON DATABASE pilot_fixture FROM PUBLIC;
-GRANT CONNECT ON DATABASE pilot_fixture TO pilot_app;
+${restoreTarget ? '' : 'GRANT CONNECT ON DATABASE pilot_fixture TO pilot_app;'}
 REVOKE ALL ON DATABASE postgres, template1 FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-CREATE TABLE public.fixture_identity (id text PRIMARY KEY);
-INSERT INTO public.fixture_identity VALUES ('${f.id}');\n`);
+CREATE TABLE public.fixture_identity (id text PRIMARY KEY, restore_target boolean NOT NULL);
+INSERT INTO public.fixture_identity VALUES ('${f.id}', ${restoreTarget});\n`);
   await save('init-identity.sql', `CREATE ROLE keycloak LOGIN PASSWORD '${f.keycloakPassword}' VALID UNTIL '${expiry}';
 ALTER ROLE identity_owner VALID UNTIL '${expiry}';
 ALTER DATABASE identity_fixture OWNER TO keycloak;
@@ -142,18 +146,22 @@ async function main(): Promise<void> {
     console.log('Identity and mailbox TLS readiness verified.');
     return;
   }
-  if (!['up', 'down'].includes(action ?? '') || process.argv.length !== 3) throw new Error('Usage: pilot:up or pilot:down');
+  const restoreTarget = action === 'up' && process.argv.length === 4 && process.argv[3] === 'restore-target';
+  if (!restoreTarget && (process.argv.length !== 3 || (action !== 'up' && action !== 'down'))) {
+    throw new Error('Usage: pilot:up [-- restore-target] or pilot:down');
+  }
   let f: Fixture;
   try { f = await loadFixture(action === 'down'); }
   catch (error) {
     if (action !== 'up' || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    f = await initialize();
+    f = await initialize(restoreTarget ? 'restore-target' : 'ordinary');
   }
   if (action === 'down') {
     compose(f, ['down']);
     console.log('Isolated fixture stopped; database, mailbox and provider state retained.');
     return;
   }
+  if ((f.restoreTarget === true) !== restoreTarget) throw new Error('Existing fixture has a different purpose.');
   try {
     if (!(await stat('work/pilot/keycloak-realm.json')).isFile()) throw new Error('Not a file');
   } catch {
@@ -163,7 +171,8 @@ async function main(): Promise<void> {
   }
   compose(f, ['up', '-d', '--wait', '--wait-timeout', '120']);
   console.log(await runIsolated(['dist/pilot/ops/local/stack.js', 'check']));
-  console.log('Isolated fixture ready; no host ports or external runtime route.');
+  console.log(restoreTarget ? 'Restore fixture services ready; use pilot:restore-quarantine to verify the target.'
+    : 'Isolated fixture ready; no host ports or external runtime route.');
 }
 if (require.main === module) main().catch(async error => {
   console.error(error instanceof SyntaxError ? 'Invalid fixture manifest.' : safeDiagnostics(String(error)));

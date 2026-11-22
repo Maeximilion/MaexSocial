@@ -13,6 +13,7 @@
     "pilot:backup": "npm run pilot:build && node dist/pilot/ops/local/backup.js",
     "pilot:stop-dispatch": "node dist/pilot/ops/local/dispatch-control.js stop",
     "pilot:dispatch-status": "node dist/pilot/ops/local/dispatch-control.js status",
+    "pilot:restore-quarantine": "node dist/pilot/ops/local/recover.js",
     "pilot:test": "node --test --test-concurrency=1 dist/pilot/tests/pilot/*.test.js"
   },
   "dependencies": {
