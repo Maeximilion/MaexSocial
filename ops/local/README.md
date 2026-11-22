@@ -147,6 +147,25 @@ explicitly replacing that ID. The test inspects the actual mailbox message, the 
 both invitation generations and unchanged memberships.
 [#221](https://github.com/Maeximilion/MaexSocial/issues/221) owns authenticated link handling and acceptance.
 
+## Private Employee membership revocation (#210)
+
+After the strict build and fixture migration, run `node --test dist/pilot/tests/pilot/employees.test.js`. The test invokes
+`revokeEmployeeMembership` in a real PostgreSQL transaction using seeded Manager and Employee sessions.
+The private entry point takes only a target membership ID, an already parsed customer request binding and
+server-owned fixture dependencies. The actor's locked session selects the tenant. The fixture supplies a
+canonical recipient email for the locked target subject. Missing bindings deny the removal.
+
+The transaction locks both identities in order, then the tenant, memberships and actor session. The exclusive
+tenant lock serializes the invitation update with issuance using the tenant authority lock. The operation checks
+current Manager authority, stored CSRF, enrolled proof up to five minutes old and the current Employee role.
+It disables the selected membership, advances its version, cancels that recipient's unexpired, unconsumed
+and unrevoked Employee invitations in the tenant, and records one activity with actor and target membership
+in append-only audit. Failure rolls back the writes. Repeating a committed removal returns false.
+
+The protected HTTPS read denies the previous session for the removed membership. Another active membership
+of the same identity remains usable. The [authenticated integration](https://github.com/Maeximilion/MaexSocial/issues/221)
+owns real identity/MFA and recipient binding, invitation redemption and the public Manager mutation.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.

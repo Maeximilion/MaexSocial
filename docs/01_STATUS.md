@@ -16,9 +16,17 @@ synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/lo
 uses a current Manager and inspects the stored bindings and captured messages. [#221](https://github.com/Maeximilion/MaexSocial/issues/221)
 retains authenticated integration and acceptance under [#123](https://github.com/Maeximilion/MaexSocial/issues/123).
 
+November 22 bounded Task 2B delivery [#210](https://github.com/Maeximilion/MaexSocial/issues/210) provides
+[private Employee membership revocation](../ops/local/README.md#private-employee-membership-revocation-210).
+The isolated transaction invalidates only the selected tenant's membership and matching pending Employee
+invitations, records audit, and denies the next protected read for that grant. [#221](https://github.com/Maeximilion/MaexSocial/issues/221)
+retains real identity/MFA and the public Manager mutation. G3 acceptance remains open.
+
 November 21 test maintenance [#155](https://github.com/Maeximilion/MaexSocial/issues/155) corrects the two OIDC elapsed assertions while retaining their strict 6500 ms limit. The [delivery handover](handovers/sessions/2026-11-21-oidc-monotonic-time.md) preserves both historical observations and the closure rationale. The original host cause remains undetermined. G3 and G5 acceptance remain open.
 
 November 22 bounded content delivery [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records the exact Manager proposal through an unmounted transaction exercised with local fixtures. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) retain the authenticated action and reapproval in #223 after #131. Integrated Task 2 and G3/G5 remain open.
+
+November 22 bounded content delivery [#211](https://github.com/Maeximilion/MaexSocial/issues/211) implements [private occurrence rescheduling](superpowers/plans/2026-11-06-task-2-deliveries.md#private-occurrence-reschedule-211). Changes to an unclaimed occurrence invalidate approval eligibility while preserving its identity, immutable history and any hold or quarantine. Authenticated integration and reapproval remain under #223 and #131.
 
 November 21 bounded content delivery [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged at `4391dd4`. The read-only Manager preview shows the proposed current draft revision with the actual destination and both stored time interpretations. The [local handover](handovers/sessions/2026-11-21-approval-preview.md) preserves the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). The [Claude API receipt](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) and [candidate pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) record the later integration evidence. #124 retains actual approval and #131 retains identity and MFA. G3–G5 remain open.
 

@@ -19,12 +19,18 @@ The local Task 6 receipt supplies a tested candidate for separately authorized s
 
 ## Planning maturity
 
+Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
+[private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
+The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.
+
 Bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexSocial/pull/157) merged the internal
 [PostgreSQL abuse-limit contract](../ops/local/README.md#internal-accountsource-throttles-154): accepted per-account
 and per-source limits, atomic denied-attempt charging and restart continuity. This is not public authentication,
 full ACCESS-09 or enrollment/recovery-generation evidence; #131/#149, integrated Task 2 and G3/G5 stay open.
 
 Bounded Task 2C component [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records an immutable approval of the current Manager proposal in the isolated pilot. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) cover the private operation. #223 retains authenticated approval and reapproval after #131.
+
+Bounded Task 2C component [#211](https://github.com/Maeximilion/MaexSocial/issues/211) validates changes to the schedule and destination of an unclaimed occurrence in the isolated pilot. [Contract and checks](superpowers/plans/2026-11-06-task-2-deliveries.md#private-occurrence-reschedule-211) cover time-zone validation, preservation of occurrence identity and approval history, and refusal after claim. #223 retains authenticated integration.
 
 Bounded Task 2C component [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged the Manager's read-only preview of the proposed draft revision, actual destination and local/UTC occurrence time. [Evidence and limits](handovers/sessions/2026-11-21-approval-preview.md) preserve actual approval and reapproval under #124 and integrated identity/MFA under #131.
 
