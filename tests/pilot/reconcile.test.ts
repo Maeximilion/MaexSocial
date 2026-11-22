@@ -172,6 +172,40 @@ test('stored GBP attempts reconcile without a second create or a return to expor
         assert.equal(fake.createCount(a.tenant, intent.occurrenceId), 1);
       } finally { fake.close(); }
     });
+
+    await t.test('a blocked readback leaves both rows unlocked and discards stale resource correlation', async () => {
+      const intent = await seed(a);
+      const fake = new FakeGbp(path, { clock: () => claimedAt.getTime(), frames: [{ afterMs: 0, candidates: ['LIVE'] }] });
+      try {
+        await fake.create(intent);
+        let observed!: () => void, release!: () => void;
+        const reachedProvider = new Promise<void>(resolve => { observed = resolve; });
+        const releaseProvider = new Promise<void>(resolve => { release = resolve; });
+        const reading = reconcileOccurrence(connectFixture, intent.occurrenceId, {
+          async readback(attempt) {
+            const result = await fake.readback(attempt);
+            observed();
+            await releaseProvider;
+            return result;
+          },
+        });
+        await Promise.race([reachedProvider, reading.then(() => assert.fail('readback did not start'))]);
+        const resource = `${location}/localPosts/a-different-receipt`;
+        try {
+          await owner.query('BEGIN');
+          await owner.query('SELECT id FROM pilot.occurrences WHERE id=$1 FOR UPDATE NOWAIT', [intent.occurrenceId]);
+          await owner.query('SELECT id FROM pilot.attempts WHERE occurrence_id=$1 FOR UPDATE NOWAIT', [intent.occurrenceId]);
+          await owner.query("UPDATE pilot.occurrences SET state='quarantined' WHERE id=$1", [intent.occurrenceId]);
+          await owner.query('UPDATE pilot.attempts SET resource_name=$2 WHERE occurrence_id=$1', [intent.occurrenceId, resource]);
+          await owner.query('COMMIT');
+        } catch (error) { await owner.query('ROLLBACK'); throw error; }
+        finally { release(); await reading; }
+        assert.equal(await reading, 'unknown');
+        assert.deepEqual(await stored(intent.occurrenceId), { state: 'quarantined', outcome: 'unknown',
+          observed_at: null, resource_name: resource, attempt_id: intent.attemptId });
+        assert.equal(fake.createCount(a.tenant, intent.occurrenceId), 1);
+      } finally { fake.close(); }
+    });
     assert.deepEqual(await readStop(), originalStop);
   } finally { await owner.end(); }
 });

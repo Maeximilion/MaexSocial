@@ -1,10 +1,13 @@
 import type { Client } from 'pg';
-import type { GbpReadback } from '../../../packages/contracts/pilot.js';
+import type { GbpObservation, GbpReadback } from '../../../packages/contracts/pilot.js';
 
 type Outcome = 'unknown' | 'pending' | 'confirmed' | 'rejected';
 
 interface StoredAttempt {
   id: string;
+  tenant_id: string;
+  approval_id: string;
+  state: string;
   provider_location: string | null;
   resource_name: string | null;
   outcome: Outcome;
@@ -16,39 +19,49 @@ interface StoredAttempt {
 export async function reconcileOccurrence(connect: () => Promise<Client>, occurrenceId: string,
   provider: GbpReadback): Promise<Outcome | null> {
   if (typeof occurrenceId !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(occurrenceId)) return null;
+  const reader = await connect();
+  const original = await readAttempt(reader, occurrenceId).finally(() => reader.end());
+  if (!original || finalOutcome(original)) return original?.outcome ?? null;
+
+  const { provider_location: location, resource_name: resourceName, tenant_id: tenantId } = original;
+  const observation = location?.trim() ? await provider.readback({ tenantId, occurrenceId, attemptId: original.id, location,
+    ...(resourceName === null ? {} : { resourceName }) }) : null;
+
   const db = await connect();
   try {
     await db.query('BEGIN');
     // Hold, claim and export serialize on this row before accessing the attempt.
-    const occurrence = (await db.query<{ tenant_id: string; state: string }>(
-      'SELECT tenant_id,state FROM pilot.occurrences WHERE id=$1 FOR UPDATE', [occurrenceId])).rows[0];
-    const result = occurrence ? await reconcileStored(db, occurrence.tenant_id, occurrenceId, occurrence.state, provider) : null;
+    const locked = await db.query('SELECT id FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [tenantId, occurrenceId]);
+    const current = locked.rowCount === 1 ? await readAttempt(db, occurrenceId, true) : undefined;
+    const sameBinding = current?.id === original.id && current.approval_id === original.approval_id &&
+      current.resource_name === original.resource_name;
+    const result = sameBinding && !finalOutcome(current) ? await persist(db, occurrenceId, current, observation) : current?.outcome ?? null;
     await db.query('COMMIT');
     return result;
   } catch (error) { await db.query('ROLLBACK'); throw error; }
   finally { await db.end(); }
 }
 
-async function reconcileStored(db: Client, tenantId: string, occurrenceId: string, state: string,
-  provider: GbpReadback): Promise<Outcome | null> {
-  if (!['in_flight', 'unknown', 'pending', 'confirmed', 'rejected', 'quarantined'].includes(state)) return null;
-  const attempt = (await db.query<StoredAttempt>(`SELECT a.id,a.resource_name,a.outcome,a.claimed_at,a.observed_at,p.provider_location
-    FROM pilot.attempts a JOIN pilot.approvals p
-      ON p.tenant_id=a.tenant_id AND p.occurrence_id=a.occurrence_id AND p.id=a.approval_id
-    WHERE a.tenant_id=$1 AND a.occurrence_id=$2 FOR UPDATE OF a`, [tenantId, occurrenceId])).rows[0];
-  if (!attempt) return null;
-  if (attempt.outcome === 'confirmed' || attempt.outcome === 'rejected' || state === 'confirmed' || state === 'rejected') {
-    return attempt.outcome;
-  }
+async function readAttempt(db: Client, occurrenceId: string, lockAttempt = false): Promise<StoredAttempt | undefined> {
+  return (await db.query<StoredAttempt>(`SELECT o.state,a.id,a.tenant_id,a.approval_id,a.resource_name,a.outcome,
+    a.claimed_at,a.observed_at,p.provider_location FROM pilot.occurrences o
+    JOIN pilot.attempts a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id
+    JOIN pilot.approvals p ON p.tenant_id=a.tenant_id AND p.occurrence_id=a.occurrence_id AND p.id=a.approval_id
+    WHERE o.id=$1 AND o.state IN ('in_flight','unknown','pending','confirmed','rejected','quarantined')
+    ${lockAttempt ? 'FOR UPDATE OF a' : ''}`, [occurrenceId])).rows[0];
+}
 
+function finalOutcome({ state, outcome }: StoredAttempt): boolean {
+  return state === 'confirmed' || state === 'rejected' || outcome === 'confirmed' || outcome === 'rejected';
+}
+
+async function persist(db: Client, occurrenceId: string, attempt: StoredAttempt, observation: GbpObservation | null): Promise<Outcome> {
+  const { provider_location: location, tenant_id: tenantId, state } = attempt;
   let outcome: Outcome = 'unknown';
   let resourceName = attempt.resource_name;
   let observedAt = attempt.observed_at;
-  const location = attempt.provider_location;
-  if (location?.trim()) {
-    const observation = await provider.readback({ tenantId, occurrenceId, attemptId: attempt.id, location,
-      ...(resourceName === null ? {} : { resourceName }) });
-    const time = observation?.observedAt;
+  if (observation && location) {
+    const time = observation.observedAt;
     if (!Number.isSafeInteger(time) || !Number.isFinite(new Date(time).getTime())) throw new Error('Invalid GBP observation time');
     if (time < attempt.claimed_at.getTime() || (observedAt && time < observedAt.getTime())) return attempt.outcome;
     observedAt = new Date(time);
