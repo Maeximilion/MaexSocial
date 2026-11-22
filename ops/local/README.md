@@ -40,6 +40,19 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Local readiness recovery (#219)
+
+Use a fresh task worktree without `work/pilot`, the pinned Node and npm, installed locked dependencies, and the pinned Compose images already present in the local Docker cache.
+
+~~~text
+npm run pilot:build
+npm run --silent pilot:readiness
+~~~
+
+The command creates a dedicated fixture on the local Docker socket, verifies its isolated topology, and probes the Mailpit HTTPS info endpoint from its internal runner. It expects `ready` before stopping the mailbox, `unavailable` after Compose stops it, and `ready` after Compose starts the same container. It refuses an existing fixture and stops its own stack on completion or failure. The usual fixture files and volumes are retained in their isolated namespace.
+
+The three JSON records contain the phase, UTC observation time, component, status and elapsed milliseconds. Each duration begins before the corresponding Compose action and includes the observation overhead. The output carries no HTTPS body, request identifiers or fixture credentials. These measurements describe one local mailbox run. Staging activation and alert response belong to [#82](https://github.com/Maeximilion/MaexSocial/issues/82) after [#166](https://github.com/Maeximilion/MaexSocial/issues/166) and operator approval. Production availability and recovery targets require a separate decision.
+
 ## Synthetic cold backup pair (#216)
 
 Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`.

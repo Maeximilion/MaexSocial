@@ -42,6 +42,12 @@ export function docker(args: string[], env: NodeJS.ProcessEnv = process.env): st
   }
 }
 
+export function usesLocalDocker(): boolean {
+  const endpoint = (!process.env.DOCKER_CONTEXT && process.env.DOCKER_HOST)
+    || JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}']));
+  return typeof endpoint === 'string' && /^(unix|npipe):\/\//.test(endpoint);
+}
+
 export function safeDiagnostics(text: string): string {
   // This fixture generates only 64-hex credentials; never use this as a general log sanitizer.
   return text.replace(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC )?PRIVATE KEY-----|$)/g, '[private key]')
