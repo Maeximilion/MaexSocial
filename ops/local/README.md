@@ -294,6 +294,21 @@ in an independent SQLite fake. B commits one export audit and returns its approv
 the source caller. The drill compares both bindings with the offline restored rows and
 rechecks the original pair, source counts and fake after the target probes.
 
+The same drill also exercises post-capture fact deletion and device revocation
+([#277](https://github.com/Maeximilion/MaexSocial/issues/277)). Before capture, it inserts
+two distinct fact revisions and one synthetic device in each case. After capture,
+it reads the pair's actual history sequence, writes a separate two-event interval,
+and revokes the first source device through the fixture-owner control. The source retains
+all four fact revisions. The deletion record is a synthetic instruction for recovery.
+
+The ordinary importer restores both databases, all four revisions and both active devices
+into the offline target. Missing history, a correctly hashed incomplete interval, and a wrong
+digest each leave the target held without a replay receipt. The complete source-bound interval
+physically removes both targeted fact rows and revokes the target device at version 2.
+The other location's revisions and device remain intact. An identical replay applies zero
+events before and after both target databases restart. The drill verifies the original pair
+manifest, both archives, the capture journal and the independent later interval.
+
 The target uses outer PostgreSQL role and network controls. The normal application
 connector is refused before either private operation reaches its domain checks or returns
 text. Read-only fixture-owner queries independently verify snapshot state and counts.

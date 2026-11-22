@@ -8,7 +8,7 @@ import { claimExport } from '../../apps/web/src/server/occurrence-export.js';
 import type { CustomerRequest } from '../../apps/web/src/server/request.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { capture, type Pair } from '../../ops/local/backup.js';
-import { compose, connectFixture, loadFixture, runIsolatedFixture, safeDiagnostics, type Fixture } from '../../ops/local/fixture.js';
+import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
 import { restore } from '../../ops/local/restore.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
 import { FakeGbp } from './fake-gbp.js';
@@ -168,7 +168,10 @@ async function drill(targetDir: string) {
   const input = { a: binding(), b: binding(), cases: [] as HistoryCase[] };
   const fakeDir = resolve('work/restore-before-effects-fake');
   const save = (flag: 'w' | 'wx') => writeFile(inputPath, JSON.stringify(input), { flag, mode: 0o600 });
-  const stage = (fixture: Fixture, name: string) => JSON.parse(runIsolatedFixture(fixture, [command, name]).output);
+  const stage = (fixture: Fixture, name: string) => {
+    verifyContainers(fixture);
+    return JSON.parse(compose(fixture, ['run', '--rm', '--no-deps', '--pull', 'never', 'runner', 'node', command, name]));
+  };
   await mkdir('work', { recursive: true });
   await mkdir(fakeDir);
   await save('wx');
@@ -284,6 +287,7 @@ async function drill(targetDir: string) {
       const attempt = spawnSync(process.execPath, replayArgs(digest), { encoding: 'utf8', timeout: 45_000 });
       assert.equal(attempt.status, 1);
       assert.equal(attempt.stdout, '');
+      assert.equal(attempt.stderr.trim(), 'Fixture restore quarantine refused or failed.');
       assert.deepEqual(stage(t, 'history'), held);
     };
     refuseReplay(historyDigest);
@@ -293,14 +297,15 @@ async function drill(targetDir: string) {
     await writeFile(replayPath, historyBytes);
     refuseReplay('0'.repeat(64));
 
+    const appliedState = {
+      facts: snapshot.facts.filter(row => row.location_id === b.location),
+      devices: revokedDevices,
+      state: { ...held.state, receipt: historyDigest },
+    };
     const checkReplay = (applied: number) => {
       assert.deepEqual(JSON.parse(node(...replayArgs(historyDigest))),
         { quarantined: 0, ...quarantine, history: { applied } });
-      assert.deepEqual(stage(t, 'history'), {
-        facts: snapshot.facts.filter(row => row.location_id === b.location),
-        devices: revokedDevices,
-        state: { ...held.state, receipt: historyDigest },
-      });
+      assert.deepEqual(stage(t, 'history'), appliedState);
     };
     checkReplay(2);
     checkReplay(0);
@@ -309,6 +314,7 @@ async function drill(targetDir: string) {
     compose(t, ['stop', 'postgres', 'identity-db']);
     compose(t, ['start', '--wait', '--wait-timeout', '90', 'postgres', 'identity-db']);
     checkIdentityLock();
+    assert.deepEqual(stage(t, 'history'), appliedState);
     checkReplay(0);
     assert.equal(await readFile(replayPath, 'utf8'), historyBytes);
     const repeated = stage(t, 'target');
