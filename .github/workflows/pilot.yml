@@ -16,7 +16,7 @@ concurrency:
 jobs:
   pilot-storage:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -71,3 +71,12 @@ jobs:
           test ! -e work/pilot/cold-backup/app-db.tar
           test ! -e work/pilot/cold-backup/identity-db.tar
           test ! -e work/pilot/cold-backup.pending
+      - name: Dedicated dispatch retention fixture
+        run: |
+          mv work/pilot work/pilot-from-cold-backup
+          trap 'npm run pilot:down' EXIT
+          npm run pilot:up -- dispatch-retention
+          npm run pilot:migrate -- up
+          npm run pilot:migrate -- down
+          npm run pilot:migrate -- up
+          node dist/pilot/tests/pilot/dispatch-retention.js

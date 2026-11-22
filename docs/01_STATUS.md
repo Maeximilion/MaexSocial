@@ -10,6 +10,11 @@
 
 ## Current work
 
+Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) adds
+[dedicated fixture evidence for expired dispatch details](../ops/local/README.md#resolved-dispatch-detail-retention-282).
+The permanent claim slot survives a retained restart, with a minimal terminal result on the
+customer read path. Operating retention and integrated acceptance remain in #166 and #82.
+
 Bounded Task 2C [#273](https://github.com/Maeximilion/MaexSocial/issues/273) adds
 [private withdrawal of an exact approval by its original Manager](../ops/local/README.md#private-manager-approval-withdrawal-273).
 Authenticated integration and real identity evidence remain under #223 and #131.

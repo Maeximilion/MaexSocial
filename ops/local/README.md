@@ -471,6 +471,51 @@ The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurren
 
 With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate -- up` and `node --test dist/pilot/tests/pilot/reconcile.test.js`. The test seeds attempts, reconnects to the same SQLite fake in a second Node process, checks the stored states and verifies the create counts. Complete the empty migration drill before seeding. Sender, terminal export and integrated evidence remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Resolved dispatch detail retention (#282)
+
+Create a dedicated fixture from a worktree without `work/pilot` using the installed locked dependencies
+and cached Docker images. Run the empty schema drill before seeding:
+
+```text
+npm run pilot:build
+npm run pilot:up -- dispatch-retention
+npm run pilot:migrate -- up
+npm run pilot:migrate -- down
+npm run pilot:migrate -- up
+node dist/pilot/tests/pilot/dispatch-retention.js
+npm run pilot:down
+```
+
+The private owner command `npm run pilot:retire-dispatch-details -- <occurrence-id>` requires the
+explicit fixture purpose and matching database identity. Use `pilot:up -- dispatch-retention` for a
+retained restart. The command checks one exact occurrence and uses the AppDB clock. It reports
+`retired`, `already-retired` or `ineligible`. The test alone supplies an exact synthetic expiry clock.
+No ordinary or restored fixture is eligible. Pending, unknown, held, historically held, quarantined,
+inconsistent and unrelated occurrences are excluded.
+
+The first terminal reconciliation writes `resolved_at` from PostgreSQL time in the transaction
+that commits the attempt and occurrence together. The claim and provider observation times
+remain independent. A rolled-back reconciliation records no resolution time. Historical terminal
+rows with no trustworthy local time retain their details. The threshold is 90 elapsed days
+(2,160 hours) from the local terminal write.
+
+After expiry the row keeps `tenant_id`, `occurrence_id`, terminal `outcome` and
+`details_retired=true`. The attempt `id`, `approval_id`, `claimed_at`, `observed_at`,
+`resolved_at` and synthetic `resource_name` become SQL NULL. The original composite primary key
+and occurrence foreign key keep the claim attached to the stored occurrence. The marker is immutable.
+The occurrence, original approval record and independent audit are preserved. The customer sees the
+matching terminal result and that its dispatch details expired. A retired slot cannot authorize
+reconciliation readback, a new claim or approval, or a manual text export. Its result is also separate
+from the counting fake's deliberately independent state.
+
+Migration down refuses populated fixtures, and the migration itself refuses to discard a retired
+claim. Existing supported cold pairs can still be imported offline in the forward direction.
+The current schema cannot be imported by earlier builds. Cold capture still uses its own new
+backup fixture and excludes the fake. This drill covers the logical data in the dedicated fixture.
+Physical erasure, restored-copy minimization, provider data rules, management audit expiry and
+operating retention remain outside it. See [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166)
+and the [access and recovery contract](../../docs/17_ACCESS_SECURITY.md#data-recovery-and-rollback-proposals).
+
 ## Windows two-dimension charging evidence (#238)
 
 For an ordinary Windows `npm run pilot:test`, record `git rev-parse HEAD` and whether the fixture is fresh or

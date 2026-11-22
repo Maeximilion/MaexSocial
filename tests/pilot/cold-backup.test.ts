@@ -49,6 +49,13 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   const schema012 = { ...compatibility, appSchema: await hashSources([...through011, 'db/migrations/012_approval_withdrawal.up.sql']) };
   await verifyPair(path, fixtureId, schema012, { ...pair, compatibility: schema010 });
   await verifyPair(path, fixtureId, schema012, { ...pair, compatibility: schema011 });
+  const schema013 = { ...compatibility, appSchema: await hashSources([
+    ...through011, 'db/migrations/012_approval_withdrawal.up.sql', 'db/migrations/013_attempt_retention.up.sql',
+  ]) };
+  for (const source of [schema010, schema011, schema012]) {
+    await verifyPair(path, fixtureId, schema013, { ...pair, compatibility: source });
+    await assert.rejects(verifyPair(path, fixtureId, source, { ...pair, compatibility: schema013 }), /incompatible/);
+  }
   await assert.rejects(verifyPair(path, fixtureId, schema011, { ...pair, compatibility: schema012 }), /incompatible/);
   await assert.rejects(verifyPair(path, fixtureId, schema010, { ...pair, compatibility: schema011 }), /incompatible/);
   await assert.rejects(verifyPair(path, fixtureId, schema011, pair), /incompatible/);

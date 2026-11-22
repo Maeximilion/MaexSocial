@@ -121,6 +121,7 @@ interface OccurrenceView {
   draft_id: string;
   state: keyof typeof publicationOutcomes;
   attempt_outcome: 'unknown' | 'pending' | 'confirmed' | 'rejected' | null;
+  attempt_details_retired: boolean | null;
   attempt_matches_approval: boolean | null;
   claimed_at: Date | null;
   observed_at: Date | null;
@@ -147,6 +148,7 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
       WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.action='approval_withdrawal') END AS withdrawal_count,
     extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
     p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
+    a.details_retired AS attempt_details_retired,
     a.approval_id=o.approval_id AS attempt_matches_approval FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
     JOIN pilot.tenants t ON t.id=o.tenant_id AND t.active AND t.version=$5
@@ -173,7 +175,10 @@ function localDueTime(occurrence: OccurrenceView): string {
 }
 
 function publicationOutcome(occurrence: OccurrenceView) {
-  const { state, attempt_matches_approval, attempt_outcome, claimed_at, observed_at } = occurrence;
+  const { state, attempt_matches_approval, attempt_outcome, attempt_details_retired, observed_at } = occurrence;
+  if (attempt_details_retired && attempt_outcome === state && (state === 'confirmed' || state === 'rejected')) {
+    return [publicationOutcomes[state][0], 'The recorded result is final. Detailed dispatch evidence has expired.'];
+  }
   switch (state) {
     case 'pending':
     case 'confirmed':
@@ -187,7 +192,7 @@ function publicationOutcome(occurrence: OccurrenceView) {
     case 'approved':
     case 'held':
     case 'exported':
-      if (!claimed_at) return publicationOutcomes[state];
+      if (!attempt_outcome) return publicationOutcomes[state];
       break;
     case 'quarantined':
       return publicationOutcomes.quarantined;

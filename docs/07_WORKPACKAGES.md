@@ -73,6 +73,11 @@ and applies the existing quarantine before offline inspection.
 with subsequently committed source outcomes and an independent fake.
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill and release acceptance.
 
+Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) exercises
+[90-day dispatch detail minimization](../ops/local/README.md#resolved-dispatch-detail-retention-282)
+on a dedicated disposable fixture. It preserves the one-claim invariant, terminal result and
+independent approval/audit records. Integrated operating retention stays under #166 and #82.
+
 Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted
 [occurrence hold transaction and fixture evidence](handovers/sessions/2026-11-22-operator-hold.md).
 [#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains integrated acceptance.

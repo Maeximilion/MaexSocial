@@ -15,6 +15,7 @@
     "pilot:stop-dispatch": "node dist/pilot/ops/local/dispatch-control.js stop",
     "pilot:reopen-dispatch": "node dist/pilot/ops/local/dispatch-control.js reopen",
     "pilot:dispatch-status": "node dist/pilot/ops/local/dispatch-control.js status",
+    "pilot:retire-dispatch-details": "node dist/pilot/ops/local/dispatch-retention.js",
     "pilot:restore": "npm run pilot:build && node dist/pilot/ops/local/restore.js",
     "pilot:restore-quarantine": "node dist/pilot/ops/local/recover.js",
     "pilot:test": "node --test --test-concurrency=1 dist/pilot/tests/pilot/*.test.js"
