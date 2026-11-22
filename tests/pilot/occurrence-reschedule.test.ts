@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { test } from 'node:test';
 import { rescheduleOccurrence } from '../../apps/web/src/routes/content.js';
+import * as customerRequests from '../../apps/web/src/server/request.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { occurrence, seedTenant } from './fixtures.js';
@@ -98,6 +99,25 @@ test('private occurrence reschedule validates time and destination and preserves
         await assert.rejects(change({ ...fold, ...invalid }), { message: 'Denied' });
       }
       assert.deepEqual([await read(original), await read(foreign), await history(original)], before);
+    });
+
+    await t.test('an unsupported customer role denies before and after domain locks', async t => {
+      const before = await read(original), approval = await history(original);
+      const require = customerRequests.requireCustomerRequest;
+      for (const denyAt of [1, 2]) {
+        let checks = 0;
+        const mocked = t.mock.method(customerRequests, 'requireCustomerRequest', async (...args: Parameters<typeof require>) => {
+          const context = await require(...args);
+          // Simulate a future role at the authority boundary without altering the fixture schema.
+          return ++checks === denyAt ? { ...context, role: 'Unsupported' } as unknown as typeof context : context;
+        });
+        try {
+          await assert.rejects(change(fold), { message: 'Denied' });
+          assert.equal(checks, denyAt);
+          assert.deepEqual(await read(original), before);
+          assert.deepEqual(await history(original), approval);
+        } finally { mocked.mock.restore(); }
+      }
     });
 
     await t.test('every delivery state is protected even without an attempt row', async () => {

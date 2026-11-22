@@ -292,7 +292,8 @@ export async function rescheduleOccurrence(connect: () => Promise<Client>, bindi
   const db = await connect();
   try {
     await db.query('BEGIN');
-    const { tenantId } = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    const { tenantId, role } = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    if (!['Employee', 'Manager'].includes(role)) return deny();
     const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [tenantId, draftId]);
     if (!draft.rowCount) return deny();
     const target = await db.query(`SELECT id FROM pilot.occurrences WHERE tenant_id=$1 AND draft_id=$2 AND id=$3
@@ -304,7 +305,8 @@ export async function rescheduleOccurrence(connect: () => Promise<Client>, bindi
     if (attempt.rowCount) return deny();
     const location = await db.query('SELECT id FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR KEY SHARE', [tenantId, locationId]);
     if (!location.rowCount) return deny();
-    await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    const current = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    if (current.tenantId !== tenantId || !['Employee', 'Manager'].includes(current.role)) return deny();
 
     const updated = await db.query(`UPDATE pilot.occurrences
       SET location_id=$3,due_at=$4,timezone=$5,approval_id=NULL,state=CASE WHEN state='approved' THEN 'draft' ELSE state END
