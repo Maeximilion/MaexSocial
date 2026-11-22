@@ -126,7 +126,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.get('/customer/occurrences/:occurrenceId', async (request, response) => {
     const binding = customerRequest(request);
-    const page = await transaction(async db => renderOccurrence(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.occurrenceId));
+    const page = await transaction(async db => renderOccurrence(db, await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only'), request.params.occurrenceId));
     response.type('html').send(page);
   });
   app.post('/customer/drafts/:draftId', async (request, response) => {
