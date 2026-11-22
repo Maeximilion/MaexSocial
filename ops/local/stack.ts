@@ -5,10 +5,10 @@ import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixture } from './fixture.js';
 
-const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
+export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-async function initialize(): Promise<Fixture> {
+export async function initialize(forBackup = false): Promise<Fixture> {
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
@@ -39,6 +39,7 @@ async function initialize(): Promise<Fixture> {
     { id: '13600000-0000-4000-8000-000000000002', username: 'status-disabled', enabled: false,
       email: 'status-disabled@example.invalid', emailVerified: true, requiredActions: [] }
   ];
+  if (forBackup) realm.users.push({ username: `cold-backup-${f.id}`, enabled: false });
   // Only the first import of a fresh isolated fixture creates these test credentials.
   const oidcSecret = secret(), oidcPassword = secret();
   await save('oidc-secret', oidcSecret); await save('oidc-password', oidcPassword);
@@ -74,16 +75,17 @@ async function initialize(): Promise<Fixture> {
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
   await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
-  docker(['pull', postgresImage]);
+  if (!forBackup) docker(['pull', postgresImage]);
+  const runLocal = ['run', '--rm', '--network', 'none', ...(forBackup ? ['--pull', 'never'] : [])];
   for (const name of ['postgres', 'identity-db', 'keycloak', 'mailbox', 'customer']) {
-    docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'openssl', postgresImage,
+    docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'openssl', postgresImage,
       'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', `/CN=${name}`,
       '-addext', `subjectAltName=DNS:${name},DNS:localhost,IP:127.0.0.1`,
       '-keyout', `/fixture/${name}.key`, '-out', `/fixture/${name}.crt`]);
   }
-  docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
+  docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
     postgresImage, '1000:1000', '/fixture/keycloak.key']);
-  docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
+  docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'chown',
     postgresImage, `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`, '/fixture/customer.key']);
   // Only generated hex values enter bootstrap SQL. No supplied SQL or connection URI is accepted.
   await save('init-app.sql', `CREATE ROLE pilot_app LOGIN PASSWORD '${f.appPassword}' VALID UNTIL '${expiry}';
@@ -111,7 +113,7 @@ https-certificate-key-file=/fixture/server.key
 truststore-paths=/fixture/mail.crt
 health-enabled=true
 `);
-  docker(['run', '--rm', '--network', 'none', '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'sh', postgresImage,
+  docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'sh', postgresImage,
     '-c', 'chown 1000:1000 /fixture/keycloak.conf /fixture/keycloak-realm.json; chown 999:999 /fixture/init-app.sql /fixture/init-identity.sql /fixture/owner-password /fixture/identity-password']);
   await mkdir('work/pilot/provider-state');
   return f;
@@ -163,7 +165,7 @@ async function main(): Promise<void> {
   console.log(await runIsolated(['dist/pilot/ops/local/stack.js', 'check']));
   console.log('Isolated fixture ready; no host ports or external runtime route.');
 }
-main().catch(async error => {
+if (require.main === module) main().catch(async error => {
   console.error(error instanceof SyntaxError ? 'Invalid fixture manifest.' : safeDiagnostics(String(error)));
   try { console.error(safeDiagnostics(compose(await loadFixture(true), ['logs', '--no-color', '--tail', '15']))); }
   catch { console.error('Fixture service diagnostics unavailable.'); }
