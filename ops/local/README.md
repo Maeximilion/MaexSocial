@@ -57,6 +57,24 @@ The verified pair appears under ignored `work/pilot/cold-backup/` with two archi
 
 Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. Starting a restore, rotating synthetic credentials, replaying independent history and measuring recovery remain part of Task 5.
 
+## Local dispatch stop (#215)
+
+From the worktree root with a built and migrated fixture, run `npm run pilot:stop-dispatch` to persist
+the stop and `npm run pilot:dispatch-status` to read it independently. Both report JSON with `stopped`
+and `outstandingAttempts`. The count includes stored `unknown` and `pending` attempts across the
+fixture. Confirmed and rejected attempts are terminal. The status command and existing read-only
+inspection remain available while stopped.
+
+Both commands accept only the validated local fixture. The stop commits before reporting status. If
+the command fails, use the status command to check whether the stop committed. A future claim must
+lock the same control row, check that dispatch is open and record its attempt in that transaction
+before any provider create. This slice adds no sender or reopen operation. The integrated stop and
+recovery drill remains in [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
+
+Run `node --test dist/pilot/tests/pilot/dispatch-stop.test.js` to check synthetic attempts and provider
+counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:down` and
+`npm run pilot:up` to verify that the stop and count survive a retained-volume restart.
+
 ## Private GBP reconciliation (#213)
 
 The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
@@ -137,6 +155,24 @@ After the strict build and migrations, `node --test dist/pilot/tests/pilot/facts
 The suite covers both reader roles, shared identities, latest revision per location, empty states, escaped hostile content, Unicode/newline bounds, composite references, historical confirmation, write denial, current authority and unchanged domain records. A transactional migration005 down/up compatibility probe rolls back its metadata loss; complete down remains restricted to empty fixtures. Run a fresh up/down/up before seeding. Preserve populated fixtures and their volumes.
 
 The existing keyboard suite follows workspace → facts → location → empty location → drafts, with customer-only requests. Its private screenshot is `work/portal-preview/facts.png`. Run the complete pilot before and after `pilot:down`/`pilot:up` with retained volumes. [Detailed contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [handover](../../docs/handovers/sessions/2026-11-18-business-facts.md) separate these synthetic checks from #124/#131 and product gates.
+
+## Customer publication outcomes (#214)
+
+Employees and Managers read the details of an occurrence in their active workspace via the existing draft
+destination link. The GET reads the occurrence and its tenant-bound attempt in the same statement and does
+not refresh session activity. Processing, rejection and publication confirmation require a matching approval,
+stored outcome and observation time. A missing or conflicting dispatch record stays unknown. A quarantined
+occurrence stays under review, even when historical evidence is present. The attempt
+start and last observation display in UTC only when each time is recorded. The due time remains distinct,
+with its UTC instant and occurrence-local time. Export is terminal for automatic submission. It represents
+manual handoff of the approved text with no Google publication confirmed.
+
+After the strict build and fixture migration, run
+`node --test --test-concurrency=1 dist/pilot/tests/pilot/occurrences.test.js dist/pilot/tests/pilot/portal-keyboard.test.js`.
+The HTTPS suite seeds independent stored states, checks both roles and active-tenant isolation, and compares
+domain and session rows across the reads. Chromium follows the existing keyboard path to an unknown result
+and back. The suite uses invented rows and no provider calls. [#165](https://github.com/Maeximilion/MaexSocial/issues/165)
+owns the integrated Task 4 evidence.
 
 ## Private Employee invitation preview (#207)
 
