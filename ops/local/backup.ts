@@ -85,12 +85,16 @@ const compatibleIdpConfigs = new Set([
   '16a317924e98caf2efcacbfbb89274d989c2d2fb667baad0e02561416cd98dad', // paired restore
   '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5', // before dispatch reopen
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
+  '072a8dbf6bc2883f3ec9451637105adbaefd47fb4163a7898e96339f59fe9e10', // dispatch retention
 ]);
 
-// These migrations add nullable bindings. The exact prior schemas remain safe to import offline.
-const appSchemaBeforeApprovalTenantVersion = '3ae9f21ff752c8ddd96eb7a6d4186f454f9f5aaef66da947b6dc1dc8b8f86ed6';
-const appSchemaWithApprovalTenantVersion = '4541e90e1700eeb4d33a2b6cccfec22a21b952fafa2fd924cdc5f9c527894b5e';
-const appSchemaWithApprovalWithdrawal = '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13';
+// Exact schema revisions eligible for forward offline import, oldest first.
+const forwardAppSchemas = [
+  '3ae9f21ff752c8ddd96eb7a6d4186f454f9f5aaef66da947b6dc1dc8b8f86ed6', // 010
+  '4541e90e1700eeb4d33a2b6cccfec22a21b952fafa2fd924cdc5f9c527894b5e', // 011
+  '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13', // 012
+  '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
+];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
   const idpConfig = pair?.compatibility?.idpConfig;
@@ -98,11 +102,9 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
   if (idpConfig && compatibleIdpConfigs.has(expected.idpConfig) && compatibleIdpConfigs.has(idpConfig)) {
     compatible.idpConfig = idpConfig;
   }
-  const sourceAppSchema = pair?.compatibility?.appSchema;
-  if ((sourceAppSchema === appSchemaBeforeApprovalTenantVersion
-      && [appSchemaWithApprovalTenantVersion, appSchemaWithApprovalWithdrawal].includes(expected.appSchema))
-    || (sourceAppSchema === appSchemaWithApprovalTenantVersion && expected.appSchema === appSchemaWithApprovalWithdrawal)) {
-    compatible.appSchema = sourceAppSchema;
+  const sourceSchemaIndex = forwardAppSchemas.indexOf(pair?.compatibility?.appSchema);
+  if (sourceSchemaIndex >= 0 && sourceSchemaIndex < forwardAppSchemas.indexOf(expected.appSchema)) {
+    compatible.appSchema = pair.compatibility.appSchema;
   }
   if ((pair?.format !== 1 && pair?.format !== 2) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
