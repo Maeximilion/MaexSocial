@@ -24,7 +24,7 @@ function draftText(text: string): string {
 }
 
 function draftTextField(text: string, help: string, invalid: boolean): string {
-  const requirement = `Enter 1â€“${maxDraftCodePoints.toLocaleString('en-US')} Unicode code points.`;
+  const requirement = `Enter 1–${maxDraftCodePoints.toLocaleString('en-US')} Unicode code points.`;
   return `<label for="text">Draft text</label>
 <p id="text-help">${invalid ? '' : `${requirement} `}${help}</p>
 ${invalid ? `<p id="text-error">${requirement} Remove any null characters.</p>` : ''}
@@ -33,7 +33,7 @@ ${invalid ? `<p id="text-error">${requirement} Remove any null characters.</p>` 
 
 export function page(title: string, content: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${html(title)} Â· MaexSocial</title><style>
+<title>${html(title)} · MaexSocial</title><style>
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0B0F19;color:#F8FAFC}*{box-sizing:border-box}
 body{margin:0;line-height:1.6}main{max-width:60rem;margin:auto;padding:1.5rem}a,h1{color:#00E5FF}
 form{background:#161F30;padding:1.5rem;border:1px solid #64748B;border-radius:.8rem}label{display:block;font-weight:600}
@@ -91,13 +91,13 @@ ${draft.provider_location !== null ? `<p>Initial location: ${html(draft.provider
 <input type="hidden" name="revisionId" value="${html(draft.id)}">
 ${draftTextField(invalidText ?? draft.text, 'Text only. Saving does not approve or publish.', invalidText !== undefined)}
 <p><button type="submit">Save text</button></p></form>
-${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li><a href="/customer/occurrences/${html(row.id)}">${html(row.provider_location)} â€” ${html(row.state)}</a></li>`).join('')}</ul>` : ''}
+${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li><a href="/customer/occurrences/${html(row.id)}">${html(row.provider_location)} — ${html(row.state)}</a></li>`).join('')}</ul>` : ''}
 <p><a href="/customer/drafts">All text drafts</a></p>`);
 }
 
 function renderDraftConflict(draftId: string, saved: { revision: number; text: string }, submitted: string): string {
   return page('This draft changed', `<p>Someone saved a newer revision. Your text was not saved. Copy any text you want to keep before opening the current draft.</p>
-<label for="saved-text">Saved text Â· Revision ${saved.revision}</label>
+<label for="saved-text">Saved text · Revision ${saved.revision}</label>
 <textarea id="saved-text" readonly>\n${html(saved.text)}</textarea>
 <label for="unsaved-text">Your unsaved text</label>
 <textarea id="unsaved-text" readonly>\n${html(submitted)}</textarea>
@@ -213,7 +213,7 @@ ${recordedTime('Last observation', occurrence.observed_at)}
 <dt>Due time (UTC)</dt><dd><time datetime="${html(utc)}">${html(utc)}</time></dd>
 <dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>`;
   const content = occurrence.revision === null || occurrence.text === null ? details : `<section aria-labelledby="proposed-text">
-<h2 id="proposed-text">Proposed text Â· Revision ${occurrence.revision}</h2>
+<h2 id="proposed-text">Proposed text · Revision ${occurrence.revision}</h2>
 ${details}
 <p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
   return page('Post occurrence details', `${content}
@@ -382,7 +382,7 @@ export async function rescheduleOccurrence(connect: () => Promise<Client>, bindi
   finally { await db.end(); }
 }
 
-// Caller holds authority/session locks and owns the transaction; claims/approval must use draft â†’ sorted occurrences too.
+// Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.
 export async function editDraft(db: Client, context: CustomerContext, draftId: string, revisionId: string, text: string): Promise<void> {
   if (!uuid(draftId) || !['Employee', 'Manager'].includes(context.role)) deny();
   if (!uuid(revisionId)) throw new Error('Invalid request');

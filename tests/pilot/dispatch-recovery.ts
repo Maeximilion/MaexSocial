@@ -38,6 +38,8 @@ async function isolated(stage: string, saved: string | undefined) {
           'ALTER TABLE public.fixture_identity RENAME COLUMN prior_purpose TO purpose'],
         ['ALTER TABLE pilot.approvals RENAME COLUMN grant_active_at_approval TO prior_grant_flag',
           'ALTER TABLE pilot.approvals RENAME COLUMN prior_grant_flag TO grant_active_at_approval'],
+        ['ALTER TABLE pilot.approvals RENAME COLUMN tenant_version TO prior_tenant_version',
+          'ALTER TABLE pilot.approvals RENAME COLUMN prior_tenant_version TO tenant_version'],
       ] satisfies [string, string, string[]?][]) {
         await owner.query(change);
         try {
@@ -45,7 +47,7 @@ async function isolated(stage: string, saved: string | undefined) {
           assert.deepEqual((await owner.query('SELECT stopped FROM pilot.dispatch_control')).rows, [{ stopped: true }]);
         } finally { await owner.query(restore, params); }
       }
-      console.log(JSON.stringify({ refusedDatabaseTargets: 5, stopped: true }));
+      console.log(JSON.stringify({ refusedDatabaseTargets: 6, stopped: true }));
       return;
     }
     const fake = new FakeGbp('/fake', { frames: [{ afterMs: 0, candidates: ['LIVE'] }] });

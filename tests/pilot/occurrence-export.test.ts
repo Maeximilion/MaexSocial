@@ -6,9 +6,12 @@ import { setTimeout } from 'node:timers/promises';
 import { test } from 'node:test';
 import { approveOccurrence, readApprovalProposal } from '../../apps/web/src/routes/content.js';
 import { claimExport } from '../../apps/web/src/server/occurrence-export.js';
+import { claimDispatch } from '../../apps/worker/src/dispatch.js';
+import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
 import { FakeGbp } from './fake-gbp.js';
 import { occurrence, seedManagementContext, seedTenant } from './fixtures.js';
@@ -49,20 +52,23 @@ test('private terminal export commits approved text only under current authority
     };
     const manager = await session(a.tenant, 'Manager'), employee = await session(a.tenant, 'Employee');
     const outside = await session(b.tenant, 'Manager');
-    const approved = async (tenant = a, binding = manager) => {
-      const id = await occurrence(owner, tenant);
+    const preview = async (id: string, binding = manager) => {
       const db = await connectFixture();
-      const proposal = await (async () => {
-        try {
-          await db.query('BEGIN');
-          return await readApprovalProposal(db, await requireCustomerRequest(db, binding, clock, inspect, 'read-only'), id);
-        } finally {
-          await db.query('ROLLBACK');
-          await db.end();
-        }
-      })();
-      const approvalId = await approveOccurrence(connectFixture, binding, proposal, clock, inspect);
-      return { id, approvalId };
+      try {
+        await db.query('BEGIN');
+        return await readApprovalProposal(db, await requireCustomerRequest(db, binding, clock, inspect, 'read-only'), id);
+      } finally {
+        await db.query('ROLLBACK');
+        await db.end();
+      }
+    };
+    const approve = (proposal: Awaited<ReturnType<typeof preview>>, binding = manager) =>
+      approveOccurrence(connectFixture, binding, proposal, clock, inspect);
+    const approved = async (tenant = a, binding = manager, due = false) => {
+      const id = await occurrence(owner, tenant);
+      if (due) await owner.query("UPDATE pilot.occurrences SET due_at='2020-01-01T12:00Z' WHERE id=$1", [id]);
+      const proposal = await preview(id, binding);
+      return { id, proposal, approvalId: await approve(proposal, binding) };
     };
     const claim = (id: string, binding = employee) => claimExport(connectFixture, binding, id, clock, inspect);
     const rows = async (sql: string, values: unknown[]) => (await owner.query(sql, values)).rows;
@@ -181,9 +187,9 @@ test('private terminal export commits approved text only under current authority
       const legacy = await approved(c, approving);
       await owner.query(`WITH historical AS (
         INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,location_id,provider_location,
-          membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+          membership_id,membership_version,grant_version,due_at,timezone,mfa_at,tenant_version)
         SELECT tenant_id,occurrence_id,draft_id,revision_id,location_id,provider_location,membership_id,membership_version,
-          grant_version,due_at,timezone,mfa_at FROM pilot.approvals WHERE tenant_id=$1 AND id=$2 RETURNING id
+          grant_version,due_at,timezone,mfa_at,tenant_version FROM pilot.approvals WHERE tenant_id=$1 AND id=$2 RETURNING id
       ) UPDATE pilot.occurrences SET approval_id=historical.id FROM historical WHERE pilot.occurrences.id=$3`,
       [c.tenant, legacy.approvalId, legacy.id]);
       await denied(employeeExport.id, exporting);
@@ -215,6 +221,103 @@ test('private terminal export commits approved text only under current authority
       await owner.query('UPDATE pilot.sessions SET revoked_at=$2 WHERE token_hash=$1', [tokenHash(employee.token), clock()]);
       await denied(newExport.id);
       assert.deepEqual(await claim(newExport.id, currentManager), { state: 'exported', text: 'Synthetic newer text' });
+    });
+
+    await t.test('tenant reactivation requires a fresh private approval and preserves existing history', async () => {
+      const tenant = await seedTenant(owner), independent = await seedTenant(owner);
+      const originalManager = await session(tenant.tenant, 'Manager'), originalEmployee = await session(tenant.tenant, 'Employee');
+      const otherManager = await session(independent.tenant, 'Manager');
+      const exportable = await approved(tenant, originalManager), terminal = await approved(tenant, originalManager);
+      const held = await approved(tenant, originalManager), quarantined = await approved(tenant, originalManager);
+      const pendingPreview = await preview(await occurrence(owner, tenant), originalManager);
+      assert.deepEqual(await claim(terminal.id, originalEmployee), exported);
+      const operator = await seedManagementContext(owner, tenant.tenant, clock(), clock());
+      assert.equal(await holdOccurrence(connectFixture, { ...operator, occurrenceId: held.id },
+        tenant.tenant, held.id, 'Synthetic hold', clock), 'held');
+      await owner.query("UPDATE pilot.occurrences SET state='quarantined' WHERE id=$1", [quarantined.id]);
+
+      // Give dispatch its own destination so the export cases keep an unavailable grant.
+      const [{ id: connected }] = await rows(`INSERT INTO pilot.locations(tenant_id,provider_location,grant_active)
+        VALUES($1,'synthetic-connected-location',true) RETURNING id`, [tenant.tenant]);
+      const send = await approved({ ...tenant, location: connected }, originalManager, true);
+      const inFlight = await approved({ ...tenant, location: connected }, originalManager, true);
+      const stopBefore = (await rows('SELECT stopped FROM pilot.dispatch_control', []))[0].stopped;
+      await owner.query('UPDATE pilot.dispatch_control SET stopped=false');
+      try {
+        const dispatch = (id: string) => claimDispatch(connectFixture, id, fake!);
+        const reject = (operation: Promise<unknown>) => assert.rejects(operation, { message: 'Denied' });
+        const attempt = await dispatch(inFlight.id);
+        const protectedTargets = [held, terminal, quarantined, inFlight];
+        const protectedState = () => rows(`SELECT o.id,o.state,o.approval_id,
+          (SELECT jsonb_agg(h ORDER BY h.id) FROM pilot.audit h WHERE h.occurrence_id=o.id) AS history
+          FROM pilot.occurrences o WHERE o.id=ANY($1::uuid[]) ORDER BY o.id`, [protectedTargets.map(target => target.id)]);
+        const before = await protectedState();
+        const sendState = await state(send.id);
+        const setStatus = (active: boolean) => owner.query('UPDATE pilot.tenants SET active=$2,version=version+1 WHERE id=$1',
+          [tenant.tenant, active]);
+        await setStatus(false);
+        await reject(preview(pendingPreview.occurrenceId, originalManager));
+        await reject(dispatch(send.id));
+        const other = await approved(independent, otherManager);
+        assert.deepEqual(await claim(other.id, otherManager), exported);
+
+        await setStatus(true);
+        const currentManager = await session(tenant.tenant, 'Manager'), currentEmployee = await session(tenant.tenant, 'Employee');
+        await reject(preview(pendingPreview.occurrenceId, originalManager));
+        await reject(approve(pendingPreview, currentManager));
+        await reject(approve(send.proposal, currentManager));
+        await reject(dispatch(send.id));
+        await denied(exportable.id, currentEmployee);
+        await denied(terminal.id, currentEmployee);
+        assert.deepEqual(await state(send.id), sendState);
+        assert.deepEqual(await audit(send.id), []);
+        assert.equal(fake!.createCount(tenant.tenant, send.id), 0);
+        for (const target of protectedTargets) await reject(preview(target.id, currentManager));
+        assert.deepEqual(await protectedState(), before);
+
+        const currentPreview = await preview(send.id, currentManager);
+        assert.deepEqual([send.proposal.tenantVersion, currentPreview.tenantVersion], [1, 3]);
+        const freshApproval = await approve(currentPreview, currentManager);
+        assert.notEqual(freshApproval, send.approvalId);
+        assert.equal(await approve(currentPreview, currentManager), freshApproval);
+        await reject(preview(send.id, currentManager));
+        assert.deepEqual(await rows('SELECT id,tenant_version FROM pilot.approvals WHERE occurrence_id=$1 ORDER BY tenant_version',
+          [send.id]), [{ id: send.approvalId, tenant_version: 1 }, { id: freshApproval, tenant_version: 3 }]);
+        const freshAttempt = await dispatch(send.id);
+        assert.deepEqual(await rows('SELECT id,approval_id FROM pilot.attempts WHERE occurrence_id=$1', [send.id]),
+          [{ id: freshAttempt.attemptId, approval_id: freshApproval }]);
+        await reject(dispatch(send.id));
+        assert.equal(fake!.createCount(tenant.tenant, send.id), 1);
+
+        const legacy = await approved(tenant, currentManager);
+        const [{ id: legacyApproval }] = await rows(`WITH historical AS (
+          INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,location_id,provider_location,
+            membership_id,membership_version,grant_version,due_at,timezone,mfa_at,grant_active_at_approval)
+          SELECT tenant_id,occurrence_id,draft_id,revision_id,location_id,provider_location,membership_id,membership_version,
+            grant_version,due_at,timezone,mfa_at,grant_active_at_approval FROM pilot.approvals
+          WHERE tenant_id=$1 AND id=$2 RETURNING id
+        ) UPDATE pilot.occurrences SET approval_id=historical.id FROM historical
+          WHERE pilot.occurrences.id=$3 RETURNING historical.id`, [tenant.tenant, legacy.approvalId, legacy.id]);
+        await denied(legacy.id, currentEmployee);
+        assert.notEqual(await approve(await preview(legacy.id, currentManager), currentManager), legacyApproval);
+        assert.deepEqual(await claim(legacy.id, currentEmployee), exported);
+
+        const freshExport = await approve(await preview(exportable.id, currentManager), currentManager);
+        assert.notEqual(freshExport, exportable.approvalId);
+        assert.deepEqual(await claim(exportable.id, currentEmployee), exported);
+        assert.deepEqual(await claim(exportable.id, currentEmployee), exported);
+        assert.deepEqual(await state(exportable.id), [{ state: 'exported', approval_id: freshExport }]);
+        assert.equal((await audit(exportable.id)).length, 1);
+        assert.deepEqual(await claim(other.id, otherManager), exported);
+        assert.equal((await audit(other.id)).length, 1);
+
+        assert.equal(await reconcileOccurrence(connectFixture, inFlight.id, fake!), 'pending');
+        assert.deepEqual(await rows('SELECT id,approval_id,outcome FROM pilot.attempts WHERE occurrence_id=$1', [inFlight.id]),
+          [{ id: attempt.attemptId, approval_id: inFlight.approvalId, outcome: 'pending' }]);
+        assert.equal(fake!.createCount(tenant.tenant, inFlight.id), 1);
+      } finally {
+        await owner.query('UPDATE pilot.dispatch_control SET stopped=$1', [stopBefore]);
+      }
     });
 
     assert.deepEqual(await state(control.id), controlState);
