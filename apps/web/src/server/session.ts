@@ -12,7 +12,8 @@ export async function lockIdentities(db: Client, ids: string[]): Promise<void> {
   if (locked.rowCount !== unique.length) denied();
 }
 
-export async function requireCustomer(db: Client, token: string, clock: () => Date, inspect: InspectIdentity): Promise<CustomerContext> {
+export async function requireCustomer(db: Client, token: string, clock: () => Date, inspect: InspectIdentity,
+  activity: 'refresh' | 'read-only' = 'refresh'): Promise<CustomerContext> {
   if (!/^[a-f0-9]{64}$/.test(token)) denied();
   const located = (await db.query('SELECT id,identity_id,tenant_id,membership_id FROM pilot.sessions WHERE token_hash=$1 AND audience=$2', [tokenHash(token), 'customer'])).rows[0];
   if (!located) denied();
@@ -38,7 +39,7 @@ export async function requireCustomer(db: Client, token: string, clock: () => Da
   const now = clock();
   if (!Number.isFinite(now.getTime()) || now < session.created_at || now < session.last_seen_at || now >= session.expires_at
     || now.getTime() - session.created_at.getTime() >= 28_800_000 || now.getTime() - session.last_seen_at.getTime() >= 1_800_000) denied();
-  await db.query('UPDATE pilot.sessions SET last_seen_at=$1 WHERE id=$2', [now, session.id]);
+  if (activity === 'refresh') await db.query('UPDATE pilot.sessions SET last_seen_at=$1 WHERE id=$2', [now, session.id]);
   return { sessionId: session.id, identityId: located.identity_id, subject: authority.subject, tenantId: located.tenant_id,
     membershipId: located.membership_id, membershipVersion: authority.membership_version, role: authority.role,
     mfaAt: session.mfa_at, mfaEnrolled };

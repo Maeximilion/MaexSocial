@@ -115,6 +115,19 @@ The suite covers both reader roles, shared identities, latest revision per locat
 
 The existing keyboard suite follows workspace → facts → location → empty location → drafts, with customer-only requests. Its private screenshot is `work/portal-preview/facts.png`. Run the complete pilot before and after `pilot:down`/`pilot:up` with retained volumes. [Detailed contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [handover](../../docs/handovers/sessions/2026-11-18-business-facts.md) separate these synthetic checks from #124/#131 and product gates.
 
+## Private Employee invitation preview (#207)
+
+After the strict build and fixture migration, run `node --test dist/pilot/tests/pilot/invitation-browser.test.js`.
+The isolated browser fixture mounts the preview for current synthetic customer sessions with a server-owned
+subject-to-recipient binding. It seeds invitations and supplies their credentials in a secure HTTP-only cookie.
+The regular customer app has no preview mount. A matched recipient using one workspace can see the workspace and
+Employee role of their pending invitation to another. Invalid or unrelated invitations receive the same unavailable
+view. The test checks real HTTPS and PostgreSQL, keyboard navigation, reload, mailbox counts, unchanged rows and
+the absence of token or recipient email in rendered messages and observed application/browser logs.
+
+[#221](https://github.com/Maeximilion/MaexSocial/issues/221) owns authenticated link delivery, real identity
+proof and invitation acceptance. The fixture does not issue links, consume credentials or grant access.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.
