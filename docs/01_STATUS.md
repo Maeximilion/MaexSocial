@@ -16,6 +16,12 @@ synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/lo
 uses a current Manager and inspects the stored bindings and captured messages. [#221](https://github.com/Maeximilion/MaexSocial/issues/221)
 retains authenticated integration and acceptance under [#123](https://github.com/Maeximilion/MaexSocial/issues/123).
 
+November 22 bounded Task 2B delivery [#210](https://github.com/Maeximilion/MaexSocial/issues/210) provides
+[private Employee membership revocation](../ops/local/README.md#private-employee-membership-revocation-210).
+The isolated transaction invalidates only the selected tenant's membership and matching pending Employee
+invitations, records audit, and denies the next protected read for that grant. [#221](https://github.com/Maeximilion/MaexSocial/issues/221)
+retains real identity/MFA and the public Manager mutation. G3 acceptance remains open.
+
 November 21 test maintenance [#155](https://github.com/Maeximilion/MaexSocial/issues/155) corrects the two OIDC elapsed assertions while retaining their strict 6500 ms limit. The [delivery handover](handovers/sessions/2026-11-21-oidc-monotonic-time.md) preserves both historical observations and the closure rationale. The original host cause remains undetermined. G3 and G5 acceptance remain open.
 
 November 22 bounded content delivery [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records the exact Manager proposal through an unmounted transaction exercised with local fixtures. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) retain the authenticated action and reapproval in #223 after #131. Integrated Task 2 and G3/G5 remain open.
