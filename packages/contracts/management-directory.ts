@@ -24,7 +24,7 @@ export async function listOrganizations(connect: () => Promise<Client>, proof: M
 
   const db = await connect();
   try {
-    // Authority and directory rows come from the same snapshot, without locking session rows for writing.
+    // A single snapshot keeps each page consistent with the authority used to read it.
     await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const session = await readManagementSessionAuthority(db, proof);
     requireValidManagementSession(session, assertedAt, clock());

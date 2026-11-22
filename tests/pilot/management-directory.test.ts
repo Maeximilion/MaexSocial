@@ -107,9 +107,24 @@ test('the private directory lists minimal state under current management session
         assert.ok(nextAfter);
 
         await owner.query(change, timestamp ? [binding[id], timestamp] : [binding[id]]);
-        const changed = await state();
+        const revoked = await state();
         await assert.rejects(list(binding, now, nextAfter), /^Error: Denied$/);
-        assert.deepEqual(await state(), changed);
+        assert.deepEqual(await state(), revoked);
+
+        // Match the new versions to exercise the active and verified checks independently.
+        if (id === 'deviceId') {
+          await owner.query('UPDATE pilot.sessions SET device_version=2 WHERE id=$1', [binding.sessionId]);
+          binding.deviceVersion = 2;
+        } else if (id === 'grantId') {
+          binding.grantVersion = 2;
+        } else if (id === 'identityId') {
+          await owner.query('UPDATE pilot.sessions SET identity_version=2 WHERE id=$1', [binding.sessionId]);
+        } else {
+          continue;
+        }
+        const current = await state();
+        await assert.rejects(list(binding, now, nextAfter), /^Error: Denied$/);
+        assert.deepEqual(await state(), current);
       }
     });
 
