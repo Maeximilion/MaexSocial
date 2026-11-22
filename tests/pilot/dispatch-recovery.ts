@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { claimExport } from '../../apps/web/src/server/occurrence-export.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
@@ -123,7 +124,7 @@ async function drill() {
   try {
     assert.equal(command('status').stopped, true);
     console.log(phase('guards'));
-    for (const service of ['mailbox', 'identity-db']) {
+    for (const service of ['identity-db', 'mailbox']) {
       compose(f, ['pause', service]);
       try {
         verifyContainers(f);
@@ -133,6 +134,12 @@ async function drill() {
       } finally { compose(f, ['unpause', service]); }
     }
 
+    const recoveryDeadline = performance.now() + 20_000;
+    while (compose(f, ['ps', '--format', '{{.Health}}', 'identity-db']) !== 'healthy') {
+      assert.ok(performance.now() < recoveryDeadline, 'Identity database did not become healthy');
+      await setTimeout(500);
+    }
+    compose(f, ['run', '--rm', '-T', '--no-deps', '--pull', 'never', 'runner', 'node', stack, 'check']);
     assert.equal(command('reopen').stopped, false);
     const saved = phase('stop');
     console.log(JSON.stringify({ phase: 'post-commit-stop-and-reconcile', aCreates: 1, bCreates: 0, exports: 0 }));
