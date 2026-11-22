@@ -272,8 +272,9 @@ class ProtectedReviewTests(unittest.TestCase):
                        "stop_reason": stop, "usage": {"input_tokens": 17, "output_tokens": 42},
                        "content": [{"type": "thinking", "thinking": "HIDDEN THINKING"},
                                    {"type": "text", "text": '{"findings":[],"overflow":false}'}]}
-            with patch.object(route.source.client, "HTTPSConnection") as connect, patch.dict(
-                    os.environ, self.env | {"ANTHROPIC_API_KEY": "SECRET-FIXTURE"}, clear=True), redirect_stdout(StringIO()) as logs:
+            runner = self.env | {"ANTHROPIC_API_KEY": "SECRET-FIXTURE"}
+            with patch.object(route.source.client, "HTTPSConnection") as connect, patch.object(
+                    os, "environ", runner), redirect_stdout(StringIO()) as logs:
                 response = connect.return_value.getresponse.return_value
                 response.status, response.length = 200, 0
                 response.read.return_value = json.dumps(message).encode()
@@ -286,13 +287,13 @@ class ProtectedReviewTests(unittest.TestCase):
             self.assertIn("Complete" if stop == "end_turn" else "Incomplete", self.writes[-1][1]["body"])
 
     def test_unavailable_github_diff_has_fixed_diagnostic(self):
-        with patch.object(route.source, "api", side_effect=subprocess.CalledProcessError(1, "gh", stderr=b"SECRET")), patch.dict(
-                os.environ, self.env, clear=True), redirect_stdout(StringIO()) as logs:
+        with patch.object(route.source, "api", side_effect=subprocess.CalledProcessError(1, "gh", stderr=b"SECRET")), patch.object(
+                os, "environ", self.env), redirect_stdout(StringIO()) as logs:
             self.assertEqual(route.main(["prepare"]), 1)
         self.assertEqual(logs.getvalue().strip(), "::error::Protected Claude review incomplete: local_failure")
 
     def test_errors_never_log_external_content(self):
-        with patch.dict(os.environ, self.env, clear=True), patch.object(route, "prepare", side_effect=RuntimeError("SECRET RAW THINKING")), redirect_stdout(StringIO()) as logs:
+        with patch.object(os, "environ", self.env), patch.object(route, "prepare", side_effect=RuntimeError("SECRET RAW THINKING")), redirect_stdout(StringIO()) as logs:
             self.assertEqual(route.main(["prepare"]), 1)
         self.assertNotIn("SECRET", logs.getvalue())
         self.assertIn("local_failure", logs.getvalue())
