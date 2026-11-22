@@ -24,6 +24,11 @@ Bounded Task 5 delivery [#241](https://github.com/Maeximilion/MaexSocial/issues/
 once on the offline target. [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains
 integrated recovery and release acceptance.
 
+Bounded Task 5 delivery [#250](https://github.com/Maeximilion/MaexSocial/issues/250) adds a
+[30-day UTC deadline](../ops/local/README.md#rolling-expiry-of-disposable-backup-pairs-250) to new
+synthetic pairs and archive expiry for an explicitly disposable local pair. Integrated recovery,
+cross-copy retention and production acceptance remain open under #166 and #82.
+
 Bounded Task 5 component [#217](https://github.com/Maeximilion/MaexSocial/issues/217) keeps all historical
 occurrences offline in a [disposable restore target](../ops/local/README.md#historical-quarantine-on-a-disposable-restore-target-217).
 Bounded Task 5 component [#235](https://github.com/Maeximilion/MaexSocial/issues/235) restores a verified

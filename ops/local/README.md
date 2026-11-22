@@ -69,6 +69,29 @@ The verified pair appears under ignored `work/pilot/cold-backup/` with two archi
 
 Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. The [paired restore](#offline-restore-of-a-verified-pair-235) consumes this input under the bounded Task 5 contract.
 
+## Rolling expiry of disposable backup pairs (#250)
+
+New pairs record the UTC snapshot time once the cold source has stopped. Verify and paired restore
+refuse new access at or after that instant plus 30 × 24 hours. The deadline uses elapsed UTC time
+regardless of local time or daylight saving changes. Legacy pairs whose format carries no capture
+time remain eligible for compatible offline verification and quarantine with unknown retention
+eligibility. A copy's filesystem timestamps do not establish age. History replay still requires
+the independent capture evidence and replay interval described below.
+
+To test physical expiry, create a fresh disposable pair in its own clean local worktree:
+
+~~~text
+npm run pilot:backup -- capture --disposable
+npm run pilot:backup -- expire
+~~~
+
+Run the second command in that same worktree at or after the recorded deadline. It accepts no
+path, touches only the two matching archive files in that fixture's cold-backup directory, and
+retains the manifest for safe retries. Fixture volumes are outside the expiry operation. Preserve
+the #216 reference and existing backups. Copy-wide expiry after online purge, production custody,
+provider caches and integrated recovery acceptance remain in [#166](https://github.com/Maeximilion/MaexSocial/issues/166)
+and [#82](https://github.com/Maeximilion/MaexSocial/issues/82).
+
 ## Synthetic job budget (#218)
 
 Run `node --test dist/pilot/tests/pilot/budget.test.js` after building and migrating the isolated fixture.

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { lstat, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { compose, docker, loadFixture, usesLocalDocker, verifyContainers, type Fixture } from './fixture.js';
@@ -14,6 +14,7 @@ export const databases = [
 ] as const;
 export type Database = typeof databases[number];
 const digest = /^[a-f0-9]{64}$/;
+const retentionMs = 30 * 24 * 60 * 60 * 1000;
 
 async function hashFile(path: string): Promise<string> {
   const hash = createHash('sha256');
@@ -50,8 +51,10 @@ export async function compatibility(f: Fixture, envFile?: string) {
   };
 }
 
-export type Pair = {
-  format: 1;
+export type Pair = (
+  | { format: 1; capturedAt?: never; disposable?: never }
+  | { format: 2; capturedAt: string; disposable?: true }
+) & {
   fixtureId: string;
   revision: string;
   compatibility: Awaited<ReturnType<typeof compatibility>>;
@@ -63,8 +66,19 @@ export type Pair = {
   archives: Record<string, { sha256: string; systemId: string; catalogVersion: string }>;
 };
 
+function pairExpired(pair: Pair): boolean {
+  if (pair.format === 1 && pair.capturedAt === undefined && pair.disposable === undefined) return false;
+  const now = Date.now();
+  const captureTime = typeof pair.capturedAt === 'string' ? Date.parse(pair.capturedAt) : NaN;
+  if (pair.format !== 2 || !Number.isFinite(captureTime) || new Date(captureTime).toISOString() !== pair.capturedAt
+      || captureTime > now || (pair.disposable !== undefined && pair.disposable !== true)) {
+    throw new Error('Backup pair has an invalid capture time or retention metadata.');
+  }
+  return now >= captureTime + retentionMs;
+}
+
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
-  if (pair?.format !== 1 || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
+  if ((pair?.format !== 1 && pair?.format !== 2) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
       || pair.postgresImage !== postgresImage
       || !isDeepStrictEqual(pair.compatibility, expected)) {
@@ -75,6 +89,7 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
       || typeof pair.historyAnchor.evidenceSha256 !== 'string' || !digest.test(pair.historyAnchor.evidenceSha256))) {
     throw new Error('Backup history anchor is invalid.');
   }
+  if (pairExpired(pair)) throw new Error('Backup pair has expired.');
   if (Object.keys(pair.archives ?? {}).length !== databases.length) throw new Error('Backup pair is incomplete.');
   const systemIds = new Set<string>();
   for (const { archive } of databases) {
@@ -91,6 +106,37 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
   if (systemIds.size !== databases.length || pair.archives['app-db.tar']?.catalogVersion !== pair.archives['identity-db.tar']?.catalogVersion) {
     throw new Error('The pair must contain two distinct compatible PostgreSQL clusters.');
   }
+  if (pairExpired(pair)) throw new Error('Backup pair has expired.');
+}
+
+async function expire(): Promise<void> {
+  for (const path of ['work', 'work/pilot', directory]) {
+    if (!(await lstat(path)).isDirectory()) throw new Error('Expiry requires a local backup directory.');
+  }
+  const manifest = join(directory, 'pair.json');
+  for (const path of ['work/pilot/fixture.json', manifest]) {
+    if (!(await lstat(path)).isFile()) throw new Error('Expiry requires local fixture and pair manifests.');
+  }
+  const fixture = await loadFixture(true);
+  const pair: Pair = JSON.parse(await readFile(manifest, 'utf8'));
+  if (fixture.restoreTarget || pair?.format !== 2 || pair.disposable !== true || pair.fixtureId !== fixture.id) {
+    throw new Error('Expiry requires a disposable pair captured for this fixture.');
+  }
+  if (!pairExpired(pair)) throw new Error('Backup pair has not expired.');
+
+  for (const { archive } of databases) {
+    const expected = pair.archives?.[archive]?.sha256;
+    const path = join(directory, archive);
+    const info = await lstat(path).catch(error => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+    if (typeof expected !== 'string' || !digest.test(expected)
+        || (info && (!info.isFile() || await hashFile(path) !== expected))) {
+      throw new Error('Expiry requires the original backup archive files.');
+    }
+  }
+  // Keep the manifest so expiry can be retried after either archive has been removed.
+  for (const { archive } of databases) await rm(join(directory, archive), { force: true });
 }
 
 interface Container {
@@ -215,7 +261,7 @@ function cleanRevision(): string {
   return git('rev-parse', 'HEAD');
 }
 
-async function capture(): Promise<void> {
+async function capture(disposable: boolean): Promise<void> {
   const revision = cleanRevision();
   if (!usesLocalDocker()) throw new Error('Cold backup requires a local Docker socket.');
   const f = await initialize('backup');
@@ -253,9 +299,11 @@ async function capture(): Promise<void> {
     compose(f, ['stop']);
     const before = stoppedState(f, sources);
     stopped = true;
+    const capturedAt = new Date().toISOString();
     const archives = Object.fromEntries(databases.map(db => [db.archive, copyCluster(f, db, directory + '.pending')]));
     if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
-    const pair: Pair = { format: 1, fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
+    const pair: Pair = { format: 2, capturedAt, ...(disposable ? { disposable: true } : {}),
+      fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
       postgresImage, historyAnchor, archives };
     await verifyPair(directory + '.pending', f.id, await compatibility(f), pair);
     if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
@@ -267,19 +315,29 @@ async function capture(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const action = process.argv[2];
-  if (process.argv.length !== 3 || (action !== 'capture' && action !== 'verify')) {
-    throw new Error('Usage: npm run pilot:backup -- capture|verify');
+  const [action, option, ...extra] = process.argv.slice(2);
+  const disposable = action === 'capture' && option === '--disposable';
+  if (!['capture', 'verify', 'expire'].includes(action ?? '') || extra.length || (option !== undefined && !disposable)) {
+    throw new Error('Usage: npm run pilot:backup -- capture [--disposable] | verify | expire');
+  }
+  if (action === 'expire') {
+    await expire();
+    console.log('Expired both synthetic backup archives.');
+    return;
   }
   if (action === 'capture') {
     if (await lstat('work/pilot').catch(error => {
       if (error.code !== 'ENOENT') throw error;
     })) throw new Error('Capture requires a fresh worktree without work/pilot.');
-    await capture();
+    await capture(disposable);
   } else {
     const f = await loadFixture(true);
     const pair: Pair = JSON.parse(await readFile(join(directory, 'pair.json'), 'utf8'));
     await verifyPair(directory, f.id, await compatibility(f), pair);
+    if (pair.format === 1) {
+      console.log('Legacy pair verified for offline inspection; capture time and retention eligibility are unknown.');
+      return;
+    }
   }
   console.log('Verified synthetic AppDB and IdP backup pair.');
 }
