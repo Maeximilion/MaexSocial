@@ -34,3 +34,37 @@ export async function occurrence(db: Client, f: Awaited<ReturnType<typeof seedTe
     VALUES ($1,$2,$3,$4,'2030-01-01T12:00:00Z','Europe/Berlin') RETURNING id`, [f.tenant, f.draft, f.location, key]);
   return result.rows[0].id as string;
 }
+
+export async function reserveSyntheticJob(db: Client, tenantId: string, operationKey: string, units: number): Promise<boolean> {
+  if (!Number.isSafeInteger(units) || units <= 0) throw new RangeError('Invalid synthetic reservation units');
+  await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+  try {
+    // Read the ledger in a fresh statement after competing reservations release the budget lock.
+    const budget = await db.query<{ synthetic_units: string }>(
+      'SELECT synthetic_units FROM pilot.budgets WHERE tenant_id=$1 FOR UPDATE', [tenantId]);
+    let reserved = false;
+    if (budget.rowCount === 1) {
+      const result = await db.query(`INSERT INTO pilot.budget_reservations(tenant_id,operation_key,units)
+        SELECT $1,$2,$3::bigint WHERE $3::bigint + (
+          SELECT COALESCE(SUM(CASE WHEN state='settled' THEN COALESCE(settled_units,units) ELSE units END),0)
+          FROM pilot.budget_reservations WHERE tenant_id=$1 AND state <> 'released'
+        ) <= $4::bigint ON CONFLICT (tenant_id,operation_key) DO NOTHING`,
+      [tenantId, operationKey, units, budget.rows[0]!.synthetic_units]);
+      reserved = result.rowCount === 1;
+    }
+    await db.query('COMMIT');
+    return reserved;
+  } catch (error) { await db.query('ROLLBACK'); throw error; }
+}
+
+export async function settleSyntheticJob(db: Client, tenantId: string, operationKey: string, cost: number | null): Promise<boolean> {
+  if (cost !== null && (!Number.isSafeInteger(cost) || cost < 0)) throw new RangeError('Invalid synthetic settlement cost');
+  // Settlement never increases the units counted against the cap by a concurrent reservation.
+  const result = await db.query(`UPDATE pilot.budget_reservations
+    SET state=CASE WHEN observed.cost IS NULL THEN 'unknown' ELSE 'settled' END, settled_units=observed.cost
+    FROM (VALUES ($3::bigint)) AS observed(cost)
+    WHERE tenant_id=$1 AND operation_key=$2
+      AND (state='reserved' OR (state='unknown' AND observed.cost IS NOT NULL))
+      AND (observed.cost IS NULL OR observed.cost <= units)`, [tenantId, operationKey, cost]);
+  return result.rowCount === 1;
+}

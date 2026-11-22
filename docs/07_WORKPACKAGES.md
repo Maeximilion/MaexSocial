@@ -21,6 +21,10 @@ Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues
 
 ## Planning maturity
 
+[Task 6 budget fixture #218](https://github.com/Maeximilion/MaexSocial/issues/218) covers the local synthetic
+accounting and organic-only controls for ADS-01. The [fixture checks](../ops/local/README.md#synthetic-job-budget-218)
+contribute to the integrated readiness receipt under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
+
 Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues/215) supplies
 [local dispatch stop and outstanding attempt status](../ops/local/README.md#local-dispatch-stop-215).
 [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated stop and restore drill.
