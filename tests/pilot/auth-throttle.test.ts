@@ -4,9 +4,41 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fork } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { DatabaseError } from 'pg';
 import { createAuthThrottle } from '../../apps/web/src/server/auth-throttle.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { migrate } from '../../scripts/pilot-db.js';
+
+function databaseErrorClass(error: unknown): string {
+  if (error instanceof DatabaseError && error.code && /^[0-9A-Z]{5}$/.test(error.code)) {
+    // Both migration 006 guards raise P0001, so match the fixed future-attempt frame.
+    const clockGuard = error.code === 'P0001' && error.where?.split('\n').includes(
+      'PL/pgSQL function pilot.charge_auth_throttle(text,text,text,timestamp with time zone) line 19 at RAISE');
+    return `PostgreSQL SQLSTATE ${error.code}${clockGuard ? ' (stored attempt after database clock)' : ''}`;
+  }
+  return 'database client or fixture error';
+}
+
+function observeThrottleDatabase() {
+  let firstFailure: string | undefined;
+  async function observe<T>(operation: string, run: () => Promise<T>): Promise<T> {
+    try { return await run(); }
+    catch (error) {
+      firstFailure ??= `${operation}: ${databaseErrorClass(error)}`;
+      throw error;
+    }
+  }
+  async function connect() {
+    const client = await observe('connect', connectFixture);
+    const query = client.query.bind(client), end = client.end.bind(client);
+    // Capture the first driver failure before the application replaces it with its generic error.
+    return Object.assign(client, {
+      query: (text: string, values?: unknown[]) => observe('query', () => query(text, values)),
+      end: () => observe('disconnect', () => end()),
+    });
+  }
+  return { connect, failure: () => firstFailure };
+}
 
 test('durable independent account/source throttles in actual PostgreSQL', async t => {
   if (process.env.PILOT_CONTAINER !== '1') {
@@ -76,20 +108,29 @@ test('durable independent account/source throttles in actual PostgreSQL', async 
       }
       await reset();
     });
-    await t.test('both dimensions charge on denial, absent accounts and separate flows', async () => {
-      for (const flow of ['login', 'signup', 'recovery', 'resend'] as const) {
-        const limit = flow === 'login' ? 5 : 3, throttle = make(flow);
-        for (let i = 0; i < limit; i++) assert.equal(await throttle.consume('absent@example.invalid', `192.0.2.${i + 1}`), true);
-        assert.equal(await throttle.consume('absent@example.invalid', '192.0.2.99'), false);
-        assert.equal(await count('source', '192.0.2.99', flow), 1);
-        for (let i = 0; i < (flow === 'login' ? 30 : 10); i++) assert.equal(await throttle.consume(`nat${i}@example.invalid`, '198.51.100.1'), true);
-        assert.equal(await throttle.consume('new-unknown@example.invalid', '198.51.100.1'), false);
-        assert.equal(await count('account', 'new-unknown@example.invalid', flow), 1);
-        assert.equal(await throttle.consume('positive@example.invalid', '203.0.113.1'), true);
+    await t.test('both dimensions charge on denial, absent accounts and separate flows', async t => {
+      const observed = observeThrottleDatabase();
+      try {
+        for (const flow of ['login', 'signup', 'recovery', 'resend'] as const) {
+          const limit = flow === 'login' ? 5 : 3, throttle = createAuthThrottle(key, observed.connect, flow);
+          for (let i = 0; i < limit; i++) assert.equal(await throttle.consume('absent@example.invalid', `192.0.2.${i + 1}`), true);
+          assert.equal(await throttle.consume('absent@example.invalid', '192.0.2.99'), false);
+          assert.equal(await count('source', '192.0.2.99', flow), 1);
+          for (let i = 0; i < (flow === 'login' ? 30 : 10); i++) assert.equal(await throttle.consume(`nat${i}@example.invalid`, '198.51.100.1'), true);
+          assert.equal(await throttle.consume('new-unknown@example.invalid', '198.51.100.1'), false);
+          assert.equal(await count('account', 'new-unknown@example.invalid', flow), 1);
+          assert.equal(await throttle.consume('positive@example.invalid', '203.0.113.1'), true);
+        }
+        const serialized = JSON.stringify(await rows());
+        assert.ok(!serialized.includes('example.invalid') && !serialized.includes('192.0.2') && !serialized.includes(key));
+        await reset();
+      } catch (error) {
+        t.diagnostic(observed.failure() ?? (error instanceof DatabaseError ? databaseErrorClass(error)
+          : error instanceof Error && error.message === 'Throttle unavailable'
+            ? 'application returned Throttle unavailable without an observed driver error'
+            : 'test assertion or fixture operation failed'));
+        throw error;
       }
-      const serialized = JSON.stringify(await rows());
-      assert.ok(!serialized.includes('example.invalid') && !serialized.includes('192.0.2') && !serialized.includes(key));
-      await reset();
     });
     await t.test('mail normalization and canonical IPv6/mapped IPv4 cannot split counters', async () => {
       for (const [first, alias, canonical] of [
@@ -164,11 +205,20 @@ test('durable independent account/source throttles in actual PostgreSQL', async 
       await owner.query(`CREATE FUNCTION pilot.throttle_test_fail() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN IF NEW.dimension='source' THEN RAISE EXCEPTION 'raw input must not escape'; END IF; RETURN NEW; END $$;
         CREATE TRIGGER throttle_test_fail BEFORE INSERT OR UPDATE ON pilot.auth_throttle_buckets FOR EACH ROW EXECUTE FUNCTION pilot.throttle_test_fail()`);
-      try { await denied(consume()); assert.deepEqual(await rows(), before); }
-      finally { await owner.query('DROP TRIGGER throttle_test_fail ON pilot.auth_throttle_buckets; DROP FUNCTION pilot.throttle_test_fail()'); }
+      try {
+        const observed = observeThrottleDatabase();
+        const throttle = createAuthThrottle(key, observed.connect, 'login');
+        await denied(throttle.consume('invented@example.invalid', '192.0.2.1'));
+        assert.equal(observed.failure(), 'query: PostgreSQL SQLSTATE P0001');
+        assert.deepEqual(await rows(), before);
+      } finally { await owner.query('DROP TRIGGER throttle_test_fail ON pilot.auth_throttle_buckets; DROP FUNCTION pilot.throttle_test_fail()'); }
       assert.equal(await consume(), true);
       await owner.query("UPDATE pilot.auth_throttle_buckets SET attempts=ARRAY['2099-01-01'::timestamptz],expires_at='2099-01-01'::timestamptz+interval '15 minutes'");
-      const future = await rows(); await denied(consume()); assert.deepEqual(await rows(), future); await reset();
+      const future = await rows(), observed = observeThrottleDatabase();
+      const throttle = createAuthThrottle(key, observed.connect, 'login');
+      await denied(throttle.consume('invented@example.invalid', '192.0.2.1'));
+      assert.equal(observed.failure(), 'query: PostgreSQL SQLSTATE P0001 (stored attempt after database clock)');
+      assert.deepEqual(await rows(), future); await reset();
       await owner.query(`INSERT INTO pilot.auth_throttle_buckets(flow,dimension,bucket_key,attempts,expires_at)
         SELECT 'login','account',lpad(to_hex(n),64,'0'),ARRAY[t],t+interval '15 minutes'
         FROM generate_series(1,4095) AS n CROSS JOIN (SELECT clock_timestamp() AS t) AS clock`);
