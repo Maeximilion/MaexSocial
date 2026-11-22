@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { approveOccurrence, readApprovalProposal } from '../../apps/web/src/routes/content.js';
+import { issueEmployeeInvitation, issueManagementInvitation } from '../../apps/web/src/server/invitation-issue.js';
+import { revokeManagementMembership, type ManagementMembershipRevocationContext }
+  from '../../apps/web/src/server/management-membership-revocation.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
 import { requireManagerMfa, tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
@@ -157,6 +161,102 @@ test('private membership role changes invalidate the selected grant and commit t
         [[3, 'Manager', 'Confirmed local fixture'], [4, 'Employee', 'Demote last Manager'], [5, 'Manager', 'Re-promote Manager']]);
       assert.equal(await revokedAt(foreign.id), null);
       assert.equal((await readCustomer(foreign.binding)).customer.membershipVersion, 1);
+    });
+    await t.test('private revocation of the last Manager removes only current tenant authority and is atomic', async () => {
+      const manager = await seedSession(a.tenant, a.membership, 5);
+      const issuer = { connect: connectFixture, clock, mailboxCa: await readFile('work/pilot/mailbox.crt') };
+      const recipient = `manager-${randomUUID()}@example.invalid`;
+      const recipientBySubject = new Map([[`fixture-${a.user}`, recipient]]);
+      const proof: ManagementMembershipRevocationContext = {
+        ...operator, action: 'membership_revoke', membershipId: a.membership, membershipVersion: 5
+      };
+      const revoke = (overrides: Partial<ManagementMembershipRevocationContext> = {}, reason = ' Confirmed revocation ',
+        time = clock, binding: ReadonlyMap<string, string> = recipientBySubject) =>
+        revokeManagementMembership(connectFixture, { ...proof, ...overrides }, a.tenant, a.membership, reason, time, binding);
+      const adminInvite = (tenantId: string, email: string, role: CustomerRole) =>
+        issueManagementInvitation(issuer, { ...operator, tenantId, action: 'invitation_issue', recipient: email, role },
+          tenantId, email, role, 'Synthetic control');
+      const issuedByTarget = await issueEmployeeInvitation({
+        ...issuer, authorize: db => requireCustomerRequest(db, manager.binding, clock, inspect, 'read-only')
+      }, `issuer-${randomUUID()}@example.invalid`);
+      const consumed = await adminInvite(a.tenant, recipient, 'Employee');
+      await owner.query('UPDATE pilot.invitations SET consumed_at=$2 WHERE id=$1', [consumed.id, now]);
+      const pendingManager = await adminInvite(a.tenant, recipient, 'Manager');
+      const foreignInvite = await adminInvite(b.tenant, recipient, 'Employee');
+      const otherRecipient = await adminInvite(a.tenant, `other-${randomUUID()}@example.invalid`, 'Employee');
+      for (const invitation of [issuedByTarget, consumed, pendingManager, foreignInvite, otherRecipient]) {
+        assert.equal(invitation.delivery, 'captured');
+      }
+      const invitationRows = () => rows(`SELECT id,revoked_at,consumed_at FROM pilot.invitations
+        WHERE id=ANY($1::uuid[]) ORDER BY id`,
+      [[issuedByTarget.id, consumed.id, pendingManager.id, foreignInvite.id, otherRecipient.id]]);
+      const identitiesBefore = await rows('SELECT * FROM pilot.identities WHERE id=ANY($1::uuid[]) ORDER BY id',
+        [[a.user, operator.identityId]]);
+      const sessionsBefore = await rows('SELECT * FROM pilot.sessions WHERE id=ANY($1::uuid[]) ORDER BY id',
+        [[manager.id, foreign.id, operator.sessionId]]);
+      const openBefore = await occurrenceState(open);
+      const membersBefore = await members();
+      const invitationsBefore = await invitationRows();
+      const auditBefore = await audit();
+      assert.equal(membersBefore.filter(m => m.role === 'Manager' && m.active).length, 1);
+      assert.equal(await revoke({ membershipVersion: 4 }), false);
+      for (const wrong of [{ tenantId: b.tenant }, { membershipId: foreignMembership }, { tenantVersion: 2 },
+        { sessionId: manager.id, identityId: a.user }, { deviceVersion: 2 }, { grantVersion: 2 }]) {
+        await assert.rejects(revoke(wrong), /Denied/);
+      }
+      await assert.rejects(revokeManagementMembership(connectFixture, { ...proof, membershipId: foreignMembership },
+        a.tenant, foreignMembership, 'Synthetic control', clock, recipientBySubject), /Denied/);
+      await assert.rejects(revoke({}, ''), /Denied/);
+      await assert.rejects(revoke({}, 'Synthetic control', () => new Date(now.getTime() + 1)), /Denied/);
+      await assert.rejects(revoke({}, 'Synthetic control', clock, new Map()), /Denied/);
+
+      await owner.query("ALTER TABLE pilot.audit ADD CONSTRAINT test_revocation_audit_failure CHECK (reason <> 'Fail revocation audit')");
+      try {
+        await assert.rejects(revoke({}, 'Fail revocation audit'), { code: '23514', constraint: 'test_revocation_audit_failure' });
+        assert.deepEqual(await members(), membersBefore);
+        assert.deepEqual(await audit(), auditBefore);
+        assert.deepEqual(await invitationRows(), invitationsBefore);
+        assert.deepEqual(await occurrenceState(open), openBefore);
+        assert.equal(await revokedAt(manager.id), null);
+      } finally {
+        await owner.query('ALTER TABLE pilot.audit DROP CONSTRAINT test_revocation_audit_failure');
+      }
+
+      assert.deepEqual((await Promise.all([revoke(), revoke()])).sort(), [false, true]);
+      assert.equal(await revoke({ membershipVersion: 6 }), false);
+      assert.deepEqual(await members(), membersBefore.map(m =>
+        m.id === a.membership ? { ...m, active: false, version: 6 } : m));
+      assert.deepEqual(await rows('SELECT * FROM pilot.identities WHERE id=ANY($1::uuid[]) ORDER BY id',
+        [[a.user, operator.identityId]]), identitiesBefore);
+      assert.deepEqual(await rows('SELECT * FROM pilot.sessions WHERE id=ANY($1::uuid[]) ORDER BY id',
+        [[manager.id, foreign.id, operator.sessionId]]), sessionsBefore.map(row =>
+        row.id === manager.id ? { ...row, revoked_at: now } : row));
+      await assert.rejects(readCustomer(manager.binding), /Denied/);
+      assert.equal((await readCustomer(foreign.binding)).customer.role, 'Manager');
+      assert.deepEqual(await invitationRows(), invitationsBefore.map(row =>
+        [issuedByTarget.id, pendingManager.id].includes(row.id) ? { ...row, revoked_at: now } : row));
+      assert.deepEqual(await occurrenceState(open), { state: 'draft', approval_id: null });
+      assert.deepEqual(await occurrenceState(claimed), { state: 'in_flight', approval_id: claimedApproval });
+      assert.deepEqual(await occurrenceState(exported), { state: 'exported', approval_id: exportedApproval });
+      assert.deepEqual(await occurrenceState(quarantined), { state: 'quarantined', approval_id: quarantinedApproval });
+      assert.deepEqual(await occurrenceState(outside), { state: 'approved', approval_id: outsideApproval });
+      assert.deepEqual(await history(), historyBefore);
+      const revocationAudit = (await audit()).filter(row => row.action === 'membership_revoked');
+      assert.deepEqual(revocationAudit, [{
+        actor_id: operator.identityId, device_id: operator.deviceId, membership_id: a.membership, membership_version: 6,
+        action: 'membership_revoked', reason: 'Confirmed revocation', outcome: 'revoked', created_at: now
+      }]);
+
+      const employee = (await members()).find(m => m.role === 'Employee')!;
+      const email = `employee-${randomUUID()}@example.invalid`;
+      await owner.query('UPDATE pilot.identities SET verified=true WHERE id=$1', [employee.identity_id]);
+      const pendingEmployee = await adminInvite(a.tenant, email, 'Employee');
+      assert.equal(pendingEmployee.delivery, 'captured');
+      assert.ok(!(await members()).some(m => m.active && m.role === 'Manager'));
+      assert.equal(await revokeManagementMembership(connectFixture, { ...proof, membershipId: employee.id, membershipVersion: 1 },
+        a.tenant, employee.id, 'Remove Employee without Manager', clock, new Map([[`fixture-${employee.identity_id}`, email]])), true);
+      assert.deepEqual((await members()).find(m => m.id === employee.id), { ...employee, active: false, version: 2 });
+      assert.deepEqual(await rows('SELECT revoked_at FROM pilot.invitations WHERE id=$1', [pendingEmployee.id]), [{ revoked_at: now }]);
     });
   } finally {
     await owner.end();
