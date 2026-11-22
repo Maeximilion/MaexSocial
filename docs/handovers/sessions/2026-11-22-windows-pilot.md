@@ -14,7 +14,7 @@ Codex (Sol 6.2, high) prepared this evidence. The configured Claude API reviewer
 - Branch — `dev-codex/205-windows-pilot`. Work head before this handover commit and exact local test revision — `bfce4840343ec917a3a222e0b318e1010e6b40e6`. PR pending at this checkpoint.
 - Local history — [PR #203](https://github.com/Maeximilion/MaexSocial/pull/203) at `66b77786781e9dfed72955512ce941837aeab4f8` and [PR #204](https://github.com/Maeximilion/MaexSocial/pull/204) at `bbd772777147415ee7b91f3bfd52e383c3ac7f93`. All three test files were byte-identical across these revisions and the new local baseline.
 
-Hosted Linux controls passed all three cases in both phases. Revisions below are the actual Actions checkouts.
+The hosted Linux logs show a pass for each of the three cases in both phases of every run. The PR #204 candidate added four [video replay cases](../../../tests/pilot/video-replay.test.ts), which account for the increase from 32 to 36 outer tests. Revisions below are the actual Actions checkouts.
 
 | Hosted pilot | Tested revision | Fresh | Retained |
 | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ Use this record in [#10](https://github.com/Maeximilion/MaexSocial/issues/10) an
 
 ## Open
 
-The coordinator verifies the PR and decides #205 closeout. #222 owns the next diagnostic change. Keep the fresh-factor assertion and all current security controls enabled.
+The coordinator verifies the PR before deciding whether to merge it. Merging the PR closes #205. #222 owns the next diagnostic change. Keep the fresh-factor assertion and all current security controls enabled.
 
 - Console — PowerShell.
 - Folder/worktree — `$env:USERPROFILE\.codex\worktrees\issue-205-windows-pilot\MaexSocial`.
