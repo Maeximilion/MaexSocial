@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
@@ -8,7 +8,7 @@ import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixtur
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-export async function initialize(forBackup = false): Promise<{ fixture: Fixture; effectiveIdentityConfig: string }> {
+export async function initialize(forBackup = false): Promise<Fixture> {
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
@@ -71,8 +71,7 @@ export async function initialize(forBackup = false): Promise<{ fixture: Fixture;
         secretData: JSON.stringify({ value: stepOtp }),
         credentialData: JSON.stringify({ subType: 'totp', digits: 6, counter: 0, period: 30, algorithm: 'HmacSHA1' }) }] : [])] });
   }
-  const realmConfig = JSON.stringify(realm);
-  await save('keycloak-realm.json', realmConfig);
+  await save('keycloak-realm.json', JSON.stringify(realm));
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
   await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
@@ -103,7 +102,7 @@ ALTER DATABASE identity_fixture OWNER TO keycloak;
 REVOKE ALL ON DATABASE identity_fixture, postgres, template1 FROM PUBLIC;
 GRANT CONNECT ON DATABASE identity_fixture TO keycloak;
 ALTER SCHEMA public OWNER TO keycloak;\n`);
-  const keycloakConfig = `db=postgres
+  await save('keycloak.conf', `db=postgres
 db-url=jdbc:postgresql://identity-db:5432/identity_fixture?sslmode=verify-full&sslrootcert=/fixture/db.crt
 db-username=keycloak
 db-password=${f.keycloakPassword}
@@ -113,14 +112,11 @@ https-certificate-file=/fixture/server.crt
 https-certificate-key-file=/fixture/server.key
 truststore-paths=/fixture/mail.crt
 health-enabled=true
-`;
-  await save('keycloak.conf', keycloakConfig);
-  // Keycloak owns these private files after provisioning, so hash the bytes the host wrote before chown.
-  const effectiveIdentityConfig = createHash('sha256').update(JSON.stringify([keycloakConfig, realmConfig])).digest('hex');
+`);
   docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'sh', postgresImage,
     '-c', 'chown 1000:1000 /fixture/keycloak.conf /fixture/keycloak-realm.json; chown 999:999 /fixture/init-app.sql /fixture/init-identity.sql /fixture/owner-password /fixture/identity-password']);
   await mkdir('work/pilot/provider-state');
-  return { fixture: f, effectiveIdentityConfig };
+  return f;
 }
 
 async function ready(hostname: string, port: number, certificate: string, path: string): Promise<void> {
@@ -151,7 +147,7 @@ async function main(): Promise<void> {
   try { f = await loadFixture(action === 'down'); }
   catch (error) {
     if (action !== 'up' || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    f = (await initialize()).fixture;
+    f = await initialize();
   }
   if (action === 'down') {
     compose(f, ['down']);

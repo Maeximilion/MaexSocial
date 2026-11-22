@@ -25,7 +25,6 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   const pair = {
     format: 1 as const, fixtureId, revision: 'b'.repeat(40), compatibility, postgresImage,
     appliedAppSchema: sha256('applied schema'), identitySchema: sha256('identity schema'),
-    effectiveIdentityConfig: sha256('generated identity config'),
     archives: {
       'app-db.tar': { sha256: sha256(app), systemId: '123', catalogVersion: '202406281' },
       'identity-db.tar': { sha256: sha256(identity), systemId: '456', catalogVersion: '202406281' },

@@ -10,7 +10,7 @@
     "pilot:up": "node dist/pilot/ops/local/stack.js up",
     "pilot:down": "node dist/pilot/ops/local/stack.js down",
     "pilot:migrate": "node dist/pilot/scripts/pilot-db.js",
-    "pilot:backup": "node dist/pilot/ops/local/backup.js",
+    "pilot:backup": "npm run pilot:build && node dist/pilot/ops/local/backup.js",
     "pilot:stop-dispatch": "node dist/pilot/ops/local/dispatch-control.js stop",
     "pilot:dispatch-status": "node dist/pilot/ops/local/dispatch-control.js status",
     "pilot:test": "node --test --test-concurrency=1 dist/pilot/tests/pilot/*.test.js"

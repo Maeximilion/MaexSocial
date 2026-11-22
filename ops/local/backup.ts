@@ -58,14 +58,13 @@ type Pair = {
   appliedAppSchema: string;
   identitySchema: string;
   postgresImage: string;
-  effectiveIdentityConfig: string;
   archives: Record<string, { sha256: string; systemId: string; catalogVersion: string }>;
 };
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
   if (pair?.format !== 1 || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
-      || !digest.test(pair.effectiveIdentityConfig) || pair.postgresImage !== postgresImage
+      || pair.postgresImage !== postgresImage
       || !isDeepStrictEqual(pair.compatibility, expected)) {
     throw new Error('Backup pair has an unknown identity or incompatible build, schema or configuration.');
   }
@@ -167,14 +166,20 @@ function copyCluster(f: Fixture, db: Database, output: string): Pair['archives']
   return { sha256, systemId, catalogVersion };
 }
 
+function cleanRevision(): string {
+  const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+  if (git('status', '--porcelain', '--untracked-files=normal')) throw new Error('Capture requires a clean source worktree.');
+  return git('rev-parse', 'HEAD');
+}
+
 async function capture(): Promise<void> {
+  const revision = cleanRevision();
   const endpoint = (!process.env.DOCKER_CONTEXT && process.env.DOCKER_HOST)
     || JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}']));
   if (typeof endpoint !== 'string' || !/^(unix|npipe):\/\//.test(endpoint)) throw new Error('Cold backup requires a local Docker socket.');
 
-  const { fixture: f, effectiveIdentityConfig } = await initialize(true);
+  const f = await initialize(true);
   const expected = await compatibility(f);
-  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const imageId = (image: string) => docker(['image', 'inspect', '--format', '{{.Id}}', image]);
   const postgresId = imageId(postgresImage);
   const keycloakId = imageId(expected.keycloakImage);
@@ -211,8 +216,9 @@ async function capture(): Promise<void> {
     const archives = Object.fromEntries(databases.map(db => [db.archive, copyCluster(f, db, directory + '.pending')]));
     if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
     const pair: Pair = { format: 1, fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
-      postgresImage, effectiveIdentityConfig, archives };
+      postgresImage, archives };
     await verifyPair(directory + '.pending', f.id, await compatibility(f), pair);
+    if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
     await writeFile(join(directory + '.pending', 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
     await rename(directory + '.pending', directory);
   } finally {

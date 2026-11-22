@@ -45,13 +45,12 @@ For a fresh run after expiry or a failed initialization, stop the fixture, prese
 Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`.
 
 ~~~text
-npm run pilot:build
 npm run pilot:backup -- capture
 npm run pilot:backup -- verify
 node --test dist/pilot/tests/pilot/cold-backup.test.js
 ~~~
 
-Capture initializes its own disposable fixture, migrates AppDB, seeds an invented tenant and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
+The backup command builds the current source. Capture requires a clean worktree and checks the source revision again before publishing. It initializes its own disposable fixture, migrates AppDB, seeds an invented tenant and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
 
 The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
 
