@@ -19,6 +19,10 @@ The local Task 6 receipt supplies a tested candidate for separately authorized s
 
 ## Planning maturity
 
+Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
+[private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
+The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.
+
 Bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexSocial/pull/157) merged the internal
 [PostgreSQL abuse-limit contract](../ops/local/README.md#internal-accountsource-throttles-154): accepted per-account
 and per-source limits, atomic denied-attempt charging and restart continuity. This is not public authentication,
