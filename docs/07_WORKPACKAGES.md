@@ -6,6 +6,11 @@ Task 2 update, 2026-11-17: [A1 / #135](https://github.com/Maeximilion/MaexSocial
 
 Bounded Task 2A2 component [#143 / PR #146](https://github.com/Maeximilion/MaexSocial/pull/146) merged private fresh enrolled-factor event evidence using #139's verifier/store and an isolated Keycloak fixture. [Executed evidence and limits](handovers/sessions/2026-11-17-fresh-factor.md) include repeated SSO OTP execution, no inline enrollment and a final database-clock freshness check. Current enrollment/recovery-generation validation and A1 representation remain in #131.
 
+The Task 2B local components [#207](https://github.com/Maeximilion/MaexSocial/issues/207) and
+[#209](https://github.com/Maeximilion/MaexSocial/issues/209) provide read-only preview and private
+mailbox issuance and resend. [#221](https://github.com/Maeximilion/MaexSocial/issues/221) retains the
+authenticated integration and acceptance evidence for [#123](https://github.com/Maeximilion/MaexSocial/issues/123).
+
 ## Audit follow-up · 2026-11-21
 
 [P1 tracker #162](https://github.com/Maeximilion/MaexSocial/issues/162) records the audit, owners, native dependencies and closure evidence. The accepted local sequence is storage [Task 1 / #114](https://github.com/Maeximilion/MaexSocial/issues/114), portal and approval Task 2 (#117/#131/#123/#124), signed Windows DEV/Admin [Task 3 / #164](https://github.com/Maeximilion/MaexSocial/issues/164), fake dispatch and terminal export [Task 4 / #165](https://github.com/Maeximilion/MaexSocial/issues/165), stop, rollback and isolated restore [Task 5 / #166](https://github.com/Maeximilion/MaexSocial/issues/166), and whole-slice evidence Task 6 under [#10](https://github.com/Maeximilion/MaexSocial/issues/10). Tasks 3–6 consume the preceding integrated evidence in that order.

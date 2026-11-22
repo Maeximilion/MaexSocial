@@ -1,6 +1,6 @@
 # Project status
 
-- Status date — 2026-11-21
+- Status date — 2026-11-22
 - Stage — Bounded G2 accepted. G3 local synthetic delivery is at Task 2; Task 1 storage and the bounded components below are on main.
 - Gates — G0 complete, G1 accepted for bounded discovery, G2 accepted on 2026-11-06; #113 merged and annotated gate-g2 verified at `192d0c5`. G3–G5 open. #10/#82/#131 block G3/G5; [#99](https://github.com/Maeximilion/MaexSocial/issues/99) blocks G4/G5 and [#88](https://github.com/Maeximilion/MaexSocial/issues/88) also blocks G5
 - Product implementation — Task 1 [PR #118](https://github.com/Maeximilion/MaexSocial/pull/118) and the synthetic session/tenant/CSRF/portal foundation [PR #135](https://github.com/Maeximilion/MaexSocial/pull/135) merged. The read-only Keycloak status adapter [#136 / PR #138](https://github.com/Maeximilion/MaexSocial/pull/138) is a local component. [#131](https://github.com/Maeximilion/MaexSocial/issues/131) retains real signup/login/activation/recovery/MFA and completion provenance. #123 Employee management and #124 content approval retain their real auth prerequisites. Task 2 needs A1+A2+B+C and integrated evidence. See the [delivery plan](superpowers/plans/2026-11-06-task-2-deliveries.md), [evidence map](superpowers/plans/2026-11-05-ms-009-pilot-evidence-map.md) and [fixture commands](../ops/local/README.md).
@@ -9,6 +9,12 @@
 - Canonical checkout — `C:/Users/Maxi/Documents/GitHub/MaexSocial`, clean `main`
 
 ## Current work
+
+Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
+[private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
+synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)
+uses a current Manager and inspects the stored bindings and captured messages. [#221](https://github.com/Maeximilion/MaexSocial/issues/221)
+retains authenticated integration and acceptance under [#123](https://github.com/Maeximilion/MaexSocial/issues/123).
 
 November 21 test maintenance [#155](https://github.com/Maeximilion/MaexSocial/issues/155) corrects the two OIDC elapsed assertions while retaining their strict 6500 ms limit. The [delivery handover](handovers/sessions/2026-11-21-oidc-monotonic-time.md) preserves both historical observations and the closure rationale. The original host cause remains undetermined. G3 and G5 acceptance remain open.
 

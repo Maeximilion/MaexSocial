@@ -128,6 +128,25 @@ the absence of token or recipient email in rendered messages and observed applic
 [#221](https://github.com/Maeximilion/MaexSocial/issues/221) owns authenticated link delivery, real identity
 proof and invitation acceptance. The fixture does not issue links, consume credentials or grant access.
 
+## Private Employee invitation issuance (#209)
+
+After the strict build and fixture migration, run `node --test dist/pilot/tests/pilot/invitation-issue.test.js`.
+The private `issueEmployeeInvitation` operation runs in the isolated runner. Its server-owned callback
+validates and locks the current customer context on the operation's transaction. The operation checks
+fresh enrolled Manager MFA, binds the normalized recipient and current workspace and issuer, and stores a
+24-hour Employee invitation using only the token hash. An unexpired pending Employee invitation blocks
+a second issue for the same workspace and recipient. A membership-issued invitation stops blocking a
+new issue once the issuer membership version advances past the stored version. An explicit resend
+supplies the previous ID and the same recipient. Resend retires the previous unconsumed invitation and advances the grant version
+in the same transaction. Concurrent operations for the same workspace and recipient are serialized.
+
+After commit the runner submits a single message over certificate-verified HTTPS to the local Mailpit
+sink. Only the mailbox receives the raw token, in the fixture preview URL fragment. The private result
+returns the invitation ID and whether capture was confirmed. An unconfirmed reply can be handled by
+explicitly replacing that ID. The test inspects the actual mailbox message, the preview lookup,
+both invitation generations and unchanged memberships.
+[#221](https://github.com/Maeximilion/MaexSocial/issues/221) owns authenticated link handling and acceptance.
+
 ## Pins and evidence
 
 Pins were read from official sources on 2026-11-06. The lockfile fixes packages and integrity; Compose fixes image tags **and** registry digests. Node is pinned for CI and the isolated runner. TypeScript 7.0.2 and node-postgres 8.23.1 use the registry metadata of their upstream packages.
