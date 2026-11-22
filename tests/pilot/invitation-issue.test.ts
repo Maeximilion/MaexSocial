@@ -294,6 +294,7 @@ test('private Employee invitation issuance and resend use the current issuer and
     assert.deepEqual(await issued(), []);
     assert.deepEqual(await audited(), []);
     assert.equal(await countMail(), mailBefore);
+    await assert.rejects(invite(proof(email, 'Manager', tenantA)), /Denied/);
 
     const managerInvitation = await issueManagementInvitation({ connect: connectFixture, clock, mailboxCa }, proof(),
       tenantId, ` ${target.toUpperCase()} `, 'Manager', reason);
@@ -359,6 +360,10 @@ test('private Employee invitation issuance and resend use the current issuer and
     assert.deepEqual(await previewInvitation(db, contestedToken, contested), { name: tenantName, role: contestedRole });
     assert.equal(await countMail(), mailBefore + 4);
 
+    const platformFirst = `platform-first-${email}`;
+    assert.equal((await invite(proof(platformFirst, 'Manager', tenantA))).delivery, 'captured');
+    const platformFirstToken = await latestToken(platformFirst, 'Manager');
+    await assert.rejects(issueEmployeeInvitation(otherManager.issuer, platformFirst), /Denied/);
     await db.query('UPDATE pilot.invitations SET revoked_at=$3 WHERE tenant_id=$1 AND id=$2',
       [tenantB, employeeInvitation.id, now]);
     assert.equal(await previewInvitation(db, employeeToken, target), undefined);
@@ -369,6 +374,8 @@ test('private Employee invitation issuance and resend use the current issuer and
     await db.query('UPDATE pilot.platform_grants SET active=true,version=version+1 WHERE id=$1', [operator.grantId]);
     assert.equal(await previewInvitation(db, replacementToken, target), undefined);
     await assert.rejects(invite(), /Denied/);
+    assert.equal(await previewInvitation(db, platformFirstToken, platformFirst), undefined);
+    assert.equal((await issueEmployeeInvitation(otherManager.issuer, platformFirst)).delivery, 'captured');
     assert.equal((await issueEmployeeInvitation(managerB.issuer, target)).delivery, 'captured');
     assert.deepEqual(await access(), before);
   });
