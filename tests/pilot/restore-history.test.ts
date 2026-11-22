@@ -11,7 +11,7 @@ const command = 'dist/pilot/ops/local/recover.js';
 const testFile = 'dist/pilot/tests/pilot/restore-history.test.js';
 const input = 'work/pilot/restore-history.json';
 const run = (digest: string) => promisify(execFile)(process.execPath,
-  [command, 'replay-history', '10', '13', digest], { timeout: 45_000 });
+  [command, 'replay-history', '10', '15', digest], { timeout: 45_000 });
 const sha = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
 
 if (process.env.PILOT_CONTAINER !== '1') {
@@ -27,7 +27,7 @@ if (process.env.PILOT_CONTAINER !== '1') {
       const phase = (name: string) => runIsolated(['--test', '--test-reporter=tap', `--test-name-pattern=^${name}$`, testFile]);
       const seed = await phase('seed');
       const records = JSON.parse(seed.match(/^# HISTORY (.*)$/m)![1]!);
-      const history = { schema: 1, fixtureId: fixture.id, after: 10, through: 13, records };
+      const history = { schema: 1, fixtureId: fixture.id, after: 10, through: 15, records };
       const complete = JSON.stringify(history);
 
       await writeFile(input, complete);
@@ -40,9 +40,9 @@ if (process.env.PILOT_CONTAINER !== '1') {
         { ...history, schema: 2 },
         { ...history, fixtureId: '0'.repeat(32) },
         { ...history, after: 9 },
-        { ...history, records: [records[0], records[2], records[2]] },
-        { ...history, records: records.slice(0, 2) },
-        { ...history, records: [records[0], records[1], { ...records[2], version: 2 }] },
+        { ...history, records: [records[0], ...records.slice(2), records[4]] },
+        { ...history, records: records.slice(0, -1) },
+        { ...history, records: [records[0], records[1], { ...records[2], version: 2 }, ...records.slice(3)] },
       ]) {
         const bytes = JSON.stringify(bad);
         await writeFile(input, bytes);
@@ -59,7 +59,7 @@ if (process.env.PILOT_CONTAINER !== '1') {
 
       const first = JSON.parse((await run(sha(complete))).stdout);
       assert.deepEqual(first, { quarantined: 0, stopped: true, applicationLogin: false,
-        history: { applied: 3 }, topology: { internalNetworks: 2, publishedHostPorts: 0 } });
+        history: { applied: 5 }, topology: { internalNetworks: 2, publishedHostPorts: 0 } });
       await phase('applied');
       assert.equal(JSON.parse((await run(sha(complete))).stdout).history.applied, 0);
       assert.equal(await readFile(input, 'utf8'), complete);
@@ -119,6 +119,8 @@ if (process.env.PILOT_CONTAINER !== '1') {
           { seq: 11, kind: 'delete-facts', tenantId: f.tenant, id: f.location },
           { seq: 12, kind: 'revoke-grant', tenantId: f.tenant, id: f.location, version: 2 },
           { seq: 13, kind: 'revoke-device', id: device, version: 1 },
+          { seq: 14, kind: 'delete-facts', tenantId: f.tenant, id: f.location },
+          { seq: 15, kind: 'delete-facts', tenantId: f.tenant, id: randomUUID() },
         ]));
       }
       await owner.query('UPDATE pilot.dispatch_control SET stopped=false');

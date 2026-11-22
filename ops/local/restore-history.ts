@@ -70,10 +70,9 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.
       await db.query('ALTER TABLE pilot.business_fact_revisions DISABLE TRIGGER immutable_business_facts');
-      const deleted = await db.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',
+      await db.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',
         [event.tenantId, event.id]);
       await db.query('ALTER TABLE pilot.business_fact_revisions ENABLE TRIGGER immutable_business_facts');
-      if (!deleted.rowCount) return incompatible();
     } else if (event.kind === 'revoke-grant') {
       const revoked = await db.query(`UPDATE pilot.locations SET grant_active=false,version=version+1
         WHERE tenant_id=$1 AND id=$2 AND grant_active AND version=$3`, [event.tenantId, event.id, event.version]);

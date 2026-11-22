@@ -188,7 +188,7 @@ cover every integer sequence from `after + 1` through `through` in order. Each r
 
 | `kind` | Target | Effect |
 | --- | --- | --- |
-| `delete-facts` | `tenantId` and location `id` | Remove every synthetic business-fact revision at that location. |
+| `delete-facts` | `tenantId` and location `id` | Remove every synthetic business-fact revision at that location. Facts already absent satisfy the deletion. |
 | `revoke-grant` | `tenantId`, location `id` and current `version` | Disable that location's provider grant and advance its version. |
 | `revoke-device` | Device `id` and current `version` | Disable that admin device and advance its version. |
 
