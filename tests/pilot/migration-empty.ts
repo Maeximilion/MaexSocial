@@ -18,6 +18,7 @@ test('migration guards preserve populated state and upgrade a historical approva
       assert.equal((await db.query("SELECT to_regclass('pilot.occurrences') AS name")).rows[0].name, 'pilot.occurrences');
       assert.equal((await db.query("SELECT to_regclass('pilot.business_fact_revisions') AS name")).rows[0].name, 'pilot.business_fact_revisions');
     });
+    await db.query(await readFile('db/migrations/012_approval_withdrawal.down.sql', 'utf8'));
     await db.query(await readFile('db/migrations/011_approval_tenant_version.down.sql', 'utf8'));
     const tenant = await seedTenant(db);
     const id = await occurrence(db, tenant);
@@ -29,6 +30,7 @@ test('migration guards preserve populated state and upgrade a historical approva
     ) UPDATE pilot.occurrences SET approval_id=historical.id,state='approved' FROM historical
       WHERE pilot.occurrences.id=$1 RETURNING approval_id,state`, [id, tenant.revision, tenant.membership]);
     await migrate('up');
+    assert.equal((await db.query('SELECT approval_id FROM pilot.audit LIMIT 0')).rowCount, 0);
     const read = `SELECT o.approval_id,o.state,a.tenant_version FROM pilot.occurrences o
       JOIN pilot.approvals a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id AND a.id=o.approval_id
       WHERE o.id=$1`;

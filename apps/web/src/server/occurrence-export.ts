@@ -15,8 +15,8 @@ export async function claimExport(connect: () => Promise<Client>, binding: Custo
     await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
     // Discover the lock keys only. Revalidate all bindings after acquiring the locks.
     const candidate = (await db.query<{
-      tenant_id: string; draft_id: string; caller_id: string; approver_id: string;
-    }>(`SELECT s.tenant_id,o.draft_id,s.identity_id AS caller_id,m.identity_id AS approver_id
+      tenant_id: string; draft_id: string; caller_id: string; approver_id: string; approval_id: string;
+    }>(`SELECT s.tenant_id,o.draft_id,s.identity_id AS caller_id,m.identity_id AS approver_id,o.approval_id
       FROM pilot.sessions s
       JOIN pilot.occurrences o ON o.tenant_id=s.tenant_id AND o.id=$2
       JOIN pilot.approvals a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id AND a.id=o.approval_id
@@ -48,14 +48,14 @@ export async function claimExport(connect: () => Promise<Client>, binding: Custo
         AND m.version=a.membership_version AND m.active AND m.role='Manager'
       JOIN pilot.identities i ON i.id=m.identity_id AND i.verified
       JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
-      WHERE o.tenant_id=$1 AND o.id=$2 AND i.id=$3 AND NOT l.grant_active AND a.tenant_version=$4
+      WHERE o.tenant_id=$1 AND o.id=$2 AND i.id=$3 AND NOT l.grant_active AND a.tenant_version=$4 AND a.id=$5
         AND (a.grant_version=l.version OR (a.grant_active_at_approval AND a.grant_version=l.version-1))
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
         AND NOT EXISTS (SELECT 1 FROM pilot.audit h
           WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
-      FOR SHARE OF m`, [tenantId, occurrenceId, candidate.approver_id, caller.tenantVersion])).rows[0] ?? deny();
+      FOR SHARE OF m`, [tenantId, occurrenceId, candidate.approver_id, caller.tenantVersion, candidate.approval_id])).rows[0] ?? deny();
 
     const current = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
     if (current.tenantId !== tenantId || current.identityId !== caller.identityId

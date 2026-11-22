@@ -126,6 +126,7 @@ interface OccurrenceView {
   observed_at: Date | null;
   approval_id: string | null;
   approval_tenant_version: number | null;
+  withdrawal_count: string | null;
   due_at: Date;
   due_instant: string;
   timezone: string;
@@ -142,6 +143,8 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
   // Keep displayed details and the private approval proposal in the same statement snapshot.
   const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
     approved.tenant_version AS approval_tenant_version,
+    CASE WHEN $4::boolean THEN (SELECT count(*)::text FROM pilot.audit w
+      WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.action='approval_withdrawal') END AS withdrawal_count,
     extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
     p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
     a.approval_id=o.approval_id AS attempt_matches_approval FROM pilot.occurrences o
@@ -221,6 +224,7 @@ ${details}
 }
 
 interface ApprovalProposal {
+  withdrawalCount: string;
   tenantId: string;
   tenantVersion: number;
   membershipId: string;
@@ -237,10 +241,11 @@ interface ApprovalProposal {
 
 export async function readApprovalProposal(db: Client, context: CustomerContext, occurrenceId: string): Promise<ApprovalProposal> {
   const occurrence = await readOccurrence(db, context, occurrenceId, true);
-  if (!occurrence.revision_id || occurrence.approval_tenant_version === context.tenantVersion) return deny();
+  if (!occurrence.revision_id || occurrence.withdrawal_count === null
+    || occurrence.approval_tenant_version === context.tenantVersion) return deny();
   localDueTime(occurrence);
   return {
-    tenantId: context.tenantId, tenantVersion: context.tenantVersion,
+    tenantId: context.tenantId, tenantVersion: context.tenantVersion, withdrawalCount: occurrence.withdrawal_count,
     membershipId: context.membershipId, membershipVersion: context.membershipVersion,
     draftId: occurrence.draft_id, occurrenceId, revisionId: occurrence.revision_id, locationId: occurrence.location_id,
     providerLocation: occurrence.provider_location, grantVersion: occurrence.grant_version, dueInstant: occurrence.due_instant,
@@ -274,6 +279,7 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
 
     const occurrence = await readOccurrence(db, context, proposal.occurrenceId, true);
     if (!occurrence.revision_id || occurrence.revision_id !== proposal.revisionId
+      || occurrence.withdrawal_count !== proposal.withdrawalCount
       || occurrence.grant_version !== proposal.grantVersion || occurrence.provider_location !== proposal.providerLocation
       || occurrence.due_instant !== proposal.dueInstant || occurrence.timezone !== proposal.timezone) return deny();
 
@@ -308,6 +314,55 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
     }
     await db.query('COMMIT');
     return approvalId;
+  } catch (error) { await db.query('ROLLBACK'); throw error; }
+  finally { await db.end(); }
+}
+
+// Private entry point for the isolated pilot, with no HTTP mount.
+export async function withdrawApproval(connect: () => Promise<Client>, binding: CustomerRequest,
+  occurrenceId: string, approvalId: string, clock: () => Date, inspect: InspectIdentity): Promise<boolean> {
+  binding = { ...binding };
+  if (!uuid(occurrenceId) || !uuid(approvalId)) return deny();
+
+  const db = await connect();
+  try {
+    await db.query('BEGIN');
+    const context = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    requireManagerMfa(context, clock);
+    const { tenantId, tenantVersion, membershipId, membershipVersion, identityId } = context;
+    const draft = await db.query(`SELECT d.id FROM pilot.occurrences o
+      JOIN pilot.drafts d ON d.tenant_id=o.tenant_id AND d.id=o.draft_id
+      WHERE o.tenant_id=$1 AND o.id=$2 FOR UPDATE OF d`, [tenantId, occurrenceId]);
+    if (draft.rowCount !== 1) return deny();
+    const occurrence = (await db.query<{ approval_id: string | null; state: string }>(
+      'SELECT approval_id,state FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2 FOR UPDATE',
+      [tenantId, occurrenceId])).rows[0] ?? deny();
+
+    const approval = (await db.query<{ withdrawn: boolean }>(`SELECT EXISTS (
+        SELECT 1 FROM pilot.audit w WHERE w.tenant_id=a.tenant_id AND w.occurrence_id=a.occurrence_id
+          AND w.action='approval_withdrawal' AND w.approval_id=a.id) AS withdrawn
+      FROM pilot.approvals a WHERE a.tenant_id=$1 AND a.occurrence_id=$2 AND a.id=$3
+        AND a.tenant_version=$4 AND a.membership_id=$5 AND a.membership_version=$6`,
+    [tenantId, occurrenceId, approvalId, tenantVersion, membershipId, membershipVersion])).rows[0] ?? deny();
+
+    // Recheck current enrolled MFA after waiting for the same locks as dispatch and export.
+    requireManagerMfa(await requireCustomerRequest(db, binding, clock, inspect, 'read-only'), clock);
+    if (!approval.withdrawn) {
+      if (occurrence.state !== 'approved' || occurrence.approval_id !== approvalId) return deny();
+      const updated = await db.query(`UPDATE pilot.occurrences o SET approval_id=NULL,state='draft'
+        WHERE o.tenant_id=$1 AND o.id=$2
+          AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
+          AND NOT EXISTS (SELECT 1 FROM pilot.audit h
+            WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')`,
+      [tenantId, occurrenceId]);
+      if (updated.rowCount !== 1) return deny();
+      const audit = await db.query(`INSERT INTO pilot.audit(tenant_id,actor_id,occurrence_id,approval_id,action,reason,outcome)
+        VALUES($1,$2,$3,$4,'approval_withdrawal','Approving Manager withdrew approval','withdrawn')`,
+      [tenantId, identityId, occurrenceId, approvalId]);
+      if (audit.rowCount !== 1) return deny();
+    }
+    await db.query('COMMIT');
+    return !approval.withdrawn;
   } catch (error) { await db.query('ROLLBACK'); throw error; }
   finally { await db.end(); }
 }
