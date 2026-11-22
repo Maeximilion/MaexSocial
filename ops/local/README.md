@@ -353,6 +353,27 @@ boundary, invalid or stale authority, customer authority, unchanged existing ten
 [#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains the listener, Windows client,
 actual device and phishing-resistant proof verification, and separate named-access provisioning.
 
+## Private organization directory (#269)
+
+[The unmounted read](../../packages/contracts/management-directory.ts) accepts a trusted DEV/Admin
+directory context. Each page checks the current management session, verified identity, active device
+and platform grant against a read-only database snapshot. The stored phishing-resistant assertion
+must match the session proof. The session expiry, 10-minute idle and 1-hour absolute limits apply.
+The five-minute step-up bound applies to management writes.
+
+A page contains at most 50 active or inactive organizations, ordered by existing organization UUID.
+Each entry contains only the ID, display name and active flag. Display the ID alongside the name to
+distinguish equally named organizations. Pass the last returned ID in `nextAfter` to continue until
+it is null. Each page takes a new snapshot, so changes to organizations may be visible between pages.
+Selecting an ID leaves authority and stored state intact. Subsequent mutations still validate their
+target, current authority and step-up independently.
+
+After the strict build and ordinary fixture migration, run
+`node --test dist/pilot/tests/pilot/management-directory.test.js`. The fixture checks pagination,
+minimal results, revocation between pages, session limits and unchanged stored state.
+[#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains device and identity proof,
+the private listener, the Windows client and integrated acceptance.
+
 ## Private tenant role changes (#236)
 
 [The private transaction](../../packages/contracts/management-role-change.ts) consumes already validated

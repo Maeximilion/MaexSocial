@@ -82,6 +82,10 @@ Bounded Task 3 component [#263](https://github.com/Maeximilion/MaexSocial/issues
 [private membership revocation](../ops/local/README.md#private-devadmin-membership-revocation-263)
 for either customer role with the current DEV/Admin proof and an audit written in the same transaction.
 
+Bounded Task 3 component [#269](https://github.com/Maeximilion/MaexSocial/issues/269) supplies
+[read-only organization selection](../ops/local/README.md#private-organization-directory-269).
+Native management sign-in, device proof and accessible target confirmation remain under #164.
+
 Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
 [private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
 The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.
