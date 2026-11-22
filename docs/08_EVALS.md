@@ -88,6 +88,26 @@ Reuse the fixture and receipt format for [#167's evaluation plan](https://github
 
 The [#167 decision packet and executable examples](research/2026-11-21-product-ai-decision.md) extend the fictional media receipt with source conflicts, denied rights, manual approval and unauthorized model actions. It assigns the remaining measurements to #11, #99 and #12.
 
+### Local video submission replay
+
+The [runner](../ops/local/video-replay.ts) stores reservations and a persistent stop flag in SQLite. Its counting fake appends one receipt per call to a separate file, including duplicate calls. Each [test](../tests/pilot/video-replay.test.ts) uses a fresh temporary directory and invokes the CLI in a new process for every command.
+
+From the repository root with the pilot dependencies installed and Node 24.22.2, run:
+
+```sh
+npm run pilot:build
+node --test dist/pilot/tests/pilot/video-replay.test.js
+```
+
+| Sequence | Observed result |
+| --- | --- |
+| Reconcile before any writes | The fixture is unstopped and the job has no reservation. Neither the runner database nor a fake receipt is created. |
+| Reconcile after interrupted database initialization | An empty or partially initialized database with no reservations is read without changing its bytes. An incomplete schema with a reservation causes a read error. |
+| Submit, lose the reply, reopen and replay the same job, reconcile, stop, try a new job, reconcile again | One fake acceptance. The original outcome and charge stayed unknown and its reservation stayed held. The new job acquired no reservation. Repeated reconciliation left the database bytes unchanged both while running and while stopped. |
+| Stop before the first submission, submit in two separate processes, then reconcile | Zero fake acceptances and no reservation. The stop persisted. |
+
+This [#198 fixture](https://github.com/Maeximilion/MaexSocial/issues/198) runs offline with fictional identifiers. Actual provider behavior and charges require the [#11 spike](https://github.com/Maeximilion/MaexSocial/issues/11). [G4 acceptance](https://github.com/Maeximilion/MaexSocial/issues/17) remains open.
+
 ## Report format
 
 Record commit SHA, command or scenario, environment, expected result, observed result, pass/fail, artifact path and limitations. For model evaluations also record model/provider version, prompt revision, sample size, quality rubric, cost and human review method. Set measurable thresholds before interpreting the applicable pilot as passing.
