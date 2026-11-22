@@ -85,6 +85,8 @@ test('stored occurrence details preserve active-tenant authority and domain reco
       assert.equal(original.status, 200);
       assert.ok(original.text.includes('Proposed text · Revision 1'));
       assert.ok(original.text.includes('Invented plain text'));
+      assert.equal((await send(manager, `${previewPath}/approval`, undefined,
+        new URLSearchParams({ csrf: manager.csrf, revisionId: a.revision }).toString(), 'POST')).status, 404);
       assert.deepEqual(await snapshot(), beforeEdit);
 
       const revision = { revisionId: a.revision, csrf: employee.csrf, text: 'Updated <b>literal</b> & text\nSecond line' };

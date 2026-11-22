@@ -1,5 +1,7 @@
 import type { Client } from 'pg';
-import type { CustomerContext } from '../../../../packages/contracts/pilot.js';
+import type { CustomerContext, InspectIdentity } from '../../../../packages/contracts/pilot.js';
+import { requireCustomerRequest, type CustomerRequest } from '../server/request.js';
+import { requireManagerMfa } from '../server/session.js';
 import { html } from './portal.js';
 
 const uuid = (value: string): boolean => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
@@ -102,27 +104,49 @@ function renderDraftConflict(draftId: string, saved: { revision: number; text: s
 <p><a href="/customer/drafts/${html(draftId)}">Open current draft</a></p>`);
 }
 
-export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
+interface OccurrenceView {
+  draft_id: string;
+  state: string;
+  approval_id: string | null;
+  due_at: Date;
+  due_instant: string;
+  timezone: string;
+  location_id: string;
+  provider_location: string;
+  grant_version: number;
+  revision_id: string | null;
+  revision: number | null;
+  text: string | null;
+}
+
+async function readOccurrence(db: Client, context: CustomerContext, occurrenceId: string, includeApproved = false): Promise<OccurrenceView> {
   if (!uuid(occurrenceId)) deny();
-  // Read the proposal and its occurrence from the same statement snapshot.
-  const occurrence = (await db.query<{
-    draft_id: string; state: string; due_at: Date; timezone: string; provider_location: string;
-    revision: number | null; text: string | null;
-  }>(`SELECT o.draft_id,o.state,o.due_at,o.timezone,l.provider_location,p.revision,p.text FROM pilot.occurrences o
+  // Keep displayed details and the private approval proposal in the same statement snapshot.
+  const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
+    extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
+    p.id AS revision_id,p.revision,p.text FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
     LEFT JOIN LATERAL (
-      SELECT revision,text FROM pilot.draft_revisions
-      WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id
-        AND $3::boolean AND o.state='draft' AND o.approval_id IS NULL
+      SELECT id,revision,text FROM pilot.draft_revisions
+      WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND $3::boolean
+        AND ((o.state='draft' AND o.approval_id IS NULL) OR ($4::boolean AND o.state='approved' AND o.approval_id IS NOT NULL))
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id)
       ORDER BY revision DESC LIMIT 1
     ) p ON true
-    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId, context.role === 'Manager'])).rows[0];
-  if (!occurrence) return deny();
-  const utc = occurrence.due_at.toISOString();
-  const local = new Intl.DateTimeFormat('en-GB', {
+    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId, context.role === 'Manager', includeApproved])).rows[0];
+  return occurrence ?? deny();
+}
+
+function localDueTime(occurrence: OccurrenceView): string {
+  return new Intl.DateTimeFormat('en-GB', {
     timeZone: occurrence.timezone, dateStyle: 'long', timeStyle: 'long'
   }).format(occurrence.due_at);
+}
+
+export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
+  const occurrence = await readOccurrence(db, context, occurrenceId);
+  const utc = occurrence.due_at.toISOString();
+  const local = localDueTime(occurrence);
   const details = `<dl>
 <dt>Status</dt><dd>${html(occurrence.state)}</dd>
 <dt>Destination</dt><dd>${html(occurrence.provider_location)}</dd>
@@ -134,6 +158,94 @@ ${details}
 <p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
   return page('Post occurrence details', `${content}
 <p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`);
+}
+
+interface ApprovalProposal {
+  tenantId: string;
+  membershipId: string;
+  membershipVersion: number;
+  draftId: string;
+  occurrenceId: string;
+  revisionId: string;
+  locationId: string;
+  providerLocation: string;
+  grantVersion: number;
+  dueInstant: string;
+  timezone: string;
+}
+
+export async function readApprovalProposal(db: Client, context: CustomerContext, occurrenceId: string): Promise<ApprovalProposal> {
+  const occurrence = await readOccurrence(db, context, occurrenceId);
+  if (occurrence.state !== 'draft' || occurrence.approval_id || !occurrence.revision_id) return deny();
+  localDueTime(occurrence);
+  return {
+    tenantId: context.tenantId, membershipId: context.membershipId, membershipVersion: context.membershipVersion,
+    draftId: occurrence.draft_id, occurrenceId, revisionId: occurrence.revision_id, locationId: occurrence.location_id,
+    providerLocation: occurrence.provider_location, grantVersion: occurrence.grant_version, dueInstant: occurrence.due_instant,
+    timezone: occurrence.timezone
+  };
+}
+
+// Private entry point. Only the isolated harness supplies authority until the authenticated #223 integration.
+export async function approveOccurrence(connect: () => Promise<Client>, binding: CustomerRequest, proposal: ApprovalProposal,
+  clock: () => Date, inspect: InspectIdentity): Promise<string> {
+  proposal = { ...proposal };
+  binding = { ...binding };
+  if (!uuid(proposal.draftId) || !uuid(proposal.occurrenceId) || !uuid(proposal.locationId)) return deny();
+  const db = await connect();
+  try {
+    await db.query('BEGIN');
+    const context = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
+    requireManagerMfa(context, clock);
+    if (context.tenantId !== proposal.tenantId || context.membershipId !== proposal.membershipId
+      || context.membershipVersion !== proposal.membershipVersion) return deny();
+
+    const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',
+      [context.tenantId, proposal.draftId]);
+    if (!draft.rowCount) return deny();
+    const target = (await db.query<{ location_id: string }>(`SELECT location_id FROM pilot.occurrences
+      WHERE tenant_id=$1 AND draft_id=$2 AND id=$3 FOR UPDATE`, [context.tenantId, proposal.draftId, proposal.occurrenceId])).rows[0];
+    if (target?.location_id !== proposal.locationId) return deny();
+    const location = await db.query('SELECT id FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR SHARE',
+      [context.tenantId, target.location_id]);
+    if (!location.rowCount) return deny();
+
+    const occurrence = await readOccurrence(db, context, proposal.occurrenceId, true);
+    if (!occurrence.revision_id || occurrence.revision_id !== proposal.revisionId
+      || occurrence.grant_version !== proposal.grantVersion || occurrence.provider_location !== proposal.providerLocation
+      || occurrence.due_instant !== proposal.dueInstant || occurrence.timezone !== proposal.timezone) return deny();
+
+    try { localDueTime(occurrence); } catch { return deny(); }
+
+    // Recheck the session and current enrolled factor after any wait for domain locks.
+    const current = await requireCustomerRequest(db, binding, clock, inspect);
+    requireManagerMfa(current, clock);
+    let approvalId: string;
+    if (occurrence.state === 'approved' && occurrence.approval_id) {
+      const existing = await db.query(`SELECT 1 FROM pilot.approvals
+        WHERE tenant_id=$1 AND occurrence_id=$2 AND id=$3 AND revision_id=$4 AND location_id=$5
+          AND provider_location=$6 AND grant_version=$7 AND membership_id=$8 AND membership_version=$9
+          AND due_at=(SELECT due_at FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2) AND timezone=$10`,
+      [context.tenantId, proposal.occurrenceId, occurrence.approval_id, occurrence.revision_id, target.location_id,
+        occurrence.provider_location, occurrence.grant_version, context.membershipId, context.membershipVersion, occurrence.timezone]);
+      if (!existing.rowCount) return deny();
+      approvalId = occurrence.approval_id;
+    } else {
+      if (occurrence.state !== 'draft' || occurrence.approval_id) return deny();
+      const inserted = await db.query<{ id: string }>(`INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,
+        location_id,provider_location,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+        SELECT tenant_id,id,draft_id,$3,location_id,$4,$5,$6,$7,due_at,timezone,$8
+        FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2 RETURNING id`,
+      [context.tenantId, proposal.occurrenceId, occurrence.revision_id, occurrence.provider_location,
+        context.membershipId, context.membershipVersion, occurrence.grant_version, current.mfaAt]);
+      approvalId = inserted.rows[0]!.id;
+      await db.query("UPDATE pilot.occurrences SET approval_id=$3,state='approved' WHERE tenant_id=$1 AND id=$2",
+        [context.tenantId, proposal.occurrenceId, approvalId]);
+    }
+    await db.query('COMMIT');
+    return approvalId;
+  } catch (error) { await db.query('ROLLBACK'); throw error; }
+  finally { await db.end(); }
 }
 
 // Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.

@@ -66,6 +66,14 @@ The existing protected occurrence GET reads the current revision, occurrence and
 
 The [delivery checkpoint](../../handovers/sessions/2026-11-21-approval-preview.md) covers the isolated checks. Actual approval, reapproval and identity-backed MFA remain under #124 and #131.
 
+### Private immutable Manager approval (#208)
+
+The isolated harness reads its proposal from the same statement as the read-only preview. The private approval entry point reuses the current bound session and checks the active tenant, Manager membership and version. It locks the draft, its selected occurrence and the destination in that order, then compares the latest immutable revision, actual destination and its grant version, timezone and exact PostgreSQL due instant with the proposal. It checks current enrolled MFA again after those waits. Exactly five minutes is valid. The database preserves the due instant at its original precision and the provider-facing destination label as it existed at approval.
+
+A first valid confirmation creates one immutable approval and binds it to the existing unclaimed occurrence. The same current Manager grant and matching proposal return that ID while the occurrence remains approved and unattempted. A different grant cannot replace it through this operation. A location without active Google access can still be approved for the later export workflow. An advanced location grant version invalidates the old proposal. Migration 007 leaves the new destination label null for earlier rows whose original display value was never recorded. The guarded full down runner still refuses populated teardown.
+
+[Delivery evidence](../../handovers/sessions/2026-11-22-private-manager-approval.md) covers synthetic authority and PostgreSQL transactions. [#223](https://github.com/Maeximilion/MaexSocial/issues/223) retains the authenticated preview-to-approval and reapproval path through [#131](https://github.com/Maeximilion/MaexSocial/issues/131). The public approval input remains closed. No approval path invokes a provider, creates an attempt or reserves spend.
+
 ### Synthetic business facts (#153)
 
 Employees and Managers can consult `GET /customer/facts` and `GET /customer/facts/:locationId`, linked from the workspace and draft list. The existing current identity/session/tenant/membership transaction remains mandatory. The server resolves locations in the active tenant only, even for an identity with another tenant membership. Foreign, unknown and malformed IDs receive the same generic denial. Own locations without facts and workspaces without locations have explicit empty states.
