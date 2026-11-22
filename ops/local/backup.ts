@@ -157,8 +157,9 @@ function copyCluster(f: Fixture, db: Database, output: string): Pair['archives']
     + 'control=$(pg_controldata /source 2>/tmp/pg-control) && test ! -s /tmp/pg-control; '
     + 'printf "%s\\n" "$control" | grep -Eq "^Database cluster state:[[:space:]]+shut down$"; '
     + 'umask 077; tar -cf "/output/$1" -C /source .; test ! -e /source/postmaster.pid; '
-    + 'test "$control" = "$(pg_controldata /source)"; sha256sum "/output/$1"; printf "%s\\n" "$control"',
-    'copy-cluster', db.archive]);
+    + 'test "$control" = "$(pg_controldata /source)"; chown "$2" "/output/$1"; '
+    + 'sha256sum "/output/$1"; printf "%s\\n" "$control"',
+    'copy-cluster', db.archive, (process.getuid?.() ?? 0) + ':' + (process.getgid?.() ?? 0)]);
   const sha256 = control.split(/\s+/)[0]!;
   const systemId = control.match(/^Database system identifier:\s+(\d+)$/m)?.[1];
   const catalogVersion = control.match(/^Catalog version number:\s+(\d+)$/m)?.[1];
@@ -171,7 +172,7 @@ async function capture(): Promise<void> {
     || JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}']));
   if (typeof endpoint !== 'string' || !/^(unix|npipe):\/\//.test(endpoint)) throw new Error('Cold backup requires a local Docker socket.');
 
-  const f = await initialize(true);
+  const { fixture: f, effectiveIdentityConfig } = await initialize(true);
   const expected = await compatibility(f);
   const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const imageId = (image: string) => docker(['image', 'inspect', '--format', '{{.Id}}', image]);
@@ -203,7 +204,6 @@ async function capture(): Promise<void> {
     }
     const identitySchema = query(idpContainer, identity, "SELECT encode(sha256(convert_to(string_agg(concat_ws('|', id, author, filename, md5sum), "
       + "E'\\n' ORDER BY orderexecuted), 'UTF8')), 'hex') FROM databasechangelog");
-    const effectiveIdentityConfig = await hashSources(['work/pilot/keycloak.conf', 'work/pilot/keycloak-realm.json']);
 
     compose(f, ['stop']);
     const before = stoppedState(f, sources);
