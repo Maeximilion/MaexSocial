@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { GbpAttempt, GbpObservation, GbpProviderState, GbpReadback } from '../../packages/contracts/pilot.js';
+import type { GbpAttempt, GbpCreateIntent, GbpObservation, GbpProviderState, GbpReadback } from '../../packages/contracts/pilot.js';
 
 type Frame = { afterMs: number; candidates: readonly GbpProviderState[] };
 
@@ -11,6 +11,7 @@ interface Scenario {
 }
 
 export class FakeGbp implements GbpReadback {
+  readonly policy = 'synthetic-organic-text';
   private readonly db: DatabaseSync;
   private readonly clock: () => number;
   private readonly framesJson: string;
@@ -29,20 +30,35 @@ export class FakeGbp implements GbpReadback {
     this.db.exec(`CREATE TABLE IF NOT EXISTS calls (
       id INTEGER PRIMARY KEY, tenant TEXT NOT NULL, occurrence TEXT NOT NULL,
       attempt TEXT NOT NULL, location TEXT NOT NULL, accepted_at INTEGER NOT NULL, frames TEXT NOT NULL
+    ) STRICT;
+    CREATE TABLE IF NOT EXISTS call_intents (
+      call_id INTEGER PRIMARY KEY REFERENCES calls(id), intent TEXT NOT NULL
     ) STRICT`);
   }
 
-  async create(intent: GbpAttempt) {
+  async create(intent: GbpAttempt | GbpCreateIntent) {
     const { tenantId, occurrenceId, attemptId, location } = intent;
     if (![tenantId, occurrenceId, attemptId, location].every(id => typeof id === 'string' && id.trim())) {
       throw new Error('Fake create requires tenant, occurrence, attempt and location identifiers');
     }
-    const { lastInsertRowid } = this.db.prepare(`INSERT INTO calls
-      (tenant, occurrence, attempt, location, accepted_at, frames) VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(tenantId, occurrenceId, attemptId, location, this.clock(), this.framesJson);
+    this.db.exec('BEGIN IMMEDIATE');
+    let callId: number | bigint;
+    try {
+      const { lastInsertRowid } = this.db.prepare(`INSERT INTO calls
+        (tenant, occurrence, attempt, location, accepted_at, frames) VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(tenantId, occurrenceId, attemptId, location, this.clock(), this.framesJson);
+      callId = lastInsertRowid;
+      if ('text' in intent) {
+        this.db.prepare('INSERT INTO call_intents VALUES (?, ?)').run(callId, JSON.stringify(intent));
+      }
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
     // Each insert commits independently, including an acceptance whose reply is lost.
     if (this.loseReply) throw new Error('Fake GBP reply lost after acceptance');
-    return { attemptId, location, resourceName: resourceName(location, lastInsertRowid, 0) };
+    return { attemptId, location, resourceName: resourceName(location, callId, 0) };
   }
 
   createCount(tenantId: string, occurrenceId: string): number {
