@@ -64,6 +64,11 @@ Bounded Task 3 component [#259](https://github.com/Maeximilion/MaexSocial/issues
 [private organization creation and fixture evidence](../ops/local/README.md#private-customer-organization-creation-259).
 Named access provisioning and the integrated private management path remain with #164.
 
+Bounded Task 3 component [#261](https://github.com/Maeximilion/MaexSocial/issues/261) supplies
+[private pending customer invitations and fixture evidence](../ops/local/README.md#private-devadmin-invitation-issuance-261).
+The private Windows entry and integrated acceptance remain under #164, with identity and invitation
+acceptance under #131 and #221.
+
 Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
 [private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
 The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.

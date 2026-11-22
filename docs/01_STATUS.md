@@ -61,6 +61,12 @@ Bounded Task 3 delivery [#259](https://github.com/Maeximilion/MaexSocial/issues/
 The operation commits an empty active organization and its audit together. [#164](https://github.com/Maeximilion/MaexSocial/issues/164)
 retains the private listener, operator proof, access provisioning and integrated acceptance.
 
+Bounded Task 3 delivery [#261](https://github.com/Maeximilion/MaexSocial/issues/261) issues a
+[private pending Manager or Employee invitation](../ops/local/README.md#private-devadmin-invitation-issuance-261)
+for a selected active organization. The isolated evidence covers both roles, shared duplicate
+protection, audited issuance and the recipient-bound preview. Real authority, acceptance and the
+private management entry remain under #131, #164 and #221.
+
 Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
 [private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
 synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)

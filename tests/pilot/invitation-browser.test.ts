@@ -8,6 +8,7 @@ import { createCustomerApp } from '../../apps/web/src/server/customer.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture } from '../../ops/local/fixture.js';
 import { runPortalBrowserTest } from '../../ops/local/portal-browser.js';
+import { seedManagementSession } from './fixtures.js';
 
 const origin = 'https://customer:8443';
 const previewPath = '/customer/invitations/preview';
@@ -103,6 +104,13 @@ test('private invitation preview binds the recipient and leaves invitations, acc
   const active = await seed('current');
   const expired = await seed('expired'), revoked = await seed('revoked'), consumed = await seed('consumed'), stale = await seed('stale');
   const unrelatedInvite = await seed('current', tenantB, otherIssuer, unrelatedEmail);
+  const when = new Date();
+  const platform = await seedManagementSession(db, when, when);
+  const managerInvite = randomBytes(32).toString('hex');
+  await db.query(`INSERT INTO pilot.invitations(tenant_id,email,role,purpose,issuer_platform_grant_id,issuer_version,
+    grant_version,token_hash,created_at,expires_at)
+    VALUES ($1,$2,'Manager','membership',$3,1,1,$4,now(),now()+interval '24 hours')`,
+  [tenantA, unrelatedEmail, platform.grantId, tokenHash(managerInvite)]);
   const snapshot = async () => ({
     memberships: (await db.query('SELECT tenant_id,id,identity_id,role,version,active FROM pilot.memberships WHERE tenant_id=ANY($1::uuid[]) ORDER BY id',
       [[tenantA, tenantB]])).rows,
@@ -136,13 +144,18 @@ test('private invitation preview binds the recipient and leaves invitations, acc
   const valid = await https(8443, cert, previewPath, withInvite(invited.header, active));
   assert.equal(valid.status, 200, 'A bound recipient in tenant B can preview the invitation to tenant A');
   assert.match(valid.body, /North &lt;Studio&gt; &amp; Co/);
-  assert.match(valid.body, /Employee/);
+  assert.match(valid.body, /<dt>Role<\/dt><dd>Employee<\/dd>/);
   assert.equal(valid.headers['cache-control'], 'no-store');
   assert.equal(valid.headers['referrer-policy'], 'no-referrer');
   assert.equal(valid.headers['set-cookie'], undefined);
   const secondTenant = await https(8443, cert, previewPath, withInvite(other.header, unrelatedInvite));
   assert.equal(secondTenant.status, 200);
   assert.ok(secondTenant.body.includes(tenantBName) && !secondTenant.body.includes('North'));
+  const managerPreview = await https(8443, cert, previewPath, withInvite(other.header, managerInvite));
+  assert.equal(managerPreview.status, 200);
+  assert.match(managerPreview.body, /<dt>Role<\/dt><dd>Manager<\/dd>/);
+  assert.match(managerPreview.body, /North &lt;Studio&gt; &amp; Co/);
+  assert.equal(managerPreview.headers['set-cookie'], undefined);
   const unavailable = await https(8443, cert, previewPath, invited.header);
   assert.equal(unavailable.status, 404);
   assert.match(unavailable.body, /Invitation unavailable/);
@@ -154,6 +167,7 @@ test('private invitation preview binds the recipient and leaves invitations, acc
   for (const cookie of [
     withInvite(invited.header, expired), withInvite(invited.header, revoked), withInvite(invited.header, consumed),
     withInvite(invited.header, stale), withInvite(invited.header, unrelatedInvite), withInvite(other.header, active),
+    withInvite(invited.header, managerInvite),
     withInvite(invited.header, randomBytes(32).toString('hex')), withInvite(invited.header, 'invalid'),
     withInvite(withInvite(invited.header, active), active), `__Host-invitation=${active}`
   ]) await expectUnavailable(cookie);
@@ -193,10 +207,9 @@ test('private invitation preview binds the recipient and leaves invitations, acc
   await db.query("UPDATE pilot.memberships SET role='Manager',version=version+1 WHERE tenant_id=$1 AND id=$2", [tenantA, issuer]);
   await expectUnavailable(withInvite(invited.header, active));
 
-
-  const tokens = [active, expired, revoked, consumed, stale, unrelatedInvite];
+  const tokens = [active, expired, revoked, consumed, stale, unrelatedInvite, managerInvite];
   for (const sensitive of [recipientEmail, unrelatedEmail, ...tokens, ...tokens.map(tokenHash)]) {
-    assert.ok([valid.body, unavailable.body, renderedDocument, ...diagnostics].every(value => !value.includes(sensitive)),
+    assert.ok([valid.body, managerPreview.body, unavailable.body, renderedDocument, ...diagnostics].every(value => !value.includes(sensitive)),
       'Rendered messages and application/browser logs exclude invitation credentials and recipient addresses');
   }
 });
