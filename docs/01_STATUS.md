@@ -14,6 +14,11 @@ November 22 bounded Task 5 delivery [#215](https://github.com/Maeximilion/MaexSo
 a [durable local dispatch stop and outstanding attempt count](../ops/local/README.md#local-dispatch-stop-215).
 The integrated sender and stop/restore drill remain under #165 and #166.
 
+Bounded Task 5 delivery [#248](https://github.com/Maeximilion/MaexSocial/issues/248) binds a new
+synthetic cold pair to its [capture-time history position](../ops/local/README.md#history-from-a-cold-backup-pair-248).
+The importer checks the archived anchor and replay checks the source identity. Older pairs remain
+available for offline quarantine.
+
 Bounded Task 5 delivery [#241](https://github.com/Maeximilion/MaexSocial/issues/241) applies an
 [independent synthetic deletion and revocation history](../ops/local/README.md#offline-deletion-and-revocation-history-replay-241)
 once on the offline target. [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains

@@ -63,7 +63,7 @@ npm run pilot:backup -- verify
 node --test dist/pilot/tests/pilot/cold-backup.test.js
 ~~~
 
-The backup command builds the current source. Capture requires a clean worktree and checks the source revision again before publishing. It initializes its own disposable fixture, migrates AppDB, seeds an invented tenant and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
+The backup command builds the current source. Capture requires a clean worktree and checks the source revision again before publishing. It initializes its own disposable fixture, migrates AppDB, seeds an invented tenant with draft occurrences and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
 
 The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
 
@@ -179,8 +179,24 @@ Bootstrap records it in the AppDB marker. The replay compares that marker with t
 inside the guarded transaction. Keep the independently retained history and its SHA-256 outside the
 AppDB and its backup. Supply the expected interval and hash, and make the matching bytes available
 read-only to the runner at `work/pilot/restore-history.json`. Targets without a recorded snapshot sequence
-remain eligible for quarantine and fail replay. This includes existing paired archives that lack the
-snapshot sequence. Integrated sequence provenance remains in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+remain eligible for quarantine and fail replay.
+
+### History from a cold backup pair (#248)
+
+Run `npm run pilot:backup -- capture` in a clean, fresh source worktree. It records and applies one
+synthetic grant revocation before stopping the source. The retained `work/pilot/capture-history.json`
+is outside both archives. Capture records its last sequence and SHA-256 in the AppDB and the pair
+manifest. The offline importer verifies the two anchors agree before binding the source fixture ID to
+the new AppDB target. Pairs without this capture evidence remain eligible for quarantine and fail replay.
+
+Record a later synthetic revocation in an independently retained interval from the captured source.
+For the fixture drill, use the grant labeled `after-snapshot` and check that `unaffected` remains active.
+In a fresh target worktree, run `npm run pilot:restore -- <private-synthetic-fixture-directory>`.
+Make the later interval available at the replay path below. Set its `fixtureId` to the **source** fixture
+ID and use the independently checked interval and hash. A successful replay revokes the later grant
+while all three historical occurrences stay quarantined. Repeating the same replay applies zero
+records. The source capture journal, archives and later history remain separate from the target.
+The integrated recovery drill remains in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 ```text
 npm run pilot:restore-quarantine -- replay-history <snapshot-sequence> <ending-sequence> <sha256>

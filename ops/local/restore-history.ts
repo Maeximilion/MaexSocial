@@ -29,16 +29,18 @@ function parseEvent(value: unknown, seq: number): Event {
   return incompatible();
 }
 
-export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[], paired: boolean) {
+export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[]) {
   const [mode, start, end, digest] = args;
   const after = Number(start), through = Number(end);
   if (args.length !== 4 || mode !== 'replay-history' || start !== String(after) || end !== String(through)
       || !Number.isSafeInteger(after) || !Number.isSafeInteger(through) || after < 0 || through < after
       || !digest || !/^[a-f0-9]{64}$/.test(digest)) return incompatible();
 
+  // Imported targets have a source column, including legacy pairs whose source remains unbound.
   const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null }>(
-    `SELECT ${paired ? 'restore_history_source_id' : 'id'} AS source, restore_history_digest
-    FROM public.fixture_identity WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
+    `SELECT CASE WHEN to_jsonb(marker) ? 'restore_history_source_id'
+      THEN to_jsonb(marker)->>'restore_history_source_id' ELSE id END AS source, restore_history_digest
+    FROM public.fixture_identity AS marker WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
   if (!anchor?.source) return incompatible();
 
   const file = await open(historyPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
