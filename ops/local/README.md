@@ -40,6 +40,24 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Local dispatch stop (#215)
+
+From the worktree root with a built and migrated fixture, run `npm run pilot:stop-dispatch` to persist
+the stop and `npm run pilot:dispatch-status` to read it independently. Both report JSON with `stopped`
+and `outstandingAttempts`. The count includes stored `unknown` and `pending` attempts across the
+fixture. Confirmed and rejected attempts are terminal. The status command and existing read-only
+inspection remain available while stopped.
+
+Both commands accept only the validated local fixture. The stop commits before reporting status. If
+the command fails, use the status command to check whether the stop committed. A future claim must
+lock the same control row, check that dispatch is open and record its attempt in that transaction
+before any provider create. This slice adds no sender or reopen operation. The integrated stop and
+recovery drill remains in [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
+
+Run `node --test dist/pilot/tests/pilot/dispatch-stop.test.js` to check synthetic attempts and provider
+counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:down` and
+`npm run pilot:up` to verify that the stop and count survive a retained-volume restart.
+
 ## Private GBP reconciliation (#213)
 
 The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
