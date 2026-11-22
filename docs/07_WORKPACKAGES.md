@@ -26,6 +26,9 @@ provide [read-only fake-provider reconciliation](../ops/local/README.md#private-
 [private terminal export](../ops/local/README.md#private-terminal-text-export-252) of approved text.
 [#253](https://github.com/Maeximilion/MaexSocial/issues/253) adds the
 [private synthetic dispatch claim](../ops/local/README.md#private-synthetic-dispatch-claim-253).
+[#268](https://github.com/Maeximilion/MaexSocial/issues/268) records
+[the two hold/dispatch commit orders](handovers/sessions/2026-11-22-hold-dispatch-order.md),
+held export denials for both customer roles, and read-only reconciliation of the original claim.
 [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains service wiring, the authenticated export route and integrated Task 4 acceptance.
 
 The [local candidate manifest](../ops/local/README.md#local-pilot-candidate-manifest-220) for [#220](https://github.com/Maeximilion/MaexSocial/issues/220) binds fixture inputs and migrations to exact-revision Foundation and pilot evidence. Use it as an input to [#82](https://github.com/Maeximilion/MaexSocial/issues/82)'s staged assessment.
