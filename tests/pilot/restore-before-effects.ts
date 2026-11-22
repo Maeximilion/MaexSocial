@@ -11,6 +11,7 @@ import { tokenHash } from '../../apps/web/src/server/session.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { capture } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, runIsolatedFixture, safeDiagnostics, type Fixture } from '../../ops/local/fixture.js';
+import { restore } from '../../ops/local/restore.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
 import { FakeGbp } from './fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
@@ -198,8 +199,8 @@ async function drill(targetDir: string) {
     await mkdir('work', { recursive: true });
     await save('wx');
     targetInput = true;
-    const restored = JSON.parse(node('dist/pilot/ops/local/restore.js', archive));
-    const t = targetFixture = await loadFixture();
+    const restored = await restore(archive, f => { targetFixture = f; });
+    const t = await loadFixture();
     const topology = { internalNetworks: 2, publishedHostPorts: 0 };
     const quarantine = { stopped: true, applicationLogin: false, topology };
     assert.deepEqual(restored, { verifiedDatabases: 2, quarantined: 5, ...quarantine });
