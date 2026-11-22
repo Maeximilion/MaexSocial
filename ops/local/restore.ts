@@ -5,14 +5,6 @@ import { compatibility, databases, hashSources, verifyPair, volumeName,
 import { compose, docker, runIsolatedFixture, usesLocalDocker, validateFixture, type Fixture } from './fixture.js';
 import { initialize, postgresImage } from './stack.js';
 
-// These fixture revisions change bootstrap/restore controls but produce the same synthetic IdP configuration.
-const compatibleIdpConfigs = new Set([
-  'a63937e20b8444a2d0baf887ef7fbd2bbdbbb4b95e9cb711d6a40021231a0def', // #216
-  '196ca6133119b3aad441392a50395bcf67dea77260af37dafcfcdb96ec26c22c', // #217
-  'e6b21a8d0644f45944b1177506118c2c17b923fdda8c639be625eed089acce79', // #219
-  '16a317924e98caf2efcacbfbb89274d989c2d2fb667baad0e02561416cd98dad', // paired restore
-]);
-
 async function verifySource(sourceDir: string) {
   const backupPath = join(sourceDir, 'cold-backup');
   const source: unknown = JSON.parse(await readFile(join(sourceDir, 'fixture.json'), 'utf8'));
@@ -20,9 +12,6 @@ async function verifySource(sourceDir: string) {
   if (source.restoreTarget) throw new Error('Backup source must be an ordinary synthetic fixture.');
   const pair: Pair = JSON.parse(await readFile(join(backupPath, 'pair.json'), 'utf8'));
   const expected = await compatibility(source, join(sourceDir, 'compose.env'));
-  if (compatibleIdpConfigs.has(expected.idpConfig) && compatibleIdpConfigs.has(pair?.compatibility?.idpConfig)) {
-    expected.idpConfig = pair.compatibility.idpConfig;
-  }
   await verifyPair(backupPath, source.id, expected, pair);
   if (pair.effectiveIdentityConfig !== undefined && pair.effectiveIdentityConfig !== await hashSources(
     ['work/pilot/keycloak.conf', 'work/pilot/keycloak-realm.json'], path => join(sourceDir, basename(path)))) {

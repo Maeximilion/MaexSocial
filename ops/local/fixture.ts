@@ -2,10 +2,14 @@ import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { Client, type ClientConfig } from 'pg';
 
+const purposes = ['ordinary', 'backup', 'restore-target', 'readiness', 'paired-restore'] as const;
+export type FixturePurpose = typeof purposes[number];
+
 export interface Fixture {
   schema: 1;
   id: string;
   project: string;
+  purpose?: FixturePurpose;
   restoreTarget?: true;
   pairedRestore?: true;
   expiresAt: number;
@@ -19,6 +23,7 @@ export function validateFixture(value: unknown, allowExpired = false): asserts v
   if (!value || typeof value !== 'object') throw new Error('Invalid fixture manifest');
   const f = value as Record<string, unknown>;
   if (f.schema !== 1 || typeof f.id !== 'string' || !/^[a-f0-9]{32}$/.test(f.id)
+      || (f.purpose !== undefined && !purposes.some(purpose => purpose === f.purpose))
       || (f.restoreTarget !== undefined && f.restoreTarget !== true)
       || (f.pairedRestore !== undefined && (f.pairedRestore !== true || f.restoreTarget !== true))
       || f.project !== `maex-pilot-${f.id}` || typeof f.expiresAt !== 'number'
@@ -72,6 +77,7 @@ export async function databaseConfig(f: Fixture, owner = false): Promise<ClientC
 interface ContainerInfo {
   Id: string;
   Config: { Labels: Record<string, string> };
+  State?: { Status: string; Health?: { Status: string } };
   NetworkSettings: { Ports: Record<string, unknown>; Networks: Record<string, { NetworkID: string }> };
 }
 interface NetworkInfo {
@@ -112,15 +118,22 @@ export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks
   return { internalNetworks: networks.filter(network => network.Internal).length, publishedHostPorts };
 }
 
-export function verifyContainers(f: Fixture) {
+export function verifyContainers(f: Fixture, requireHealthyDatabases = false) {
   const ids = compose(f, ['ps', '-q']).split(/\s+/).filter(Boolean);
   if (ids.length !== (f.pairedRestore ? 2 : 4)) throw new Error('Fixture services are not running');
-  return verifyTopology(f, JSON.parse(docker(['inspect', ...ids])),
+  const containers = JSON.parse(docker(['inspect', ...ids])) as ContainerInfo[];
+  const topology = verifyTopology(f, containers,
     JSON.parse(docker(['network', 'inspect', `${f.project}_application`, `${f.project}_identity`])));
+  if (requireHealthyDatabases && containers.some(({ Config, State }) =>
+    ['postgres', 'identity-db'].includes(Config.Labels['com.docker.compose.service']!)
+      && (State?.Status !== 'running' || State.Health?.Status !== 'healthy'))) {
+    throw new Error('Fixture databases are not ready');
+  }
+  return topology;
 }
 
-export function runIsolatedFixture(f: Fixture, args: string[]) {
-  const topology = verifyContainers(f);
+export function runIsolatedFixture(f: Fixture, args: string[], requireHealthyDatabases = false) {
+  const topology = verifyContainers(f, requireHealthyDatabases);
   const output = compose(f, ['run', '--rm', '--no-deps', ...(f.pairedRestore ? ['--pull', 'never'] : []), 'runner', 'node', ...args]);
   return { topology, output };
 }

@@ -34,6 +34,10 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   };
 
   await verifyPair(path, fixtureId, compatibility, pair);
+  const beforeReopen = '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5';
+  const withProvenance = 'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18';
+  await verifyPair(path, fixtureId, { ...compatibility, idpConfig: withProvenance },
+    { ...pair, compatibility: { ...compatibility, idpConfig: beforeReopen } });
   const historyAnchor = { after: 1, evidenceSha256: sha256('independent source journal') };
   await verifyPair(path, fixtureId, compatibility, { ...pair, historyAnchor });
   for (const invalid of [{ ...historyAnchor, after: 0 }, { ...historyAnchor, after: 1.5 },

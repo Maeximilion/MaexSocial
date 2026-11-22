@@ -15,6 +15,10 @@ authenticated integration and acceptance evidence for [#123](https://github.com/
 
 [P1 tracker #162](https://github.com/Maeximilion/MaexSocial/issues/162) records the audit, owners, native dependencies and closure evidence. The accepted local sequence is storage [Task 1 / #114](https://github.com/Maeximilion/MaexSocial/issues/114), portal and approval Task 2 (#117/#131/#123/#124), signed Windows DEV/Admin [Task 3 / #164](https://github.com/Maeximilion/MaexSocial/issues/164), fake dispatch and terminal export [Task 4 / #165](https://github.com/Maeximilion/MaexSocial/issues/165), stop, rollback and isolated restore [Task 5 / #166](https://github.com/Maeximilion/MaexSocial/issues/166), and whole-slice evidence Task 6 under [#10](https://github.com/Maeximilion/MaexSocial/issues/10). Tasks 3–6 consume the preceding integrated evidence in that order.
 
+[Task 5 component #266](https://github.com/Maeximilion/MaexSocial/issues/266) covers the
+[ordinary local stop, reconciliation, retained restart and explicit reopen](../ops/local/README.md#explicit-reopen-266).
+Integrated recovery evidence remains under [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
+
 The local Task 6 receipt supplies a tested candidate for separately authorized staging work under [#82](https://github.com/Maeximilion/MaexSocial/issues/82) and [#163](https://github.com/Maeximilion/MaexSocial/issues/163). #163 covers the owned staging entry and sign-in journey. A public hero and production launch remain separate owner decisions. #10 retains the first real GBP result and operating authority. [#167](https://github.com/Maeximilion/MaexSocial/issues/167) prepares G4 AI candidate scope before #11's separately approved spike and eventual selection. #12 requires G4 acceptance and the applicable operating evidence. [#168](https://github.com/Maeximilion/MaexSocial/issues/168) is maintenance and carries no product-gate dependency.
 
 Bounded Task 4 components [#213](https://github.com/Maeximilion/MaexSocial/issues/213) and [#252](https://github.com/Maeximilion/MaexSocial/issues/252)

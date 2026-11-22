@@ -35,10 +35,9 @@ jobs:
           npm run pilot:migrate -- up
       - run: node --test dist/pilot/tests/pilot/migration-empty.js
       - run: npm run pilot:test
-      - name: Restart without deleting volumes
+      - name: Stop, reconcile, restart with retained volumes and explicitly reopen
         run: |
-          npm run pilot:down
-          npm run pilot:up
+          node dist/pilot/tests/pilot/dispatch-recovery.js
           npm run pilot:test
       - if: always()
         run: npm run pilot:down

@@ -77,11 +77,24 @@ function pairExpired(pair: Pair): boolean {
   return now >= captureTime + retentionMs;
 }
 
+// These fixture revisions change bootstrap/restore controls but produce the same synthetic IdP configuration.
+const compatibleIdpConfigs = new Set([
+  'a63937e20b8444a2d0baf887ef7fbd2bbdbbb4b95e9cb711d6a40021231a0def', // #216
+  '196ca6133119b3aad441392a50395bcf67dea77260af37dafcfcdb96ec26c22c', // #217
+  'e6b21a8d0644f45944b1177506118c2c17b923fdda8c639be625eed089acce79', // #219
+  '16a317924e98caf2efcacbfbb89274d989c2d2fb667baad0e02561416cd98dad', // paired restore
+  '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5', // before dispatch reopen
+  'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
+]);
+
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
+  const idpConfig = pair?.compatibility?.idpConfig;
+  const compatible = idpConfig && compatibleIdpConfigs.has(expected.idpConfig) && compatibleIdpConfigs.has(idpConfig)
+    ? { ...expected, idpConfig } : expected;
   if ((pair?.format !== 1 && pair?.format !== 2) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
       || pair.postgresImage !== postgresImage
-      || !isDeepStrictEqual(pair.compatibility, expected)) {
+      || !isDeepStrictEqual(pair.compatibility, compatible)) {
     throw new Error('Backup pair has an unknown identity or incompatible build, schema or configuration.');
   }
   if (pair.historyAnchor !== undefined && (!pair.historyAnchor
