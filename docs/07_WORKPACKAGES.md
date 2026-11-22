@@ -69,6 +69,10 @@ Bounded Task 3 component [#261](https://github.com/Maeximilion/MaexSocial/issues
 The private Windows entry and integrated acceptance remain under #164, with identity and invitation
 acceptance under #131 and #221.
 
+Bounded Task 3 component [#263](https://github.com/Maeximilion/MaexSocial/issues/263) supplies
+[private membership revocation](../ops/local/README.md#private-devadmin-membership-revocation-263)
+for either customer role with the current DEV/Admin proof and an audit written in the same transaction.
+
 Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
 [private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
 The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.

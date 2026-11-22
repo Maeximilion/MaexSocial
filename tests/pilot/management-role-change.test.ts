@@ -36,12 +36,12 @@ test('private membership role changes invalidate the selected grant and commit t
     await owner.query("INSERT INTO pilot.memberships(tenant_id,id,identity_id,role) VALUES($1,$2,$3,'Manager')", [b.tenant, foreignMembership, a.user]);
     const operator = await seedManagementContext(owner, a.tenant, now, stepUp);
 
-    const seedSession = async (tenantId: string, membershipId: string, version: number) => {
+    const seedSession = async (tenantId: string, membershipId: string, version: number, identityId = a.user) => {
       const binding = { token: randomBytes(32).toString('hex'), csrf: randomBytes(32).toString('hex') };
       const id = (await owner.query<{ id: string }>(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,
         tenant_id,tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id)
         VALUES($1,$2,$3,2,$4,1,$5,$6,'customer',$7,$8,$9,$10,$11) RETURNING id`, [tokenHash(binding.token), tokenHash(binding.csrf),
-        a.user, tenantId, membershipId, version, new Date(now.getTime() - 360_000), now, new Date(now.getTime() + 600_000), stepUp, factor])).rows[0]!.id;
+        identityId, tenantId, membershipId, version, new Date(now.getTime() - 360_000), now, new Date(now.getTime() + 600_000), stepUp, factor])).rows[0]!.id;
       return { id, binding };
     };
     const readCustomer = async (binding: Awaited<ReturnType<typeof seedSession>>['binding'], id?: string) => {
@@ -162,7 +162,7 @@ test('private membership role changes invalidate the selected grant and commit t
       assert.equal(await revokedAt(foreign.id), null);
       assert.equal((await readCustomer(foreign.binding)).customer.membershipVersion, 1);
     });
-    await t.test('private revocation of the last Manager removes only current tenant authority and is atomic', async () => {
+    await t.test('private revocation removes the last Manager and then an Employee with tenant-scoped atomic effects', async () => {
       const manager = await seedSession(a.tenant, a.membership, 5);
       const issuer = { connect: connectFixture, clock, mailboxCa: await readFile('work/pilot/mailbox.crt') };
       const recipient = `manager-${randomUUID()}@example.invalid`;
@@ -249,13 +249,18 @@ test('private membership role changes invalidate the selected grant and commit t
 
       const employee = (await members()).find(m => m.role === 'Employee')!;
       const email = `employee-${randomUUID()}@example.invalid`;
-      await owner.query('UPDATE pilot.identities SET verified=true WHERE id=$1', [employee.identity_id]);
+      await owner.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [employee.identity_id]);
+      const employeeSession = await seedSession(a.tenant, employee.id, 1, employee.identity_id);
+      assert.equal((await readCustomer(employeeSession.binding)).customer.role, 'Employee');
       const pendingEmployee = await adminInvite(a.tenant, email, 'Employee');
       assert.equal(pendingEmployee.delivery, 'captured');
       assert.ok(!(await members()).some(m => m.active && m.role === 'Manager'));
       assert.equal(await revokeManagementMembership(connectFixture, { ...proof, membershipId: employee.id, membershipVersion: 1 },
         a.tenant, employee.id, 'Remove Employee without Manager', clock, new Map([[`fixture-${employee.identity_id}`, email]])), true);
       assert.deepEqual((await members()).find(m => m.id === employee.id), { ...employee, active: false, version: 2 });
+      assert.deepEqual(await revokedAt(employeeSession.id), now);
+      await assert.rejects(readCustomer(employeeSession.binding), /Denied/);
+      assert.equal((await audit()).filter(row => row.action === 'membership_revoked').length, 2);
       assert.deepEqual(await rows('SELECT revoked_at FROM pilot.invitations WHERE id=$1', [pendingEmployee.id]), [{ revoked_at: now }]);
     });
   } finally {

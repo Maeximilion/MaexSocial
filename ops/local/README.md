@@ -340,6 +340,28 @@ customer-session rejection, reapproval and audit rollback with synthetic managem
 [Task 3](https://github.com/Maeximilion/MaexSocial/issues/164) retains the private listener, device proof,
 Windows entry and integrated acceptance.
 
+## Private DEV/Admin membership revocation (#263)
+
+[The unmounted transaction](../../apps/web/src/server/management-membership-revocation.ts)
+requires current DEV/Admin session, device, grant and phishing-resistant proof bound to the
+revocation action and exact tenant and membership versions. The trusted private caller resolves
+the locked identity's subject through the fixture recipient binding. Either role can be revoked,
+including the last Manager or an Employee in an organization without an active Manager.
+
+The transaction deactivates the membership, advances its version, revokes old customer sessions
+and pending invitations issued by that membership, and revokes pending tenant invitations to
+the bound recipient for either role. It clears unclaimed approval bindings eligible for
+invalidation and writes the operator, device, tenant, target, resulting version, reason, time and
+outcome to the audit. Historical approvals, claims, terminal exports, quarantine and other
+organizations keep their state.
+
+After building and migrating the isolated fixture, run
+`node --test dist/pilot/tests/pilot/management-role-change.test.js` for private revocation,
+concurrent retries, cross-tenant controls and forced audit rollback. The test uses the actual
+private invitation issuers and the local Mailpit sink. Integrated private management, real
+device proof and staging acceptance remain in [#164](https://github.com/Maeximilion/MaexSocial/issues/164)
+and [#82](https://github.com/Maeximilion/MaexSocial/issues/82).
+
 ## Private GBP reconciliation (#213)
 
 The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
