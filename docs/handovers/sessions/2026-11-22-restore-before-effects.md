@@ -84,6 +84,9 @@ authentication check and the quarantined row as separate state evidence.
 [paired drill](../../../ops/local/README.md#restore-before-dispatch-and-terminal-export-258).
 The first physical run on `493fe8ae8249912c2c930240edefdf3dd442dee6` used two fresh
 marked fixtures and the cached pinned images on Windows with Node 24.22.2.
+A second fresh run on `7868b1414e34fddf0c85a7e358b188071dc9f73c` reproduced
+all observations below. It also confirmed the stopped dispatch, quarantine,
+role restrictions and replay receipt immediately after restart, before any replay retry.
 
 | Check | Observed |
 | --- | --- |
