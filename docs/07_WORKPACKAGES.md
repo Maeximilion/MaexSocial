@@ -31,6 +31,8 @@ provide [read-only fake-provider reconciliation](../ops/local/README.md#private-
 held export denials for both customer roles, and read-only reconciliation of the original claim.
 [#271](https://github.com/Maeximilion/MaexSocial/issues/271) keeps
 [private publication approval, dispatch and export current across tenant reactivation](../ops/local/README.md#private-approval-across-tenant-reactivation-271).
+[#276](https://github.com/Maeximilion/MaexSocial/issues/276) covers
+[dispatch and export after Manager re-promotion](handovers/sessions/2026-11-22-manager-repromotion-effects.md).
 [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains service wiring, the authenticated export route and integrated Task 4 acceptance.
 
 The [local candidate manifest](../ops/local/README.md#local-pilot-candidate-manifest-220) for [#220](https://github.com/Maeximilion/MaexSocial/issues/220) binds fixture inputs and migrations to exact-revision Foundation and pilot evidence. Use it as an input to [#82](https://github.com/Maeximilion/MaexSocial/issues/82)'s staged assessment.
