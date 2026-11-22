@@ -5,6 +5,7 @@ export interface CustomerContext {
   identityId: string;
   subject: string;
   tenantId: string;
+  tenantVersion: number;
   membershipId: string;
   membershipVersion: number;
   role: CustomerRole;

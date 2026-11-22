@@ -38,6 +38,16 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   const withProvenance = await hashSources(['ops/local/keycloak-realm.json', 'ops/local/keycloak-step-up.json', 'ops/local/stack.ts']);
   await verifyPair(path, fixtureId, { ...compatibility, idpConfig: withProvenance },
     { ...pair, compatibility: { ...compatibility, idpConfig: beforeReopen } });
+  const migration = '011_approval_tenant_version.up.sql';
+  const through011 = (await readdir('db/migrations')).filter(name => name.endsWith('.up.sql') && name <= migration)
+    .sort().map(name => 'db/migrations/' + name);
+  const schema010 = { ...compatibility, appSchema: await hashSources(through011.slice(0, -1)) };
+  const schema011 = { ...compatibility, appSchema: await hashSources(through011) };
+  await verifyPair(path, fixtureId, schema011, { ...pair, compatibility: schema010 });
+  await assert.rejects(verifyPair(path, fixtureId, schema010, { ...pair, compatibility: schema011 }), /incompatible/);
+  await assert.rejects(verifyPair(path, fixtureId, schema011, pair), /incompatible/);
+  await assert.rejects(verifyPair(path, fixtureId, schema011,
+    { ...pair, compatibility: { ...schema010, stack: sha256('other stack') } }), /incompatible/);
   const historyAnchor = { after: 1, evidenceSha256: sha256('independent source journal') };
   await verifyPair(path, fixtureId, compatibility, { ...pair, historyAnchor });
   for (const invalid of [{ ...historyAnchor, after: 0 }, { ...historyAnchor, after: 1.5 },

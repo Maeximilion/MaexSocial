@@ -58,6 +58,25 @@ On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurre
 including a deferred commit failure and a competing claim. The authenticated route, dispatch worker and
 integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Private approval across tenant reactivation (#271)
+
+The Manager's private proposal and immutable approval record carry the current tenant version.
+Approval submission checks the proposal under the session's tenant lock. Dispatch and terminal export,
+including repeat downloads, check the stored approval against the same current lifecycle before any effect.
+An eligible unclaimed occurrence can receive a deliberate fresh approval. It keeps the earlier snapshot.
+Holds, quarantined occurrences and existing attempt or export history stay protected.
+
+Migration 011 preserves previous snapshots with an unknown tenant version. It does not infer authority
+from the tenant's current version. The 011 build accepts the exact 010 migration fingerprint for offline
+paired restore. It verifies the captured schema and both archives, disables application login and
+quarantines on the original schema. The ordinary dispatch reopen command requires the current schema.
+
+Run `node --test dist/pilot/tests/pilot/occurrence-export.test.js` after building and migrating the ordinary
+synthetic fixture. The lifecycle case covers old sessions, previews, approvals and repeat downloads,
+a fresh Manager approval, an independent tenant, and reconciliation of an existing attempt. The
+authenticated customer journey remains under [#223](https://github.com/Maeximilion/MaexSocial/issues/223).
+Real identity and MFA remain under [#131](https://github.com/Maeximilion/MaexSocial/issues/131).
+
 ## Private synthetic dispatch claim (#253)
 
 The [private dispatch entry](../../apps/worker/src/dispatch.ts) takes a stored occurrence ID and the

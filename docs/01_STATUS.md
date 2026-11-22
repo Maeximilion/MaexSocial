@@ -10,6 +10,10 @@
 
 ## Current work
 
+Bounded Task 4 [#271](https://github.com/Maeximilion/MaexSocial/issues/271) binds
+[private approval, dispatch and export to the current tenant lifecycle](../ops/local/README.md#private-approval-across-tenant-reactivation-271).
+The authenticated journey and real identity evidence remain under #223 and #131.
+
 Bounded Task 5 [#266](https://github.com/Maeximilion/MaexSocial/issues/266) adds
 [explicit ordinary-fixture dispatch reopen](../ops/local/README.md#explicit-reopen-266).
 The local drill covers a committed private claim, stop, readback, retained restart and a new
