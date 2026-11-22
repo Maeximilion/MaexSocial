@@ -1,20 +1,10 @@
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { Client } from 'pg';
+import { normalizeAccountEmail } from './account-email.js';
 
 type Flow = 'login' | 'signup' | 'recovery' | 'resend';
 const unavailable = (): never => { throw new Error('Throttle unavailable'); };
-
-function accountKey(value: string): string {
-  if (typeof value !== 'string' || value.length > 320 || /[^\x00-\x7f]/.test(value)) return unavailable();
-  const normalized = value.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '').toLowerCase();
-  const parts = normalized.split('@'), local = parts[0]!, domain = parts[1];
-  if (normalized.length > 254 || parts.length !== 2 || !domain || local.length > 64
-    || !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)
-    || local.startsWith('.') || local.endsWith('.') || local.includes('..')
-    || domain.split('.').some(label => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))) return unavailable();
-  return normalized;
-}
 
 function sourceKey(value: string): string {
   if (typeof value !== 'string' || value.length > 45 || value.includes('%')) return unavailable();
@@ -59,7 +49,9 @@ export function createAuthThrottle(key: string, connect: () => Promise<Client>, 
   return {
     async consume(account: string, trustedSourceIp: string): Promise<boolean> {
       try {
-        const keys = [digest(flow, 'account', accountKey(account)), digest(flow, 'source', sourceKey(trustedSourceIp))];
+        const email = normalizeAccountEmail(account);
+        if (!email) return unavailable();
+        const keys = [digest(flow, 'account', email), digest(flow, 'source', sourceKey(trustedSourceIp))];
         return await transaction(async (db, now) => {
           const accountResult = await db.query('SELECT pilot.charge_auth_throttle($1,$2,$3,$4::timestamptz) AS allowed',
             [flow, 'account', keys[0], now]);
