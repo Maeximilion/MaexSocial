@@ -51,6 +51,9 @@ occurrences offline in a [disposable restore target](../ops/local/README.md#hist
 Bounded Task 5 component [#235](https://github.com/Maeximilion/MaexSocial/issues/235) restores a verified
 synthetic pair into a [fresh offline target](../ops/local/README.md#offline-restore-of-a-verified-pair-235)
 and applies the existing quarantine before offline inspection.
+[#258](https://github.com/Maeximilion/MaexSocial/issues/258) compares a
+[cold snapshot before dispatch and export](handovers/sessions/2026-11-22-restore-before-effects.md)
+with subsequently committed source outcomes and an independent fake.
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill and release acceptance.
 
 Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted
