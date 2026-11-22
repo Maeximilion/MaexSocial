@@ -49,7 +49,8 @@ function restoreCluster(f: Fixture, source: Fixture, pair: Pair, backupPath: str
     '--mount', 'type=bind,src=' + resolve('work/pilot') + ',dst=/fixture,readonly',
     '--mount', 'type=bind,src=' + resolve('ops/local/restore-cluster.sh') + ',dst=/restore.sh,readonly',
     postgresImage, '/restore.sh', db.service, db.owner, db.database, archive.sha256, archive.systemId,
-    archive.catalogVersion, source.id, f.id, schema, new Date(f.expiresAt).toISOString()]);
+    archive.catalogVersion, source.id, f.id, schema, new Date(f.expiresAt).toISOString(),
+    pair.historyAnchor ? String(pair.historyAnchor.after) : '', pair.historyAnchor?.evidenceSha256 ?? '']);
 }
 
 async function main(): Promise<void> {

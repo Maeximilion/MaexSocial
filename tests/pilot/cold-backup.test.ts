@@ -32,6 +32,12 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   };
 
   await verifyPair(path, fixtureId, compatibility, pair);
+  const historyAnchor = { after: 1, evidenceSha256: sha256('independent source journal') };
+  await verifyPair(path, fixtureId, compatibility, { ...pair, historyAnchor });
+  for (const invalid of [{ ...historyAnchor, after: 0 }, { ...historyAnchor, after: 1.5 },
+    { ...historyAnchor, evidenceSha256: 'unverified' }]) {
+    await assert.rejects(verifyPair(path, fixtureId, compatibility, { ...pair, historyAnchor: invalid }), /anchor/);
+  }
   const unsupported = { ...pair, format: 2 } as unknown as typeof pair;
   await assert.rejects(verifyPair(path, fixtureId, compatibility, unsupported), /unknown identity/);
   await assert.rejects(verifyPair(path, 'c'.repeat(32), compatibility, pair), /unknown identity/);

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { lstat, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -59,6 +59,7 @@ export type Pair = {
   identitySchema: string;
   postgresImage: string;
   effectiveIdentityConfig?: string;
+  historyAnchor?: { after: number; evidenceSha256: string };
   archives: Record<string, { sha256: string; systemId: string; catalogVersion: string }>;
 };
 
@@ -68,6 +69,11 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
       || pair.postgresImage !== postgresImage
       || !isDeepStrictEqual(pair.compatibility, expected)) {
     throw new Error('Backup pair has an unknown identity or incompatible build, schema or configuration.');
+  }
+  if (pair.historyAnchor !== undefined && (!pair.historyAnchor
+      || !Number.isSafeInteger(pair.historyAnchor.after) || pair.historyAnchor.after < 1
+      || typeof pair.historyAnchor.evidenceSha256 !== 'string' || !digest.test(pair.historyAnchor.evidenceSha256))) {
+    throw new Error('Backup history anchor is invalid.');
   }
   if (Object.keys(pair.archives ?? {}).length !== databases.length) throw new Error('Backup pair is incomplete.');
   const systemIds = new Set<string>();
@@ -148,6 +154,42 @@ function query(container: Container, db: Database, sql: string): string {
     '-U', db.owner, '-d', db.database, '-c', sql]);
 }
 
+async function captureHistory(f: Fixture, app: Container): Promise<NonNullable<Pair['historyAnchor']>> {
+  const db = databases[0];
+  const tenantId = randomUUID(), prior = randomUUID(), draft = randomUUID();
+  query(app, db, `BEGIN;
+    INSERT INTO pilot.tenants(id,name) VALUES ('${tenantId}','Cold Backup Orchard');
+    INSERT INTO pilot.locations(tenant_id,id,provider_location,grant_active)
+      VALUES ('${tenantId}','${prior}','before-snapshot',true),
+        ('${tenantId}',gen_random_uuid(),'after-snapshot',true),
+        ('${tenantId}',gen_random_uuid(),'unaffected',true);
+    INSERT INTO pilot.drafts(tenant_id,id) VALUES ('${tenantId}','${draft}');
+    INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
+      SELECT tenant_id,'${draft}',id,gen_random_uuid(),'2030-01-01T12:00:00Z','UTC'
+      FROM pilot.locations WHERE tenant_id='${tenantId}';
+    COMMIT;`);
+
+  // The independent journal exists before the cold copy and outside either database or archive.
+  const records = [{ seq: 1, kind: 'revoke-grant', tenantId, id: prior, version: 1 }];
+  const path = 'work/pilot/capture-history.json';
+  const journal = JSON.stringify({ schema: 1, fixtureId: f.id, after: 0, through: records.length, records });
+  await writeFile(path, journal, { mode: 0o600, flag: 'wx' });
+  query(app, db, `UPDATE pilot.locations SET grant_active=false,version=version+1
+    WHERE tenant_id='${tenantId}' AND id='${prior}' AND grant_active AND version=1`);
+  if (query(app, db, `SELECT count(*) FROM pilot.locations
+    WHERE tenant_id='${tenantId}' AND id='${prior}' AND NOT grant_active AND version=2`) !== '1') {
+    throw new Error('The synthetic history event did not take effect.');
+  }
+  const evidence = await readFile(path, 'utf8');
+  if (evidence !== journal) throw new Error('Capture history evidence changed.');
+  const { through } = JSON.parse(evidence) as { through: number };
+  const evidenceSha256 = createHash('sha256').update(evidence).digest('hex');
+  query(app, db, `ALTER TABLE public.fixture_identity
+    ADD COLUMN restore_history_after bigint NOT NULL DEFAULT ${through},
+    ADD COLUMN restore_history_evidence text NOT NULL DEFAULT '${evidenceSha256}'`);
+  return { after: through, evidenceSha256 };
+}
+
 function copyCluster(f: Fixture, db: Database, output: string): Pair['archives'][string] {
   const control = docker(['run', '--rm', '--read-only', '--tmpfs', '/tmp', '--network', 'none', '--pull', 'never', '--entrypoint', 'sh',
     '--mount', 'type=volume,src=' + volumeName(f, db) + ',dst=/source,readonly,volume-nocopy',
@@ -196,7 +238,7 @@ async function capture(): Promise<void> {
     const [app, identity] = databases;
     const appContainer = sources.get(app.service)!;
     if (query(appContainer, app, 'SELECT id FROM public.fixture_identity') !== f.id) throw new Error('AppDB fixture identity mismatch.');
-    query(appContainer, app, "INSERT INTO pilot.tenants(name) VALUES ('Cold Backup Orchard')");
+    const historyAnchor = await captureHistory(f, appContainer);
     const schema = docker(['exec', '--user', 'postgres', appContainer.Id, 'pg_dump', '-U', app.owner, '-d', app.database,
       '--schema=pilot', '--schema-only', '--restrict-key=MaexSocialColdBackupSchema']);
     const appliedAppSchema = createHash('sha256').update(schema).digest('hex');
@@ -214,7 +256,7 @@ async function capture(): Promise<void> {
     const archives = Object.fromEntries(databases.map(db => [db.archive, copyCluster(f, db, directory + '.pending')]));
     if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
     const pair: Pair = { format: 1, fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
-      postgresImage, archives };
+      postgresImage, historyAnchor, archives };
     await verifyPair(directory + '.pending', f.id, await compatibility(f), pair);
     if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
     await writeFile(join(directory + '.pending', 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
