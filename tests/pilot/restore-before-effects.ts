@@ -49,7 +49,7 @@ async function seed(request: CustomerRequest, grant: boolean): Promise<Case> {
     const app = await connectFixture();
     const proposal = await (async () => {
       try {
-        await app.query('BEGIN READ ONLY');
+        await app.query('BEGIN');
         return await readApprovalProposal(app, await requireCustomerRequest(app, request, clock, inspect, 'read-only'), id);
       } finally { await app.end(); }
     })();
