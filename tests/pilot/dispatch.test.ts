@@ -12,9 +12,10 @@ import { tokenHash } from '../../apps/web/src/server/session.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
 import { FakeGbp } from './fake-gbp.js';
-import { occurrence, seedTenant } from './fixtures.js';
+import { occurrence, seedManagementContext, seedTenant } from './fixtures.js';
 
 const clock = () => new Date('2020-01-01T10:00:00Z');
 const inspect: InspectIdentity = async subject => ({
@@ -74,18 +75,25 @@ test('private dispatch claims the immutable approved text once on the isolated f
   await owner.query('INSERT INTO pilot.draft_revisions(tenant_id,draft_id,id,revision,text) VALUES($1,$2,$3,2,$4)',
     [tenant.tenant, tenant.draft, snapshot, text]);
   await owner.query('INSERT INTO pilot.budgets(tenant_id,synthetic_units) VALUES($1,5)', [tenant.tenant]);
-  const binding = { token: randomBytes(32).toString('hex'), csrf: randomBytes(32).toString('hex') };
-  await owner.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [tenant.user]);
-  await owner.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
-    membership_id,membership_version,audience,created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id)
-    VALUES($1,$2,$3,2,$4,1,$5,1,'customer','2020-01-01T09:55Z','2020-01-01T09:56Z',
-      '2020-01-01T11:00Z','2020-01-01T09:59Z','synthetic-otp')`,
-  [tokenHash(binding.token), tokenHash(binding.csrf), tenant.user, tenant.tenant, tenant.membership]);
+  const session = async (role: 'Manager' | 'Employee') => {
+    const binding = { token: randomBytes(32).toString('hex'), csrf: randomBytes(32).toString('hex') };
+    await owner.query(`UPDATE pilot.identities i SET verified=true,version=i.version+1 FROM pilot.memberships m
+      WHERE m.tenant_id=$1 AND m.role=$2 AND m.identity_id=i.id`, [tenant.tenant, role]);
+    const inserted = await owner.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,
+      tenant_version,membership_id,membership_version,audience,created_at,last_seen_at,expires_at,mfa_at,mfa_credential_id)
+      SELECT $1,$2,i.id,i.version,m.tenant_id,1,m.id,m.version,'customer','2020-01-01T09:55Z','2020-01-01T09:56Z',
+        '2020-01-01T11:00Z','2020-01-01T09:59Z','synthetic-otp'
+      FROM pilot.memberships m JOIN pilot.identities i ON i.id=m.identity_id WHERE m.tenant_id=$3 AND m.role=$4`,
+    [tokenHash(binding.token), tokenHash(binding.csrf), tenant.tenant, role]);
+    assert.equal(inserted.rowCount, 1);
+    return binding;
+  };
+  const binding = await session('Manager');
   const setGrant = (active: boolean, db = owner) => db.query(`UPDATE pilot.locations SET grant_active=$3,version=version+1
     WHERE tenant_id=$1 AND id=$2`, [tenant.tenant, tenant.location, active]);
   await setGrant(true);
-  const approved = async (due = '2020-01-01T12:00:00.123456Z') => {
-    const id = await occurrence(owner, tenant);
+  const approved = async (due = '2020-01-01T12:00:00.123456Z', location = tenant.location) => {
+    const id = await occurrence(owner, { ...tenant, location });
     await owner.query('UPDATE pilot.occurrences SET due_at=$2 WHERE id=$1', [id, due]);
     const reader = await connectFixture();
     const proposal = await (async () => {
@@ -104,6 +112,10 @@ test('private dispatch claims the immutable approved text once on the isolated f
   const state = async (id: string) => (await read('SELECT state FROM pilot.occurrences WHERE id=$1', [id]))[0]!.state;
   const attempts = (id: string) => read('SELECT id,approval_id,outcome FROM pilot.attempts WHERE occurrence_id=$1', [id]);
   const audit = (id: string) => read('SELECT action,outcome FROM pilot.audit WHERE occurrence_id=$1', [id]);
+  const stepUp = new Date(clock().getTime() - 300_000);
+  const operator = await seedManagementContext(owner, tenant.tenant, clock(), stepUp);
+  const hold = (id: string, connect = connectFixture, reason = 'Review requested', now = clock) =>
+    holdOccurrence(connect, { ...operator, occurrenceId: id }, tenant.tenant, id, reason, now);
 
   async function waitForBlocked(blockerPid: number, waitingPid?: number) {
     const deadline = performance.now() + 3000;
@@ -126,6 +138,27 @@ test('private dispatch claims the immutable approved text once on the isolated f
         await changing;
       }
     } finally { await changer.end(); }
+  }
+
+  async function competeAtCommit<First, Second>(id: string, startFirst: (connect: typeof connectFixture) => Promise<First>,
+    startSecond: () => Promise<Second>) {
+    const gate = pauseCommit();
+    const first = startFirst(gate.connect);
+    let second: Promise<Second> | undefined;
+    try {
+      const pid = await Promise.race([gate.entered, first.then(() => assert.fail('Expected commit barrier'))]);
+      second = startSecond();
+      const waiting = waitForBlocked(pid);
+      await Promise.race([waiting, second.then(() => assert.fail('Competing transaction finished before commit'))]);
+      assert.equal(await state(id), 'approved');
+      assert.deepEqual(await attempts(id), []);
+      assert.deepEqual(await audit(id), []);
+      assert.equal(count(id), 0);
+    } finally {
+      gate.resume();
+      await Promise.allSettled([first, second]);
+    }
+    return Promise.all([first, second!]);
   }
 
   await t.test('competing claims send exactly one stored revision after the attempt is durable', async () => {
@@ -274,6 +307,92 @@ test('private dispatch claims the immutable approved text once on the isolated f
     assert.equal(count(id), 0);
     assert.deepEqual(await attempts(id), []);
     assert.deepEqual(await audit(id), [{ action: 'occurrence_export', outcome: 'exported' }]);
+  });
+
+  await t.test('operator hold commits first, blocking dispatch and both customer exports while A2 can dispatch', async () => {
+    const { id } = await approved();
+    const otherLocation = randomUUID();
+    await owner.query(`INSERT INTO pilot.locations(tenant_id,id,provider_location,grant_active)
+      VALUES($1,$2,'fake-location-a2',true)`, [tenant.tenant, otherLocation]);
+    const a2 = await approved(undefined, otherLocation);
+    const employee = await session('Employee');
+
+    const [held] = await competeAtCommit(id, connect => hold(id, connect), () => deny(dispatch(id)));
+    assert.equal(held, 'held');
+    await setGrant(false);
+    try {
+      for (const [customer, role] of [[employee, 'Employee'], [binding, 'Manager']] as const) {
+        const reader = await connectFixture();
+        try {
+          await reader.query('BEGIN');
+          const current = await requireCustomerRequest(reader, customer, clock, inspect, 'read-only');
+          assert.equal(current.role, role);
+          assert.equal(current.tenantId, tenant.tenant);
+        } finally { await reader.end(); }
+        await deny(claimExport(connectFixture, customer, id, clock, inspect));
+      }
+      assert.equal(await state(id), 'held');
+      assert.deepEqual(await attempts(id), []);
+      assert.equal(count(id), 0);
+      assert.deepEqual(await audit(id), [{ action: 'occurrence_hold', outcome: 'held' }]);
+
+      assert.equal(await state(a2.id), 'approved');
+      const { attemptId } = await dispatch(a2.id);
+      await deny(dispatch(a2.id));
+      assert.equal(await state(a2.id), 'in_flight');
+      assert.deepEqual(await attempts(a2.id), [{ id: attemptId, approval_id: a2.approvalId, outcome: 'unknown' }]);
+      assert.deepEqual(await audit(a2.id), [{ action: 'dispatch_claim', outcome: 'in_flight' }]);
+      assert.equal(count(a2.id), 1);
+    } finally { await setGrant(true); }
+  });
+
+  await t.test('dispatch commits first, preserving the original attempt through hold and read-only reconciliation', async () => {
+    const { id, approvalId } = await approved();
+    const [{ state: claimedState, attemptId }, held] = await competeAtCommit(id,
+      connect => dispatch(id, connect), () => hold(id));
+    assert.equal(held, 'in_flight');
+    assert.equal(claimedState, 'in_flight');
+    assert.equal(await state(id), 'in_flight');
+    const claimed = { id: attemptId, approval_id: approvalId, outcome: 'unknown' };
+    assert.deepEqual(await attempts(id), [claimed]);
+
+    const reopened = new FakeGbp(directory);
+    try {
+      assert.equal(reopened.createCount(tenant.tenant, id), 1);
+      await deny(dispatch(id));
+      assert.equal(await reconcileOccurrence(connectFixture, id, reopened), 'confirmed');
+      assert.equal(await hold(id), 'confirmed');
+      assert.deepEqual(await attempts(id), [{ ...claimed, outcome: 'confirmed' }]);
+      assert.equal(await state(id), 'confirmed');
+      assert.equal(reopened.createCount(tenant.tenant, id), 1);
+      assert.deepEqual(await audit(id), [{ action: 'dispatch_claim', outcome: 'in_flight' }]);
+    } finally { reopened.close(); }
+  });
+
+  await t.test('stale proof, missing reason and failed hold audit leave a due approval dispatchable', async () => {
+    const { id, approvalId } = await approved();
+    const unchanged = async () => {
+      assert.equal(await state(id), 'approved');
+      assert.deepEqual(await audit(id), []);
+      assert.deepEqual(await attempts(id), []);
+      assert.equal(count(id), 0);
+    };
+    await deny(hold(id, connectFixture, 'Review requested', () => new Date(clock().getTime() + 1)));
+    await unchanged();
+    await deny(hold(id, connectFixture, '   '));
+    await unchanged();
+    await owner.query(`ALTER TABLE pilot.audit ADD CONSTRAINT test_dispatch_hold_audit_failure
+      CHECK (reason <> 'Synthetic dispatch hold audit failure')`);
+    try {
+      await assert.rejects(hold(id, connectFixture, 'Synthetic dispatch hold audit failure'),
+        { code: '23514', constraint: 'test_dispatch_hold_audit_failure' });
+      await unchanged();
+    } finally { await owner.query('ALTER TABLE pilot.audit DROP CONSTRAINT test_dispatch_hold_audit_failure'); }
+
+    const { attemptId } = await dispatch(id);
+    assert.deepEqual(await attempts(id), [{ id: attemptId, approval_id: approvalId, outcome: 'unknown' }]);
+    assert.deepEqual(await audit(id), [{ action: 'dispatch_claim', outcome: 'in_flight' }]);
+    assert.equal(count(id), 1);
   });
 
   await t.test('a provider version change, tenant suspension and Manager version change independently deny', async () => {
