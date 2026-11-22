@@ -14,6 +14,11 @@ November 22 bounded Task 5 delivery [#215](https://github.com/Maeximilion/MaexSo
 a [durable local dispatch stop and outstanding attempt count](../ops/local/README.md#local-dispatch-stop-215).
 The integrated sender and stop/restore drill remain under #165 and #166.
 
+Bounded Task 5 component [#217](https://github.com/Maeximilion/MaexSocial/issues/217) keeps all historical
+occurrences offline in a [disposable restore target](../ops/local/README.md#historical-quarantine-on-a-disposable-restore-target-217).
+[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains paired restore, independent
+revocation replay and release acceptance.
+
 November 22 bounded Task 3 delivery [#212](https://github.com/Maeximilion/MaexSocial/issues/212) adds an
 [atomic hold and audit for one occurrence](handovers/sessions/2026-11-22-operator-hold.md) in the isolated fixture.
 Integrated identity, device verification and private management acceptance remain in [#164](https://github.com/Maeximilion/MaexSocial/issues/164).

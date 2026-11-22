@@ -6,6 +6,7 @@ export interface Fixture {
   schema: 1;
   id: string;
   project: string;
+  restoreTarget?: true;
   expiresAt: number;
   ownerPassword: string;
   appPassword: string;
@@ -17,6 +18,7 @@ export function validateFixture(value: unknown, allowExpired = false): asserts v
   if (!value || typeof value !== 'object') throw new Error('Invalid fixture manifest');
   const f = value as Record<string, unknown>;
   if (f.schema !== 1 || typeof f.id !== 'string' || !/^[a-f0-9]{32}$/.test(f.id)
+      || (f.restoreTarget !== undefined && f.restoreTarget !== true)
       || f.project !== `maex-pilot-${f.id}` || typeof f.expiresAt !== 'number'
       || !Number.isFinite(f.expiresAt) || (!allowExpired && f.expiresAt <= Date.now())) {
     throw new Error('Unknown, expired or non-fixture target');
