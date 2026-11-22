@@ -58,6 +58,12 @@ Run `node --test dist/pilot/tests/pilot/dispatch-stop.test.js` to check syntheti
 counts. Compare `npm run pilot:dispatch-status` before and after `npm run pilot:down` and
 `npm run pilot:up` to verify that the stop and count survive a retained-volume restart.
 
+## Private GBP reconciliation (#213)
+
+The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
+
+With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate -- up` and `node --test dist/pilot/tests/pilot/reconcile.test.js`. The test seeds attempts, reconnects to the same SQLite fake in a second Node process, checks the stored states and verifies the create counts. Complete the empty migration drill before seeding. Sender, terminal export and integrated evidence remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+
 ## Internal account/source throttles (#154)
 
 `createAuthThrottle(key, connect, flow)` is an **unmounted internal component**. The composition root fixes
@@ -132,6 +138,24 @@ After the strict build and migrations, `node --test dist/pilot/tests/pilot/facts
 The suite covers both reader roles, shared identities, latest revision per location, empty states, escaped hostile content, Unicode/newline bounds, composite references, historical confirmation, write denial, current authority and unchanged domain records. A transactional migration005 down/up compatibility probe rolls back its metadata loss; complete down remains restricted to empty fixtures. Run a fresh up/down/up before seeding. Preserve populated fixtures and their volumes.
 
 The existing keyboard suite follows workspace → facts → location → empty location → drafts, with customer-only requests. Its private screenshot is `work/portal-preview/facts.png`. Run the complete pilot before and after `pilot:down`/`pilot:up` with retained volumes. [Detailed contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [handover](../../docs/handovers/sessions/2026-11-18-business-facts.md) separate these synthetic checks from #124/#131 and product gates.
+
+## Customer publication outcomes (#214)
+
+Employees and Managers read the details of an occurrence in their active workspace via the existing draft
+destination link. The GET reads the occurrence and its tenant-bound attempt in the same statement and does
+not refresh session activity. Processing, rejection and publication confirmation require a matching approval,
+stored outcome and observation time. A missing or conflicting dispatch record stays unknown. A quarantined
+occurrence stays under review, even when historical evidence is present. The attempt
+start and last observation display in UTC only when each time is recorded. The due time remains distinct,
+with its UTC instant and occurrence-local time. Export is terminal for automatic submission. It represents
+manual handoff of the approved text with no Google publication confirmed.
+
+After the strict build and fixture migration, run
+`node --test --test-concurrency=1 dist/pilot/tests/pilot/occurrences.test.js dist/pilot/tests/pilot/portal-keyboard.test.js`.
+The HTTPS suite seeds independent stored states, checks both roles and active-tenant isolation, and compares
+domain and session rows across the reads. Chromium follows the existing keyboard path to an unknown result
+and back. The suite uses invented rows and no provider calls. [#165](https://github.com/Maeximilion/MaexSocial/issues/165)
+owns the integrated Task 4 evidence.
 
 ## Private Employee invitation preview (#207)
 

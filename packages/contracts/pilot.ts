@@ -22,3 +22,23 @@ export interface IdentityStatus {
   credentials: { id: string; type: string }[];
 }
 export type InspectIdentity = (subject: string) => Promise<IdentityStatus>;
+
+export interface GbpAttempt {
+  tenantId: string;
+  occurrenceId: string;
+  attemptId: string;
+  location: string;
+}
+
+export type GbpProviderState = 'PROCESSING' | 'LIVE' | 'REJECTED';
+
+export interface GbpObservation {
+  location: string;
+  observedAt: number;
+  correlation: 'missing' | 'unique' | 'ambiguous';
+  candidates: { resourceName: string; state: GbpProviderState }[];
+}
+
+export interface GbpReadback {
+  readback(attempt: GbpAttempt & { resourceName?: string }): Promise<GbpObservation>;
+}

@@ -17,6 +17,8 @@ authenticated integration and acceptance evidence for [#123](https://github.com/
 
 The local Task 6 receipt supplies a tested candidate for separately authorized staging work under [#82](https://github.com/Maeximilion/MaexSocial/issues/82) and [#163](https://github.com/Maeximilion/MaexSocial/issues/163). #163 covers the owned staging entry and sign-in journey. A public hero and production launch remain separate owner decisions. #10 retains the first real GBP result and operating authority. [#167](https://github.com/Maeximilion/MaexSocial/issues/167) prepares G4 AI candidate scope before #11's separately approved spike and eventual selection. #12 requires G4 acceptance and the applicable operating evidence. [#168](https://github.com/Maeximilion/MaexSocial/issues/168) is maintenance and carries no product-gate dependency.
 
+Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues/213) provides [read-only fake-provider reconciliation](../ops/local/README.md#private-gbp-reconciliation-213) for synthetic stored attempts. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains the sender, export, and integrated Task 4 acceptance.
+
 ## Planning maturity
 
 Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues/215) supplies
@@ -43,6 +45,8 @@ Bounded Task 2C component [#211](https://github.com/Maeximilion/MaexSocial/issue
 Bounded Task 2C component [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged the Manager's read-only preview of the proposed draft revision, actual destination and local/UTC occurrence time. [Evidence and limits](handovers/sessions/2026-11-21-approval-preview.md) preserve actual approval and reapproval under #124 and integrated identity/MFA under #131.
 
 Bounded Task 2C component [#153 / PR #156](https://github.com/Maeximilion/MaexSocial/pull/156) merged the Business Facts read view with tenant/location revision history and explicitly synthetic fixture provenance. Current Employee/Manager readers use the existing protected request boundary; only the fixture owner seeds facts. [Contract and limits](superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) retain genuine confirmation, generated-claim provenance and approval under #124, real identity/MFA under #131 and integrated Task 2/G3/G5 evidence. The [delivery checkpoint](handovers/sessions/2026-11-18-business-facts.md) records local checks.
+
+Bounded Task 4 component [#214](https://github.com/Maeximilion/MaexSocial/issues/214) adds [customer-readable publication outcomes](../ops/local/README.md#customer-publication-outcomes-214) to the protected occurrence GET. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains integrated dispatch, export and reconciliation acceptance.
 
 Bounded Task 2C component [#151](https://github.com/Maeximilion/MaexSocial/issues/151) adds `GET /customer/occurrences/:occurrenceId` for both customer roles, linked from existing draft destinations. Current server-derived session/identity/active-tenant authority remains mandatory; a second membership cannot select another tenant. The detail renders the actual occurrence location, stored state and UTC/local due time, preserving DST disambiguation. [Focused HTTPS/DB and browser evidence](handovers/sessions/2026-11-17-occurrence-details.md) covers non-disclosure and unchanged domain records. No scheduling, approval, delivery, export, lifecycle completion or product-gate acceptance is added; #124/#131 remain open.
 

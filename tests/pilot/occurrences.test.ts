@@ -64,7 +64,7 @@ test('stored occurrence details preserve active-tenant authority and domain reco
         assert.ok(draft.text.includes(`href="${path}"`));
         const page = await send(who, path); assert.equal(page.status, 200);
         assert.match(page.text, /<h1>Post occurrence details<\/h1>/);
-        assert.ok(page.text.includes('<dd>held</dd>'));
+        assert.match(page.text, /<strong>Held<\/strong>/);
         assert.ok(page.text.includes('Stored destination &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; branch'));
         assert.ok(!page.text.includes('<script>')); assert.ok(!page.text.includes('fake-location'));
         assert.ok(!page.text.includes('Invented plain text')); assert.ok(!page.text.includes('<form'));
@@ -123,14 +123,63 @@ test('stored occurrence details preserve active-tenant authority and domain reco
         assert.doesNotMatch(view.text, /Proposed text|Updated|Invented plain text/);
       }
       assert.deepEqual(await snapshot(), before);
-      for (const state of ['approved', 'held', 'exported', 'in_flight', 'unknown', 'pending', 'confirmed', 'rejected', 'quarantined']) {
-        await db.query('UPDATE pilot.occurrences SET state=$1 WHERE tenant_id=$2 AND id=$3', [state, a.tenant, summer]);
-        const view = await send(manager, `/customer/occurrences/${summer}`);
-        assert.equal(view.status, 200);
-        assert.ok(view.text.includes(`<dd>${state}</dd>`));
-        assert.doesNotMatch(view.text, /Proposed text|Updated/);
+    });
+    await t.test('stored publication evidence is read independently without writes or inferred success', async () => {
+      const claimedAt = '2030-01-01T12:01:00.000Z', observedAt = '2030-01-01T12:04:00.000Z';
+      const cases = [
+        { state: 'held', label: 'Held' },
+        { state: 'approved', label: 'Approved' },
+        { state: 'quarantined', label: 'Under review', outcome: 'confirmed', observed: true },
+        { state: 'exported', label: 'Exported', detail: /manual posting.*No Google publication was confirmed/ },
+        { state: 'in_flight', label: 'Submitting', outcome: 'unknown' },
+        { state: 'pending', label: 'Processing', outcome: 'pending', observed: true },
+        { state: 'rejected', label: 'Rejected', outcome: 'rejected', observed: true },
+        { state: 'confirmed', label: 'Publication confirmed', outcome: 'confirmed', observed: true },
+        { state: 'unknown', label: 'Outcome unknown', outcome: 'unknown', observed: true },
+        { state: 'in_flight', label: 'Outcome unknown' },
+        { state: 'confirmed', label: 'Outcome unknown' },
+        { state: 'confirmed', label: 'Outcome unknown', outcome: 'confirmed' },
+        { state: 'confirmed', label: 'Outcome unknown', outcome: 'pending', observed: true },
+        { state: 'confirmed', label: 'Outcome unknown', outcome: 'confirmed', observed: true, unboundApproval: true },
+      ];
+      const targets = [];
+      for (const item of cases) {
+        const id = await occurrence(db, a);
+        await db.query('UPDATE pilot.occurrences SET state=$1 WHERE tenant_id=$2 AND id=$3', [item.state, a.tenant, id]);
+        if (item.outcome) {
+          const approval = (await db.query(`INSERT INTO pilot.approvals
+            (tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+            SELECT tenant_id,id,draft_id,$3,location_id,$4,1,1,due_at,timezone,now() FROM pilot.occurrences
+            WHERE tenant_id=$1 AND id=$2 RETURNING id`, [a.tenant, id, a.revision, a.membership])).rows[0].id;
+          if (!item.unboundApproval) {
+            await db.query('UPDATE pilot.occurrences SET approval_id=$1 WHERE tenant_id=$2 AND id=$3', [approval, a.tenant, id]);
+          }
+          await db.query(`INSERT INTO pilot.attempts(tenant_id,occurrence_id,approval_id,claimed_at,outcome,observed_at)
+            VALUES($1,$2,$3,$4,$5,$6)`, [a.tenant, id, approval, claimedAt, item.outcome, item.observed ? observedAt : null]);
+        }
+        targets.push({ ...item, id });
       }
-      await db.query("UPDATE pilot.occurrences SET state='draft' WHERE tenant_id=$1 AND id=$2", [a.tenant, summer]);
+      const before = await snapshot();
+      const sessions = () => db.query('SELECT id,last_seen_at FROM pilot.sessions WHERE tenant_id=$1 ORDER BY id', [a.tenant]);
+      const beforeSessions = (await sessions()).rows;
+      for (const who of [employee, manager]) {
+        for (const item of targets) {
+          const view = await send(who, `/customer/occurrences/${item.id}`);
+          assert.equal(view.status, 200);
+          assert.ok(view.text.includes(`<strong>${item.label}</strong>`), `Expected ${item.label} for ${item.state}/${item.outcome}`);
+          if (item.detail) assert.match(view.text, item.detail);
+          if (item.label === 'Outcome unknown') {
+            assert.match(view.text, /Resolve the original attempt before retrying or posting manually/);
+            assert.doesNotMatch(view.text, /<strong>Publication confirmed<\/strong>/);
+          }
+          assert.equal(view.text.includes(`<time datetime="${claimedAt}">`), Boolean(item.outcome));
+          assert.equal(view.text.includes(`<time datetime="${observedAt}">`), Boolean(item.observed));
+          assert.equal(view.text.includes('Last observation (UTC)'), Boolean(item.observed));
+          assert.doesNotMatch(view.text, /Proposed text|Updated|Invented plain text|<form|<button/);
+        }
+      }
+      assert.deepEqual(await snapshot(), before);
+      assert.deepEqual((await sessions()).rows, beforeSessions);
     });
     await t.test('a stored draft without a text revision retains the status page', async () => {
       const draft = (await db.query('INSERT INTO pilot.drafts(tenant_id) VALUES($1) RETURNING id', [a.tenant])).rows[0].id;
@@ -138,7 +187,7 @@ test('stored occurrence details preserve active-tenant authority and domain reco
       const before = await snapshot();
       const view = await send(manager, `/customer/occurrences/${id}`);
       assert.equal(view.status, 200);
-      assert.ok(view.text.includes('<dd>draft</dd>'));
+      assert.match(view.text, /<strong>Draft<\/strong>/);
       assert.doesNotMatch(view.text, /Proposed text|Revision/);
       assert.deepEqual(await snapshot(), before);
     });

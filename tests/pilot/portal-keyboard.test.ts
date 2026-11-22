@@ -184,6 +184,31 @@ test('dashboard keyboard navigation and session rotation in an isolated browser'
     await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to draft');
     await page.keyboard.press('Enter');
     await page.waitForURL(`https://customer:8443${draftPath}`, { timeout: 5000 });
+
+    const approval = (await db.query(`INSERT INTO pilot.approvals
+      (tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+      SELECT o.tenant_id,o.id,o.draft_id,r.id,o.location_id,$3,1,1,o.due_at,o.timezone,now()
+      FROM pilot.occurrences o JOIN pilot.draft_revisions r ON r.tenant_id=o.tenant_id AND r.draft_id=o.draft_id
+      WHERE o.tenant_id=$1 AND o.id=$2 AND r.revision=3 RETURNING pilot.approvals.id`,
+    [tenants[1], occurrence, memberships[1]])).rows[0].id;
+    const claimedAt = '2030-01-01T12:01:00.000Z';
+    await db.query("UPDATE pilot.occurrences SET state='unknown',approval_id=$3 WHERE tenant_id=$1 AND id=$2", [tenants[1], occurrence, approval]);
+    await db.query('INSERT INTO pilot.attempts(tenant_id,occurrence_id,approval_id,claimed_at) VALUES($1,$2,$3,$4)',
+      [tenants[1], occurrence, approval, claimedAt]);
+    await page.getByRole('button', { name: 'Save text' }).focus(); await page.keyboard.press('Tab');
+    assert.equal(await page.locator(':focus').getAttribute('href'), `/customer/occurrences/${occurrence}`);
+    await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443/customer/occurrences/${occurrence}`, { timeout: 5000 });
+    assert.equal(await page.getByText('Outcome unknown', { exact: true }).count(), 1);
+    assert.equal(await page.getByText('Last observation (UTC)', { exact: true }).count(), 0);
+    assert.equal(await page.locator(`time[datetime="${claimedAt}"]`).count(), 1);
+    assert.equal(await page.getByText(/Resolve the original attempt before retrying or posting manually/).count(), 1);
+    assert.equal(await page.getByRole('button').count(), 0);
+    await page.screenshot({ path: '/artifacts/occurrence-outcome.png', fullPage: true });
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to workspace');
+    await page.keyboard.press('Tab'); assert.equal(await page.locator(':focus').textContent(), 'Back to draft');
+    await page.keyboard.press('Enter');
+    await page.waitForURL(`https://customer:8443${draftPath}`, { timeout: 5000 });
     await page.getByRole('link', { name: 'Back to workspace' }).focus(); await page.keyboard.press('Enter');
     await page.waitForURL('https://customer:8443/customer', { timeout: 5000 });
     const factOwner = await connectFixture(true);
