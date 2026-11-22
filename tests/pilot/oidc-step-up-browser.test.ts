@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import express from 'express';
 import { Client } from 'pg';
-import { chromium, type Browser, type Page } from 'playwright';
+import { chromium, type Browser, type Page, type Response } from 'playwright';
 import { connectFixture, loadFixture } from '../../ops/local/fixture.js';
 import { runPortalBrowserTest } from '../../ops/local/portal-browser.js';
 import { createOidcVerifier, type OidcStepUpEvidence } from '../../apps/web/src/server/oidc.js';
@@ -111,24 +111,67 @@ test('isolated Keycloak requires a new enrolled OTP execution even after high-AC
       await p.getByLabel('Username or email').fill(username); await p.getByLabel('Password', { exact: true }).fill(password);
       await p.getByRole('button', { name: 'Sign In', exact: true }).click();
     };
-    const submitOtp = async () => {
-      // A retained fixture may have consumed this period's code in a prior run. Never retry a rejected code.
-      await delay(30000 - Date.now() % 30000 + 250);
-      const counter = Buffer.alloc(8); counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30000)));
+    let previousPeriod: number | undefined;
+    const submitOtp = async (phase: 'initial OTP' | 'high-ACR SSO') => {
+      stage = `${phase}: wait for a fresh TOTP period`;
+      const periodMs = 30_000;
+      const nextPeriod = Math.max(Math.floor(Date.now() / periodMs), previousPeriod ?? 0) + 1;
+      const readyAt = nextPeriod * periodMs + 250;
+      const waitDeadline = performance.now() + 2 * periodMs;
+      let generatedAt = Date.now(), waits = 0;
+      // The monotonic timer can finish before the fixture wall clock reaches the next period.
+      while (generatedAt < readyAt) {
+        const remaining = waitDeadline - performance.now();
+        assert.ok(remaining > 0, 'Fixture wall clock did not reach the next TOTP period');
+        await delay(Math.min(readyAt - generatedAt, remaining));
+        generatedAt = Date.now();
+        waits++;
+      }
+      const period = Math.floor(generatedAt / periodMs);
+      assert.ok(period >= nextPeriod);
+      if (waits > 1) console.log(`Step-up browser waited for the fresh TOTP period (${phase}, ${waits} clock checks).`);
+      stage = `${phase}: submit challenge`;
+      const periodsAdvanced = previousPeriod === undefined ? 'first' : period - previousPeriod;
+      previousPeriod = period;
+      const counter = Buffer.alloc(8); counter.writeBigUInt64BE(BigInt(period));
       const mac = createHmac('sha1', secret).update(counter).digest(), offset = mac[19]! & 15;
       const otp = String((mac.readUInt32BE(offset) & 0x7fffffff) % 1000000).padStart(6, '0');
-      await page.getByLabel('One-time code').fill(otp); await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-      await page.waitForURL('https://customer:8443/verified', { timeout: 10000 });
-      assert.equal(await page.title(), 'Factor verified');
+      let otpStatus: number | undefined, callbackStatus: number | undefined;
+      const observe = (response: Response) => {
+        const { origin, pathname } = new URL(response.url());
+        if (origin === 'https://keycloak:8443' && pathname === '/realms/pilot/login-actions/authenticate'
+          && response.request().method() === 'POST') otpStatus = response.status();
+        if (origin === 'https://customer:8443' && pathname === '/oidc/callback') callbackStatus = response.status();
+      };
+      page.on('response', observe);
+      try {
+        await page.getByLabel('One-time code').fill(otp);
+        await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+        stage = `${phase}: wait for verified page`;
+        await page.waitForURL('https://customer:8443/verified', { timeout: 10000 });
+        stage = `${phase}: verify page title`;
+        assert.equal(await page.title(), 'Factor verified');
+      } catch (error) {
+        const challengeRepeated = otpStatus === 200 && await page.getByLabel('One-time code').isVisible().catch(() => false);
+        stage += ` (OTP POST ${otpStatus ?? 'unobserved'}, challenge repeated ${challengeRepeated}, callback ${callbackStatus ?? 'unobserved'}, periods advanced ${periodsAdvanced}, generated ${generatedAt % periodMs} ms into period)`;
+        throw error;
+      } finally { page.off('response', observe); }
     };
-    stage = 'initial OTP'; await begin(page); await login(page, 'step-up-enrolled');
-    await page.getByLabel('One-time code').waitFor({ state: 'visible' }); assert.equal(receipts.length, 0); await submitOtp();
+    stage = 'initial OTP: start and sign in'; await begin(page); await login(page, 'step-up-enrolled');
+    stage = 'initial OTP: require visible challenge';
+    await page.getByLabel('One-time code').waitFor({ state: 'visible' }); assert.equal(receipts.length, 0);
+    await submitOtp('initial OTP');
+    stage = 'initial OTP: verify receipt';
     assert.equal(receipts.length, 1); assert.equal(receipts[0]!.acr, '2');
-    stage = 'high-ACR SSO still challenges'; await begin(page);
+    stage = 'high-ACR SSO: start'; await begin(page);
+    stage = 'high-ACR SSO: require visible challenge';
     await page.getByLabel('One-time code').waitFor({ state: 'visible' });
+    stage = 'high-ACR SSO: verify challenge before receipt';
     assert.equal(await page.getByLabel('Password', { exact: true }).count(), 0);
     assert.equal(receipts.length, 1, 'Prior high ACR cannot produce a second receipt without a new OTP execution');
-    await submitOtp(); assert.equal(receipts.length, 2);
+    await submitOtp('high-ACR SSO');
+    stage = 'high-ACR SSO: verify fresh receipt';
+    assert.equal(receipts.length, 2);
     assert.ok(receipts[1]!.factorTimeLowerBound > receipts[0]!.factorTimeLowerBound);
     stage = 'unenrolled fails without setup'; await begin(other); await login(other, 'step-up-unenrolled');
     await other.getByText('Cannot login, credential setup required.', { exact: true }).waitFor({ state: 'visible' });
