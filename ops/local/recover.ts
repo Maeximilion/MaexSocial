@@ -59,7 +59,7 @@ async function main(): Promise<void> {
         AND NOT EXISTS (SELECT 1 FROM pilot.occurrences WHERE state<>'quarantined' OR restore_previous_state IS NULL)
         FOR SHARE`);
       if (held.rowCount !== 1) throw new Error('Restore quarantine required');
-      return replayRestoreHistory(db, fixture.id, args);
+      return replayRestoreHistory(db, fixture.id, args, fixture.pairedRestore === true);
     });
     console.log(JSON.stringify({ ...result, history }));
   } finally {

@@ -29,17 +29,17 @@ function parseEvent(value: unknown, seq: number): Event {
   return incompatible();
 }
 
-export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[]) {
+export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[], paired: boolean) {
   const [mode, start, end, digest] = args;
   const after = Number(start), through = Number(end);
   if (args.length !== 4 || mode !== 'replay-history' || start !== String(after) || end !== String(through)
       || !Number.isSafeInteger(after) || !Number.isSafeInteger(through) || after < 0 || through < after
       || !digest || !/^[a-f0-9]{64}$/.test(digest)) return incompatible();
 
-  const { rows: [anchor] } = await db.query<{ restore_history_digest: string | null }>(
-    `SELECT restore_history_digest FROM public.fixture_identity
-    WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
-  if (!anchor) return incompatible();
+  const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null }>(
+    `SELECT ${paired ? 'restore_history_source_id' : 'id'} AS source, restore_history_digest
+    FROM public.fixture_identity WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
+  if (!anchor?.source) return incompatible();
 
   const file = await open(historyPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let bytes: Buffer;
@@ -56,7 +56,7 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
   const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   if (!value || typeof value !== 'object') return incompatible();
   const history = value as Record<string, unknown>;
-  if (history.schema !== 1 || history.fixtureId !== fixtureId || history.after !== after || history.through !== through
+  if (history.schema !== 1 || history.fixtureId !== anchor.source || history.after !== after || history.through !== through
       || !Array.isArray(history.records) || history.records.length !== through - after) return incompatible();
   const events = history.records.map((row, i) => parseEvent(row, after + i + 1));
 

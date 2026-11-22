@@ -3,7 +3,7 @@ set -eu
 export LC_ALL=C
 service=$1 owner=$2 database=$3 digest=$4 system_id=$5 catalog=$6 source_id=$7 target_id=$8 schema=$9
 shift 9
-expiry=$1
+expiry=$1 history_after=$2 history_evidence=$3
 
 # Process a single immutable copy, with no network and no source volume mounted.
 test -z "$(find "$PGDATA" -mindepth 1 -print -quit)"
@@ -40,6 +40,12 @@ if [ "$service" = postgres ]; then
   pg_dump --schema=pilot --schema-only --restrict-key=MaexSocialColdBackupSchema > /tmp/schema
   printf '%s' "$(cat /tmp/schema)" > /tmp/schema-trimmed
   printf '%s  %s\n' "$schema" /tmp/schema-trimmed | sha256sum -c --status
+  history_source=NULL
+  if [ -n "$history_after" ]; then
+    archived_anchor=$(query -c "SELECT restore_history_after || ':' || restore_history_evidence FROM public.fixture_identity")
+    test "$archived_anchor" = "$history_after:$history_evidence"
+    history_source="'$source_id'"
+  fi
   password=$(cat /fixture/owner-password)
   query <<SQL
 BEGIN;
@@ -47,7 +53,9 @@ ALTER ROLE pilot_owner PASSWORD '$password' VALID UNTIL '$expiry';
 ALTER ROLE pilot_app NOLOGIN PASSWORD NULL;
 REVOKE CONNECT ON DATABASE pilot_fixture FROM pilot_app;
 ALTER TABLE public.fixture_identity ADD COLUMN IF NOT EXISTS restore_target boolean NOT NULL DEFAULT false;
-UPDATE public.fixture_identity SET id='$target_id', restore_target=true;
+ALTER TABLE public.fixture_identity ADD COLUMN IF NOT EXISTS restore_history_source_id text;
+ALTER TABLE public.fixture_identity ADD COLUMN IF NOT EXISTS restore_history_digest text;
+UPDATE public.fixture_identity SET id='$target_id', restore_target=true, restore_history_source_id=$history_source;
 UPDATE pilot.dispatch_control SET stopped=true WHERE singleton;
 COMMIT;
 SQL
