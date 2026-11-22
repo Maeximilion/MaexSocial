@@ -17,7 +17,7 @@ test('local dispatch stop persists across processes and reports only unresolved 
     return;
   }
   const dir = await mkdtemp(join('/dev/shm', 'maex-dispatch-stop-'));
-  const fake = new FakeGbp(dir);
+  const fake = new FakeGbp(dir, { clock: () => 1000 });
   const owner = await connectFixture(true);
   const readAttempts = (tenant: string) => owner.query(
     'SELECT * FROM pilot.attempts WHERE tenant_id = $1 ORDER BY id', [tenant]);
