@@ -6,24 +6,13 @@ import type { Client } from 'pg';
 import { holdOccurrence, type ManagementHoldContext } from '../../packages/contracts/occurrence.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { occurrence, seedTenant } from './fixtures.js';
+import { occurrence, seedManagementContext, seedTenant } from './fixtures.js';
 
 const now = new Date('2030-01-01T10:00:00Z');
 const stepUp = new Date(now.getTime() - 300_000);
 
 async function seedOperator(db: Client, tenantId: string, occurrenceId: string): Promise<ManagementHoldContext> {
-  const identityId = randomUUID(), grantId = randomUUID(), deviceId = randomUUID(), sessionId = randomUUID();
-  await db.query('INSERT INTO pilot.identities(id,subject,verified) VALUES($1,$2,true)', [identityId, randomUUID()]);
-  await db.query('INSERT INTO pilot.platform_grants(id,identity_id) VALUES($1,$2)', [grantId, identityId]);
-  await db.query("INSERT INTO pilot.devices(id,platform_grant_id,identity_id,public_key) VALUES($1,$2,$3,'synthetic device key')",
-    [deviceId, grantId, identityId]);
-  await db.query(`INSERT INTO pilot.sessions(id,token_hash,identity_id,identity_version,device_id,device_version,
-    audience,created_at,last_seen_at,expires_at,mfa_at)
-    VALUES($1,$2,$3,1,$4,1,'management',$5,$6,$7,$8)`,
-  [sessionId, tokenHash(randomUUID()), identityId, deviceId, new Date(now.getTime() - 360_000), now,
-    new Date(now.getTime() + 600_000), stepUp]);
-  return { sessionId, identityId, deviceId, deviceVersion: 1, grantId, grantVersion: 1, tenantId, tenantVersion: 1,
-    occurrenceId, phishingResistantAt: stepUp };
+  return { ...await seedManagementContext(db, tenantId, now, stepUp), occurrenceId };
 }
 
 test('unmounted management hold commits only the selected occurrence and its audit', async t => {
