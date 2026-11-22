@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
 import { tokenHash } from '../../apps/web/src/server/session.js';
-import type { ManagementContext } from '../../packages/contracts/management.js';
+import type { ManagementContext, ManagementSessionContext } from '../../packages/contracts/management.js';
 
 export async function withProbeView(db: Client, check: () => Promise<void>): Promise<void> {
   let created = false;
@@ -73,6 +73,10 @@ export async function settleSyntheticJob(db: Client, tenantId: string, operation
 
 // Only isolated tests seed the context normally produced by the private listener.
 export async function seedManagementContext(db: Client, tenantId: string, now: Date, stepUp: Date): Promise<ManagementContext> {
+  return { ...await seedManagementSession(db, now, stepUp), tenantId, tenantVersion: 1 };
+}
+
+export async function seedManagementSession(db: Client, now: Date, stepUp: Date): Promise<ManagementSessionContext> {
   const identityId = randomUUID(), grantId = randomUUID(), deviceId = randomUUID(), sessionId = randomUUID();
   await db.query('INSERT INTO pilot.identities(id,subject,verified) VALUES($1,$2,true)', [identityId, randomUUID()]);
   await db.query('INSERT INTO pilot.platform_grants(id,identity_id) VALUES($1,$2)', [grantId, identityId]);
@@ -83,6 +87,5 @@ export async function seedManagementContext(db: Client, tenantId: string, now: D
     VALUES($1,$2,$3,1,$4,1,'management',$5,$6,$7,$8)`,
   [sessionId, tokenHash(randomUUID()), identityId, deviceId, new Date(now.getTime() - 360_000), now,
     new Date(now.getTime() + 600_000), stepUp]);
-  return { sessionId, identityId, deviceId, deviceVersion: 1, grantId, grantVersion: 1, tenantId, tenantVersion: 1,
-    phishingResistantAt: stepUp };
+  return { sessionId, identityId, deviceId, deviceVersion: 1, grantId, grantVersion: 1, phishingResistantAt: stepUp };
 }

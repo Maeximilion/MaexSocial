@@ -55,6 +55,10 @@ Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues
 [occurrence hold transaction and fixture evidence](handovers/sessions/2026-11-22-operator-hold.md).
 [#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains integrated acceptance.
 
+Bounded Task 3 component [#259](https://github.com/Maeximilion/MaexSocial/issues/259) supplies
+[private organization creation and fixture evidence](../ops/local/README.md#private-customer-organization-creation-259).
+Named access provisioning and the integrated private management path remain with #164.
+
 Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
 [private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
 The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.
