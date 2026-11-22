@@ -113,11 +113,24 @@ test('isolated Keycloak requires a new enrolled OTP execution even after high-AC
     };
     let previousPeriod: number | undefined;
     const submitOtp = async (phase: 'initial OTP' | 'high-ACR SSO') => {
+      stage = `${phase}: wait for a fresh TOTP period`;
+      const periodMs = 30_000;
+      const nextPeriod = Math.max(Math.floor(Date.now() / periodMs), previousPeriod ?? 0) + 1;
+      const readyAt = nextPeriod * periodMs + 250;
+      const waitDeadline = performance.now() + 2 * periodMs;
+      let generatedAt = Date.now(), waits = 0;
+      // The monotonic timer can finish before the fixture wall clock reaches the next period.
+      while (generatedAt < readyAt) {
+        const remaining = waitDeadline - performance.now();
+        assert.ok(remaining > 0, 'Fixture wall clock did not reach the next TOTP period');
+        await delay(Math.min(readyAt - generatedAt, remaining));
+        generatedAt = Date.now();
+        waits++;
+      }
+      const period = Math.floor(generatedAt / periodMs);
+      assert.ok(period >= nextPeriod);
+      if (waits > 1) console.log(`Step-up browser waited for the fresh TOTP period (${phase}, ${waits} clock checks).`);
       stage = `${phase}: submit challenge`;
-      // A retained fixture may have consumed this period's code in a prior run. Never retry a rejected code.
-      await delay(30000 - Date.now() % 30000 + 250);
-      const generatedAt = Date.now();
-      const period = Math.floor(generatedAt / 30000);
       const periodsAdvanced = previousPeriod === undefined ? 'first' : period - previousPeriod;
       previousPeriod = period;
       const counter = Buffer.alloc(8); counter.writeBigUInt64BE(BigInt(period));
@@ -140,7 +153,7 @@ test('isolated Keycloak requires a new enrolled OTP execution even after high-AC
         assert.equal(await page.title(), 'Factor verified');
       } catch (error) {
         const challengeRepeated = otpStatus === 200 && await page.getByLabel('One-time code').isVisible().catch(() => false);
-        stage += ` (OTP POST ${otpStatus ?? 'unobserved'}, challenge repeated ${challengeRepeated}, callback ${callbackStatus ?? 'unobserved'}, periods advanced ${periodsAdvanced}, generated ${generatedAt % 30000} ms into period)`;
+        stage += ` (OTP POST ${otpStatus ?? 'unobserved'}, challenge repeated ${challengeRepeated}, callback ${callbackStatus ?? 'unobserved'}, periods advanced ${periodsAdvanced}, generated ${generatedAt % periodMs} ms into period)`;
         throw error;
       } finally { page.off('response', observe); }
     };
