@@ -19,6 +19,8 @@ Bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexS
 and per-source limits, atomic denied-attempt charging and restart continuity. This is not public authentication,
 full ACCESS-09 or enrollment/recovery-generation evidence; #131/#149, integrated Task 2 and G3/G5 stay open.
 
+Bounded Task 2C component [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records an immutable approval of the current Manager proposal in the isolated pilot. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) cover the private operation. #223 retains authenticated approval and reapproval after #131.
+
 Bounded Task 2C component [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged the Manager's read-only preview of the proposed draft revision, actual destination and local/UTC occurrence time. [Evidence and limits](handovers/sessions/2026-11-21-approval-preview.md) preserve actual approval and reapproval under #124 and integrated identity/MFA under #131.
 
 Bounded Task 2C component [#153 / PR #156](https://github.com/Maeximilion/MaexSocial/pull/156) merged the Business Facts read view with tenant/location revision history and explicitly synthetic fixture provenance. Current Employee/Manager readers use the existing protected request boundary; only the fixture owner seeds facts. [Contract and limits](superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) retain genuine confirmation, generated-claim provenance and approval under #124, real identity/MFA under #131 and integrated Task 2/G3/G5 evidence. The [delivery checkpoint](handovers/sessions/2026-11-18-business-facts.md) records local checks.

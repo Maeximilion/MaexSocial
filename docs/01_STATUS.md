@@ -12,6 +12,8 @@
 
 November 21 test maintenance [#155](https://github.com/Maeximilion/MaexSocial/issues/155) corrects the two OIDC elapsed assertions while retaining their strict 6500 ms limit. The [delivery handover](handovers/sessions/2026-11-21-oidc-monotonic-time.md) preserves both historical observations and the closure rationale. The original host cause remains undetermined. G3 and G5 acceptance remain open.
 
+November 22 bounded content delivery [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records the exact Manager proposal through an unmounted transaction exercised with local fixtures. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) retain the authenticated action and reapproval in #223 after #131. Integrated Task 2 and G3/G5 remain open.
+
 November 21 bounded content delivery [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged at `4391dd4`. The read-only Manager preview shows the proposed current draft revision with the actual destination and both stored time interpretations. The [local handover](handovers/sessions/2026-11-21-approval-preview.md) preserves the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). The [Claude API receipt](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) and [candidate pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) record the later integration evidence. #124 retains actual approval and #131 retains identity and MFA. G3–G5 remain open.
 
 November 18 bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexSocial/pull/157) merged at `d2332fe` with internal
