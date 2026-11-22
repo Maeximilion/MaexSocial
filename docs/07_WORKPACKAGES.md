@@ -19,6 +19,10 @@ The local Task 6 receipt supplies a tested candidate for separately authorized s
 
 ## Planning maturity
 
+Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues/215) supplies
+[local dispatch stop and outstanding attempt status](../ops/local/README.md#local-dispatch-stop-215).
+[#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated stop and restore drill.
+
 Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted
 [occurrence hold transaction and fixture evidence](handovers/sessions/2026-11-22-operator-hold.md).
 [#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains integrated acceptance.
