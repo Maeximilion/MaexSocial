@@ -202,8 +202,13 @@ test('private terminal export commits approved text only under current authority
         await race(i => withdraw(withdrawalWinsDispatch, i), () => dispatch(withdrawalWinsDispatch.id), true);
         assert.equal(fake!.createCount(tenant.tenant, withdrawalWinsDispatch.id), 0);
         assert.deepEqual(await rows('SELECT id FROM pilot.attempts WHERE occurrence_id=$1', [withdrawalWinsDispatch.id]), []);
-        const committed = await dispatch(dispatchWinsWithdrawal.id);
-        await reject(withdraw(dispatchWinsWithdrawal));
+        const committed = await claimDispatch(connectFixture, dispatchWinsWithdrawal.id, {
+          policy: fake!.policy,
+          create: async intent => {
+            await reject(withdraw(dispatchWinsWithdrawal));
+            return fake!.create(intent);
+          }
+        });
         assert.deepEqual(await rows('SELECT id,approval_id FROM pilot.attempts WHERE occurrence_id=$1', [dispatchWinsWithdrawal.id]),
           [{ id: committed.attemptId, approval_id: dispatchWinsWithdrawal.approvalId }]);
         assert.equal(await reconcileOccurrence(connectFixture, dispatchWinsWithdrawal.id, fake!), 'pending');

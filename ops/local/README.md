@@ -58,6 +58,24 @@ On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurre
 including a deferred commit failure and a competing claim. The authenticated route, dispatch worker and
 integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Private Manager approval withdrawal (#273)
+
+The private `withdrawApproval` operation binds the occurrence and exact approval ID to the original
+approving Manager's current tenant lifecycle and membership version. It checks the same five-minute
+enrolled MFA as approval, including after the draft and occurrence locks. A successful withdrawal
+returns the occurrence to draft and appends one audit row referencing the immutable approval. An
+authorized repeat of that exact withdrawal leaves any later approval intact. A fresh approval needs
+a proposal read after the withdrawal.
+
+Dispatch and terminal export share the occurrence lock. A claim or export that wins retains its
+approval and outcome. Dispatch reconciliation continues on the original attempt. Holds and
+quarantine deny a new withdrawal and retain their own state.
+
+Migration 012 links withdrawal audit rows to approvals and retains offline restore compatibility
+with the exact 010 and 011 schemas. On an isolated migrated fixture, run
+`node --test dist/pilot/tests/pilot/occurrence-export.test.js` after building. Public approval UI and
+authenticated integration remain under [#223](https://github.com/Maeximilion/MaexSocial/issues/223).
+
 ## Private approval across tenant reactivation (#271)
 
 The Manager's private proposal and immutable approval record carry the current tenant version.

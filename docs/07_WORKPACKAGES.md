@@ -93,6 +93,10 @@ full ACCESS-09 or enrollment/recovery-generation evidence; #131/#149, integrated
 
 Bounded Task 2C component [#208](https://github.com/Maeximilion/MaexSocial/issues/208) records an immutable approval of the current Manager proposal in the isolated pilot. [Contract and evidence](superpowers/plans/2026-11-06-task-2-deliveries.md#private-immutable-manager-approval-208) cover the private operation. #223 retains authenticated approval and reapproval after #131.
 
+Bounded Task 2C component [#273](https://github.com/Maeximilion/MaexSocial/issues/273) protects
+[withdrawal of a Manager's own exact, unclaimed approval](../ops/local/README.md#private-manager-approval-withdrawal-273).
+A later approval requires a fresh proposal. #223 retains authenticated integration.
+
 Bounded Task 2C component [#211](https://github.com/Maeximilion/MaexSocial/issues/211) validates changes to the schedule and destination of an unclaimed occurrence in the isolated pilot. [Contract and checks](superpowers/plans/2026-11-06-task-2-deliveries.md#private-occurrence-reschedule-211) cover time-zone validation, preservation of occurrence identity and approval history, and refusal after claim. #223 retains authenticated integration.
 
 Bounded Task 2C component [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged the Manager's read-only preview of the proposed draft revision, actual destination and local/UTC occurrence time. [Evidence and limits](handovers/sessions/2026-11-21-approval-preview.md) preserve actual approval and reapproval under #124 and integrated identity/MFA under #131.
