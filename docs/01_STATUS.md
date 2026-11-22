@@ -67,6 +67,12 @@ for a selected active organization. The isolated evidence covers both roles, sha
 protection, audited issuance and the recipient-bound preview. Real authority, acceptance and the
 private management entry remain under #131, #164 and #221.
 
+Bounded Task 3 delivery [#263](https://github.com/Maeximilion/MaexSocial/issues/263) adds
+[private membership revocation](../ops/local/README.md#private-devadmin-membership-revocation-263)
+for either customer role, with tenant-scoped authority invalidation and atomic audit. The fixture
+covers the last Manager and an Employee in a managerless organization. #164 retains private listener,
+device proof and integrated acceptance.
+
 Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
 [private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
 synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)
