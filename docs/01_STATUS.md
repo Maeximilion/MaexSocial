@@ -51,6 +51,11 @@ Bounded Task 3 delivery [#236](https://github.com/Maeximilion/MaexSocial/issues/
 and last Manager demotion. The synthetic fixture checks current grant and target, old session and unclaimed approval
 invalidation, and atomic audit. [#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains integrated acceptance.
 
+Bounded Task 3 delivery [#259](https://github.com/Maeximilion/MaexSocial/issues/259) adds
+[private customer organization creation](../ops/local/README.md#private-customer-organization-creation-259).
+The operation commits an empty active organization and its audit together. [#164](https://github.com/Maeximilion/MaexSocial/issues/164)
+retains the private listener, operator proof, access provisioning and integrated acceptance.
+
 Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
 [private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
 synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)
