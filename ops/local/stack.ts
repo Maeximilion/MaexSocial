@@ -8,9 +8,10 @@ import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixtur
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' = 'ordinary'): Promise<Fixture> {
+export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' = 'ordinary'): Promise<Fixture> {
   const forBackup = purpose === 'backup';
   const restoreTarget = purpose === 'restore-target';
+  const cachedImagesOnly = forBackup || purpose === 'readiness';
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
@@ -78,8 +79,8 @@ export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-targe
   await save('owner-password', f.ownerPassword);
   await save('identity-password', f.identityPassword);
   await save('compose.env', `FIXTURE_ID=${f.id}\nFIXTURE_UID=${process.getuid?.() ?? 0}\nFIXTURE_GID=${process.getgid?.() ?? 0}\n`);
-  if (!forBackup) docker(['pull', postgresImage]);
-  const runLocal = ['run', '--rm', '--network', 'none', ...(forBackup ? ['--pull', 'never'] : [])];
+  if (!cachedImagesOnly) docker(['pull', postgresImage]);
+  const runLocal = ['run', '--rm', '--network', 'none', ...(cachedImagesOnly ? ['--pull', 'never'] : [])];
   for (const name of ['postgres', 'identity-db', 'keycloak', 'mailbox', 'customer']) {
     docker([...runLocal, '-v', `${resolve('work/pilot')}:/fixture`, '--entrypoint', 'openssl', postgresImage,
       'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', `/CN=${name}`,
@@ -123,26 +124,31 @@ health-enabled=true
   return f;
 }
 
-async function ready(hostname: string, port: number, certificate: string, path: string): Promise<void> {
-  const ca = await readFile(`work/pilot/${certificate}.crt`, 'utf8');
-  for (let i = 0; i < 60; i++) {
+export async function httpsReady(hostname: 'keycloak' | 'mailbox', wait: boolean): Promise<boolean> {
+  const ca = await readFile(`work/pilot/${hostname}.crt`, 'utf8');
+  const [port, path] = hostname === 'keycloak'
+    ? [8443, '/realms/pilot/.well-known/openid-configuration'] as const
+    : [8025, '/api/v1/info'] as const;
+  for (let attempt = 0; attempt < (wait ? 60 : 1); attempt++) {
     const ok = await new Promise<boolean>(done => {
-      const request = get({ hostname, port, path, ca, rejectUnauthorized: true, timeout: 2000 }, response => {
-        response.resume(); done(response.statusCode === 200);
+      const request = get({ hostname, port, path, ca, rejectUnauthorized: true, signal: AbortSignal.timeout(2000) }, response => {
+        response.destroy();
+        done(response.statusCode === 200);
       });
-      request.on('error', () => done(false)); request.on('timeout', () => request.destroy());
+      request.on('error', () => done(false));
     });
-    if (ok) return;
+    if (ok || !wait) return ok;
     await setTimeout(1000);
   }
-  throw new Error('Fixture HTTPS readiness failed');
+  return false;
 }
 
 async function main(): Promise<void> {
   const action = process.argv[2];
   if (action === 'check' && process.env.PILOT_CONTAINER === '1') {
-    await ready('keycloak', 8443, 'keycloak', '/realms/pilot/.well-known/openid-configuration');
-    await ready('mailbox', 8025, 'mailbox', '/api/v1/info');
+    if (!(await httpsReady('keycloak', true)) || !(await httpsReady('mailbox', true))) {
+      throw new Error('Fixture HTTPS readiness failed');
+    }
     console.log('Identity and mailbox TLS readiness verified.');
     return;
   }

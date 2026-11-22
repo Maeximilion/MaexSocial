@@ -74,6 +74,31 @@ test('fixture validation rejects altered target, expired fixture and unknown sch
   assert.doesNotThrow(() => validateFixture({ ...fixture, expiresAt: 0 }, true));
 });
 
+test('readiness refuses an existing fixture and a remote Docker endpoint', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'maex-readiness-'));
+  const entry = resolve('dist/pilot/ops/local/readiness.js');
+  const invoke = () => spawnSync(process.execPath, [entry], { cwd: root, encoding: 'utf8', timeout: 10000,
+    env: { ...process.env, DOCKER_CONTEXT: '', DOCKER_HOST: 'tcp://unused.example.invalid:2375' } });
+  try {
+    const remote = invoke();
+    assert.equal(remote.status, 1);
+    assert.equal(remote.stdout, '');
+    assert.equal(remote.stderr.trim(), 'Readiness drill requires a local Docker socket.');
+    assert.deepEqual(await readdir(root), []);
+    const folder = join(root, 'work', 'pilot');
+    await mkdir(folder, { recursive: true });
+    await writeFile(join(folder, 'fixture.json'), 'private fixture canary');
+    const existing = invoke();
+    assert.equal(existing.status, 1);
+    assert.equal(existing.stdout, '');
+    assert.equal(existing.stderr.trim(), 'Readiness drill requires a fresh worktree without work/pilot.');
+    assert.equal(await readFile(join(folder, 'fixture.json'), 'utf8'), 'private fixture canary');
+    assert.deepEqual(await readdir(folder), ['fixture.json']);
+  } finally {
+    assert.equal(dirname(root), resolve(tmpdir())); await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('runtime guard rejects an added external network on every fixture service', () => {
   const f = { id: 'a'.repeat(32), project: `maex-pilot-${'a'.repeat(32)}` } as Fixture;
   const networks = ['application', 'identity'].map(name => ({ Id: name, Name: `${f.project}_${name}`,

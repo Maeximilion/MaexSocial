@@ -23,6 +23,12 @@ The [local candidate manifest](../ops/local/README.md#local-pilot-candidate-mani
 
 ## Planning maturity
 
+[Task 6 budget fixture #218](https://github.com/Maeximilion/MaexSocial/issues/218) covers the local synthetic
+accounting and organic-only controls for ADS-01. The [fixture checks](../ops/local/README.md#synthetic-job-budget-218)
+contribute to the integrated readiness receipt under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
+
+[Readiness recovery #219](../ops/local/README.md#local-readiness-recovery-219) supplies the local mailbox outage drill and sanitized timing evidence for [#82](https://github.com/Maeximilion/MaexSocial/issues/82). Staging activation retains [#166](https://github.com/Maeximilion/MaexSocial/issues/166) and operator approval.
+
 Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues/215) supplies
 [local dispatch stop and outstanding attempt status](../ops/local/README.md#local-dispatch-stop-215).
 [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated stop and restore drill.

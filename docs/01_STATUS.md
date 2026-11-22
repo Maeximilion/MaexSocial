@@ -111,6 +111,8 @@ On 2026-11-05 Maxi accepted the [six G1 deliverables](https://github.com/Maeximi
 2. Keep staging assurance in [#82](https://github.com/Maeximilion/MaexSocial/issues/82) and the owned staging entry in [#163](https://github.com/Maeximilion/MaexSocial/issues/163). The actual Google publication result, account eligibility and operating authority remain #10 evidence. Export is a pre-dispatch fallback. External access, customer data, deployment and spending require separate authorization.
 3. Preserve the later gates and carried [#88](https://github.com/Maeximilion/MaexSocial/issues/88) and [#99](https://github.com/Maeximilion/MaexSocial/issues/99) evidence. [#167](https://github.com/Maeximilion/MaexSocial/issues/167) scopes a future G4 AI candidate before #11's approved spike. The local pilot uses manually authored text with no product model selected.
 
+[Local readiness recovery #219](../ops/local/README.md#local-readiness-recovery-219) supplies a healthy mailbox control, an observed loss of readiness and a verified normal restart. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains separately approved staging and monitoring acceptance.
+
 ## Planning audit · 2026-11-21
 
 The [Ponytail planning audit and verification pass](https://github.com/Maeximilion/MaexSocial/issues/162) checked source and Graphify at `51c4df7` and read back the native G0 → G1 → G2 → G3 → G4 → G5 chain. #162 remains open for the resulting task and gate evidence. [#137's disposition](https://github.com/Maeximilion/MaexSocial/issues/137#issuecomment-7064444214) closed the empty-page browser observation after it did not recur in subsequent required runs. The cause remains unknown and the native G5 relationship preserves the history. [#168's synthetic tooling measurements](https://github.com/Maeximilion/MaexSocial/issues/168#issuecomment-7064158170) are recorded. The maintenance issue remains Project Blocked on native callback attribution and effective runtime routing, with no product-gate dependency.
@@ -134,6 +136,10 @@ Maxi confirmed a public website with customer registration/login and separate pl
 The owner configured the dedicated GitHub Project credential. Targeted API queries preserve its project/public_repo scope choice. Hosted reconciliation is active and verified. The canonical checkout stays on clean main, changes use separate task worktrees, and synchronization follows [playbooks](12_CLAUDE_CODE_PLAYBOOKS.md).
 
 ## Delivered evidence and handovers
+
+[Task 6 budget fixture #218](https://github.com/Maeximilion/MaexSocial/issues/218) exercises concurrent reservation,
+atomic settlement and unresolved cost in the [isolated ADS-01 checks](../ops/local/README.md#synthetic-job-budget-218).
+The integrated Task 6 receipt and operating authority remain open under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
 
 [Session handovers](handovers/sessions/) record each session's stopping point and runnable restart instructions.
 

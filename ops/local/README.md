@@ -40,6 +40,19 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Local readiness recovery (#219)
+
+Use a fresh task worktree without `work/pilot`, the pinned Node and npm, installed locked dependencies, and the pinned Compose images already present in the local Docker cache.
+
+~~~text
+npm run pilot:build
+npm run --silent pilot:readiness
+~~~
+
+The command creates a dedicated fixture on the local Docker socket, verifies its isolated topology, and probes the Mailpit HTTPS info endpoint from its internal runner. It expects `ready` before stopping the mailbox, `unavailable` after Compose stops it, and `ready` after Compose starts the same container. It refuses an existing fixture and stops its own stack on completion or failure. The usual fixture files and volumes are retained in their isolated namespace.
+
+The three JSON records contain the phase, UTC observation time, component, status and elapsed milliseconds. Each duration begins before the corresponding Compose action and includes the observation overhead. The output carries no HTTPS body, request identifiers or fixture credentials. These measurements describe one local mailbox run. Staging activation and alert response belong to [#82](https://github.com/Maeximilion/MaexSocial/issues/82) after [#166](https://github.com/Maeximilion/MaexSocial/issues/166) and operator approval. Production availability and recovery targets require a separate decision.
+
 ## Synthetic cold backup pair (#216)
 
 Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`.
@@ -55,6 +68,18 @@ The backup command builds the current source. Capture requires a clean worktree 
 The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
 
 Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. Starting a restore, rotating synthetic credentials, replaying independent history and measuring recovery remain part of Task 5.
+
+## Synthetic job budget (#218)
+
+Run `node --test dist/pilot/tests/pilot/budget.test.js` after building and migrating the isolated fixture.
+The test helpers lock the tenant's budget row before admitting new work. Reservations and unknown costs
+hold their full units. An atomic settlement fixes the first known cost and returns any unused units to
+available capacity. A repeated settlement leaves the stored result intact. A missing or zero budget
+admits zero work. The configured cap and reservation ledger stay in the existing tables.
+
+The draft and approval suites exercise organic text with a funded synthetic budget and verify that the
+budget and recorded reservations remain untouched. Synthetic accounting runs only inside the test fixture.
+The integrated ADS-01 receipt and external operating prerequisites remain under [#10](https://github.com/Maeximilion/MaexSocial/issues/10).
 
 ## Local dispatch stop (#215)
 
