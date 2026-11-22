@@ -129,7 +129,7 @@ test('stored occurrence details preserve active-tenant authority and domain reco
       const cases = [
         { state: 'held', label: 'Held' },
         { state: 'approved', label: 'Approved' },
-        { state: 'quarantined', label: 'Under review' },
+        { state: 'quarantined', label: 'Under review', outcome: 'confirmed', observed: true },
         { state: 'exported', label: 'Exported', detail: /manual posting.*No Google publication was confirmed/ },
         { state: 'in_flight', label: 'Submitting', outcome: 'unknown' },
         { state: 'pending', label: 'Processing', outcome: 'pending', observed: true },

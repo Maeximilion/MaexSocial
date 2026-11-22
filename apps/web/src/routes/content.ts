@@ -177,9 +177,10 @@ function publicationOutcome(occurrence: OccurrenceView) {
     case 'approved':
     case 'held':
     case 'exported':
-    case 'quarantined':
       if (!claimed_at) return publicationOutcomes[state];
       break;
+    case 'quarantined':
+      return publicationOutcomes.quarantined;
   }
   return publicationOutcomes.unknown;
 }

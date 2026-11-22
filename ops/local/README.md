@@ -126,7 +126,8 @@ The existing keyboard suite follows workspace → facts → location → empty l
 Employees and Managers read the details of an occurrence in their active workspace via the existing draft
 destination link. The GET reads the occurrence and its tenant-bound attempt in the same statement and does
 not refresh session activity. Processing, rejection and publication confirmation require a matching approval,
-stored outcome and observation time. A missing or conflicting dispatch record stays unknown. The attempt
+stored outcome and observation time. A missing or conflicting dispatch record stays unknown. A quarantined
+occurrence stays under review, even when historical evidence is present. The attempt
 start and last observation display in UTC only when each time is recorded. The due time remains distinct,
 with its UTC instant and occurrence-local time. Export is terminal for automatic submission. It represents
 manual handoff of the approved text with no Google publication confirmed.
