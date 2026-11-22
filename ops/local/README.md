@@ -251,6 +251,23 @@ The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurren
 
 With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate -- up` and `node --test dist/pilot/tests/pilot/reconcile.test.js`. The test seeds attempts, reconnects to the same SQLite fake in a second Node process, checks the stored states and verifies the create counts. Complete the empty migration drill before seeding. Sender, terminal export and integrated evidence remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Windows two-dimension charging evidence (#238)
+
+For an ordinary Windows `npm run pilot:test`, record `git rev-parse HEAD` and whether the fixture is fresh or
+restarted with retained volumes. If the `both dimensions charge on denial, absent accounts and separate flows`
+case fails, retain its name and fixed diagnostic. A database diagnostic identifies the connection, query or
+disconnect stage and includes the SQLSTATE when PostgreSQL supplied one. Errors in direct fixture queries carry
+the `fixture query` label. The diagnostic identifies the future-attempt guard
+when the driver context matches [migration 006](../../db/migrations/006_auth_throttle.up.sql). An application
+diagnostic means the app returned `Throttle unavailable` without a driver error captured by the test. If the
+isolated runner fails before the case reports a result, record the runner failure and leave the case unobserved.
+
+Share only those fields and the suite result. Keep raw driver messages, SQL, parameters and fixture material
+private. The existing rollback case checks that the second-charge trigger and the future-attempt guard report
+distinct diagnostics for SQLSTATE `P0001` while the caller still receives `Throttle unavailable`. A passing run
+is a control. The original failures in [#234](https://github.com/Maeximilion/MaexSocial/pull/234) and
+[#237](https://github.com/Maeximilion/MaexSocial/pull/237) lack the driver diagnostic needed to attribute their cause.
+
 ## Internal account/source throttles (#154)
 
 `createAuthThrottle(key, connect, flow)` is an **unmounted internal component**. The composition root fixes
