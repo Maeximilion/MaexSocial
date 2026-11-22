@@ -67,7 +67,7 @@ The backup command builds the current source. Capture requires a clean worktree 
 
 The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
 
-Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. Starting a restore, rotating synthetic credentials, replaying independent history and measuring recovery remain part of Task 5.
+Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. The [paired restore](#offline-restore-of-a-verified-pair-235) consumes this input under the bounded Task 5 contract.
 
 ## Synthetic job budget (#218)
 
@@ -130,8 +130,45 @@ on the same rows reports zero. The fixture remains offline.
 The focused test invokes the command against an empty and a populated scratch database. It covers all
 occurrence states, two tenants, a missing attempt after a fake acceptance, a negative worker readback,
 stable independent create counts, repeat execution, and refusal of an ordinary or mismarked database.
-The ordinary pilot suite exercises refusal only. Paired restore transport, deletion/revocation replay, and
+The ordinary pilot suite exercises refusal only. The [paired restore](#offline-restore-of-a-verified-pair-235)
+uses the same quarantine. Deletion/revocation replay and
 a separately authorized release decision remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
+## Offline restore of a verified pair (#235)
+
+Run this in a fresh local worktree with no `work/pilot`. Supply a private copy of the #216
+fixture directory containing `fixture.json`, `compose.env`, and `cold-backup/` with the pair manifest and
+both archives. If the legacy manifest records the generated IdP configuration fingerprint, include the
+copy's `keycloak.conf` and `keycloak-realm.json`. Keep the original configuration, files and volumes
+private and intact. Use the cached pinned images on the local Docker socket.
+
+    npm run pilot:restore -- <private-synthetic-fixture-copy>
+    npm run pilot:restore-quarantine
+    npm run pilot:down
+
+The command checks the pair identity, pinned builds, fixture configuration, schema fingerprints
+and both archive hashes before creating storage. Each cluster is extracted and checked without a
+network connection. The command checks the captured AppDB and IdP records and their live schema
+fingerprints, binds the new fixture identity, and restricts application and Keycloak logins. It starts
+only PostgreSQL on internal networks with no published ports. Dispatch is stopped before either
+database joins those networks, and #217's quarantine runs before the command records readiness.
+
+The sanitized output reports two verified databases, the number of historical occurrences quarantined,
+dispatch stop, disabled application login and the network topology. The same summary is recorded
+privately in `work/pilot/restore-ready.json` after both restores and quarantine finish. An existing fixture
+or target directory is refused. A partial import has no readiness record and the normal `pilot:up`
+command refuses all paired targets. After inspection, stop the databases with `pilot:down`. For a
+failed or completed drill, the owner may remove the volumes for the verified disposable target project
+with Docker Compose `down --volumes` before discarding its local configuration. Retry from a fresh
+target and keep the recovery pair.
+
+For the historical drill, seed a draft occurrence before the disposable snapshot, record one accepted
+create for that occurrence in the independent counting fake, then restore the pair. Check that the
+restored state is `quarantined`, the saved previous state is `draft`, repeat quarantine reports zero
+changes, and the fake still reports one create. Keep provider state outside both backup and target.
+
+Independent deletion/revocation history, general credential invalidation, recovery targets and
+release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 ## Private GBP reconciliation (#213)
 

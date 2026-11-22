@@ -32,6 +32,8 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   };
 
   await verifyPair(path, fixtureId, compatibility, pair);
+  const unsupported = { ...pair, format: 2 } as unknown as typeof pair;
+  await assert.rejects(verifyPair(path, fixtureId, compatibility, unsupported), /unknown identity/);
   await assert.rejects(verifyPair(path, 'c'.repeat(32), compatibility, pair), /unknown identity/);
   await assert.rejects(verifyPair(path, fixtureId, { ...compatibility, appSchema: sha256('other schema') }, pair), /incompatible/);
   await assert.rejects(verifyPair(path, fixtureId, { ...compatibility, keycloakImage: 'other image' }, pair), /incompatible/);

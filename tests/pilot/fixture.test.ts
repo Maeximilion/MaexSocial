@@ -121,6 +121,13 @@ test('runtime guard rejects an added external network on every fixture service',
 
   const restore: Fixture = { ...f, restoreTarget: true };
   assert.deepEqual(verifyTopology(restore, containers, networks), { internalNetworks: 2, publishedHostPorts: 0 });
+  const paired: Fixture = { ...restore, pairedRestore: true };
+  const databases = containers.slice(0, 2);
+  const pairedNetworks = structuredClone(networks);
+  pairedNetworks[1]!.Containers = { 'identity-db': {} };
+  assert.deepEqual(verifyTopology(paired, databases, pairedNetworks), { internalNetworks: 2, publishedHostPorts: 0 });
+  assert.throws(() => verifyTopology(paired, containers, networks), /Incomplete fixture topology/);
+  assert.throws(() => verifyTopology(paired, databases, networks), /Unexpected restore network attachments/);
   const withExtraEndpoint = structuredClone(networks);
   withExtraEndpoint[0]!.Containers = { postgres: {}, unexpected: {} };
   assert.throws(() => verifyTopology(restore, containers, withExtraEndpoint), /Unexpected restore network attachments/);

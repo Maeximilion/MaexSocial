@@ -16,7 +16,10 @@ The integrated sender and stop/restore drill remain under #165 and #166.
 
 Bounded Task 5 component [#217](https://github.com/Maeximilion/MaexSocial/issues/217) keeps all historical
 occurrences offline in a [disposable restore target](../ops/local/README.md#historical-quarantine-on-a-disposable-restore-target-217).
-[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains paired restore, independent
+Bounded Task 5 component [#235](https://github.com/Maeximilion/MaexSocial/issues/235) restores a verified
+synthetic pair into a [fresh offline target](../ops/local/README.md#offline-restore-of-a-verified-pair-235)
+and applies the existing quarantine before offline inspection.
+[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill, independent
 revocation replay and release acceptance.
 
 November 22 bounded Task 3 delivery [#212](https://github.com/Maeximilion/MaexSocial/issues/212) adds an

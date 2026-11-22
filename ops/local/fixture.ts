@@ -7,6 +7,7 @@ export interface Fixture {
   id: string;
   project: string;
   restoreTarget?: true;
+  pairedRestore?: true;
   expiresAt: number;
   ownerPassword: string;
   appPassword: string;
@@ -19,6 +20,7 @@ export function validateFixture(value: unknown, allowExpired = false): asserts v
   const f = value as Record<string, unknown>;
   if (f.schema !== 1 || typeof f.id !== 'string' || !/^[a-f0-9]{32}$/.test(f.id)
       || (f.restoreTarget !== undefined && f.restoreTarget !== true)
+      || (f.pairedRestore !== undefined && (f.pairedRestore !== true || f.restoreTarget !== true))
       || f.project !== `maex-pilot-${f.id}` || typeof f.expiresAt !== 'number'
       || !Number.isFinite(f.expiresAt) || (!allowExpired && f.expiresAt <= Date.now())) {
     throw new Error('Unknown, expired or non-fixture target');
@@ -54,8 +56,8 @@ export function safeDiagnostics(text: string): string {
     .replace(/[a-f0-9]{64}/gi, '[fixture secret]').slice(-12000);
 }
 
-export function compose(f: Fixture, args: string[]): string {
-  return docker(['compose', '--project-name', f.project, '--env-file', 'work/pilot/compose.env',
+export function compose(f: Fixture, args: string[], envFile = 'work/pilot/compose.env'): string {
+  return docker(['compose', '--project-name', f.project, '--env-file', envFile,
     '-f', 'ops/local/compose.yaml', ...args], { ...process.env,
     FIXTURE_ID: f.id, FIXTURE_UID: String(process.getuid?.() ?? 0), FIXTURE_GID: String(process.getgid?.() ?? 0) });
 }
@@ -82,6 +84,10 @@ interface NetworkInfo {
 
 export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks: NetworkInfo[]) {
   const services = new Map([['postgres', 'application'], ['identity-db', 'identity'], ['keycloak', 'identity'], ['mailbox', 'identity']]);
+  if (f.pairedRestore) {
+    services.delete('keycloak');
+    services.delete('mailbox');
+  }
   if (containers.length !== services.size || networks.length !== 2) throw new Error('Incomplete fixture topology');
   if (f.restoreTarget && networks.flatMap(network => Object.keys(network.Containers ?? {})).length !== containers.length) {
     throw new Error('Unexpected restore network attachments');
@@ -108,14 +114,14 @@ export function verifyTopology(f: Fixture, containers: ContainerInfo[], networks
 
 export function verifyContainers(f: Fixture) {
   const ids = compose(f, ['ps', '-q']).split(/\s+/).filter(Boolean);
-  if (ids.length !== 4) throw new Error('Fixture services are not running');
+  if (ids.length !== (f.pairedRestore ? 2 : 4)) throw new Error('Fixture services are not running');
   return verifyTopology(f, JSON.parse(docker(['inspect', ...ids])),
     JSON.parse(docker(['network', 'inspect', `${f.project}_application`, `${f.project}_identity`])));
 }
 
 export function runIsolatedFixture(f: Fixture, args: string[]) {
   const topology = verifyContainers(f);
-  const output = compose(f, ['run', '--rm', '--no-deps', 'runner', 'node', ...args]);
+  const output = compose(f, ['run', '--rm', '--no-deps', ...(f.pairedRestore ? ['--pull', 'never'] : []), 'runner', 'node', ...args]);
   return { topology, output };
 }
 

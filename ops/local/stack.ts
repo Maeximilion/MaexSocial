@@ -8,16 +8,18 @@ import { compose, docker, loadFixture, runIsolated, safeDiagnostics, type Fixtur
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
 
-export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' = 'ordinary'): Promise<Fixture> {
+export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-target' | 'readiness' | 'paired-restore' = 'ordinary'): Promise<Fixture> {
   const forBackup = purpose === 'backup';
-  const restoreTarget = purpose === 'restore-target';
-  const cachedImagesOnly = forBackup || purpose === 'readiness';
+  const pairedRestore = purpose === 'paired-restore';
+  const restoreTarget = purpose === 'restore-target' || pairedRestore;
+  const cachedImagesOnly = forBackup || purpose === 'readiness' || pairedRestore;
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
   const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', expiresAt: Date.now() + 86_400_000,
     ownerPassword: secret(), appPassword: secret(), identityPassword: secret(), keycloakPassword: secret() };
   if (restoreTarget) f.restoreTarget = true;
+  if (pairedRestore) f.pairedRestore = true;
   f.project = `maex-pilot-${f.id}`;
   const save = (name: string, value: string) => writeFile(`work/pilot/${name}`, value, { mode: 0o600, flag: 'wx' });
   const expiry = new Date(f.expiresAt).toISOString();
@@ -167,6 +169,7 @@ async function main(): Promise<void> {
     console.log('Isolated fixture stopped; database, mailbox and provider state retained.');
     return;
   }
+  if (f.pairedRestore) throw new Error('Paired restore targets cannot be started with pilot:up.');
   if ((f.restoreTarget === true) !== restoreTarget) throw new Error('Existing fixture has a different purpose.');
   try {
     if (!(await stat('work/pilot/keycloak-realm.json')).isFile()) throw new Error('Not a file');
