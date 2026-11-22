@@ -35,8 +35,9 @@ export async function requireBoundCsrf(db: Client, request: CustomerRequest): Pr
   requireCsrf(customerOrigin, tokenHash(request.csrf), customerOrigin, row.csrf_hash ?? '');
 }
 
-export async function requireCustomerRequest(db: Client, request: CustomerRequest, clock: () => Date, inspect: InspectIdentity): Promise<CustomerContext> {
-  const context = await requireCustomer(db, request.token, clock, inspect);
+export async function requireCustomerRequest(db: Client, request: CustomerRequest, clock: () => Date, inspect: InspectIdentity,
+  activity?: 'read-only'): Promise<CustomerContext> {
+  const context = await requireCustomer(db, request.token, clock, inspect, activity);
   await requireBoundCsrf(db, request);
   return context;
 }

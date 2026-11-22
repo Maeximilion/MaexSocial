@@ -21,8 +21,8 @@ async function serve(): Promise<void> {
   console.log('Portal browser ready.');
 }
 
-export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 'oidc-step-up' = 'portal'): Promise<string> {
-  if (!['entry', 'portal', 'oidc', 'oidc-step-up'].includes(suite)) throw new Error('Unknown browser test suite');
+export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 'oidc-step-up' | 'invitation' = 'portal'): Promise<string> {
+  if (!['entry', 'portal', 'oidc', 'oidc-step-up', 'invitation'].includes(suite)) throw new Error('Unknown browser test suite');
   const needsKeycloak = suite === 'oidc' || suite === 'oidc-step-up';
   const f = await loadFixture(); verifyContainers(f);
   const alias = `portal-browser-${randomBytes(4).toString('hex')}`;

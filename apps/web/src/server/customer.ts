@@ -6,6 +6,7 @@ import { customerRequest, requireBoundCsrf, requireCustomerRequest } from './req
 import { renderPortal, renderSignedOut } from '../routes/portal.js';
 import { createDraft, DraftConflict, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 import { renderFacts } from '../routes/facts.js';
+import { invitationToken, previewEmployeeInvitation, renderInvitationPreview } from '../routes/employees.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -24,7 +25,8 @@ async function saveDraft<T>(save: () => Promise<T>, render: (invalidText: string
 }
 
 export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity,
-  privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string }): express.Express {
+  privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string },
+  privateInvitationPreview?: { recipientBySubject: ReadonlyMap<string, string> }): express.Express {
   // This unmounted option belongs only to the isolated, pinned browser fixture.
   if (privateLogout && (privateLogout.issuer !== 'https://keycloak:8443/realms/pilot'
     || privateLogout.clientId !== 'pilot-oidc-test' || privateLogout.postLogoutRedirectUri !== 'https://customer:8443/')) {
@@ -77,6 +79,25 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     const binding = customerRequest(request);
     const page = await transaction(async db => renderFacts(db, await requireCustomerRequest(db, binding, () => new Date(), inspect), request.params.locationId));
     response.type('html').send(page);
+  });
+  // #221 owns the public link and real identity proof. Only the isolated fixture supplies this binding.
+  if (privateInvitationPreview) app.get('/customer/invitations/preview', async (request, response) => {
+    response.set('Referrer-Policy', 'no-referrer');
+    const token = invitationToken(request.headers.cookie);
+    let tenantName: string | undefined;
+    if (token) {
+      try {
+        const binding = customerRequest(request);
+        tenantName = await transaction(async db => {
+          const { subject } = await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only');
+          const email = privateInvitationPreview.recipientBySubject.get(subject);
+          return email === undefined ? undefined : previewEmployeeInvitation(db, token, email);
+        });
+      } catch (error) {
+        if (!(error instanceof Error) || error.message !== 'Denied') throw error;
+      }
+    }
+    response.status(tenantName === undefined ? 404 : 200).type('html').send(renderInvitationPreview(tenantName));
   });
   app.get('/customer/drafts', async (request, response) => {
     const binding = customerRequest(request);
