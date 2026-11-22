@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { setTimeout } from 'node:timers/promises';
 import { test } from 'node:test';
 import { approveOccurrence, readApprovalProposal, withdrawApproval } from '../../apps/web/src/routes/content.js';
@@ -11,6 +12,7 @@ import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
+import { changeMembershipRole } from '../../packages/contracts/management-role-change.js';
 import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
 import { FakeGbp } from './fake-gbp.js';
@@ -470,6 +472,107 @@ test('private terminal export commits approved text only under current authority
         assert.equal(fake!.createCount(tenant.tenant, inFlight.id), 1);
       } finally {
         await owner.query('UPDATE pilot.dispatch_control SET stopped=$1', [stopBefore]);
+      }
+    });
+
+    await t.test('Manager re-promotion requires fresh approval for dispatch and export while a claim survives', async t => {
+      const tenant = await seedTenant(owner);
+      const oldManager = await session(tenant.tenant, 'Manager', tenant.user);
+      const operator = await seedManagementContext(owner, tenant.tenant, clock(), clock());
+      const approvedText = 'Synthetic approved revision two\nSecond line.';
+      await owner.query('INSERT INTO pilot.draft_revisions(tenant_id,draft_id,revision,text) VALUES($1,$2,2,$3)',
+        [tenant.tenant, tenant.draft, approvedText]);
+      const [{ id: connected }] = await rows(`INSERT INTO pilot.locations(tenant_id,provider_location,grant_active)
+        VALUES($1,'synthetic-connected-location',true) RETURNING id`, [tenant.tenant]);
+      const send = await approved({ ...tenant, location: connected }, oldManager, true);
+      const download = await approved(tenant, oldManager, true);
+      const inFlight = await approved({ ...tenant, location: connected }, oldManager, true);
+      const targets = [send, download, inFlight].map(target => target.id);
+      const history = () => rows('SELECT * FROM pilot.approvals WHERE occurrence_id=ANY($1::uuid[]) ORDER BY id', [targets]);
+      const historyBefore = await history();
+      const attempts = (id: string) => rows('SELECT id,approval_id,outcome FROM pilot.attempts WHERE occurrence_id=$1', [id]);
+      const provider = new FakeGbp(providerDirectory, { frames: [{ afterMs: 0, candidates: ['LIVE'] }] });
+      t.after(() => provider.close());
+      const dispatch = (id: string) => claimDispatch(connectFixture, id, provider);
+      const count = (id: string) => provider.createCount(tenant.tenant, id);
+      const reject = (operation: Promise<unknown>) => assert.rejects(operation, { message: 'Denied' });
+      const [{ stopped }] = await rows('SELECT stopped FROM pilot.dispatch_control', []);
+      await owner.query('UPDATE pilot.dispatch_control SET stopped=false');
+      try {
+        await denied(send.id, oldManager);
+        const claimed = await dispatch(inFlight.id);
+        const originalAttempt = { id: claimed.attemptId, approval_id: inFlight.approvalId, outcome: 'unknown' };
+        assert.deepEqual(await attempts(inFlight.id), [originalAttempt]);
+        assert.equal(count(inFlight.id), 1);
+
+        const { membershipId, membershipVersion } = send.proposal;
+        const change = (role: 'Manager' | 'Employee', version: number) =>
+          changeMembershipRole(connectFixture, { ...operator, membershipId, membershipVersion: version, role },
+            tenant.tenant, membershipId, role, 'Synthetic role transition', clock);
+        assert.equal(await change('Employee', membershipVersion), true);
+        assert.equal(await change('Manager', membershipVersion + 1), true);
+        const currentManager = await session(tenant.tenant, 'Manager', tenant.user);
+        const sendProposal = await preview(send.id, currentManager);
+        const exportProposal = await preview(download.id, currentManager);
+        assert.deepEqual([sendProposal.membershipId, sendProposal.membershipVersion], [membershipId, membershipVersion + 2]);
+        await reject(approve(send.proposal, currentManager));
+        await reject(approve(sendProposal, oldManager));
+        await reject(dispatch(send.id));
+        await denied(download.id, currentManager);
+        for (const id of [send.id, download.id]) {
+          assert.deepEqual(await state(id), [{ state: 'draft', approval_id: null }]);
+          assert.deepEqual(await attempts(id), []);
+          assert.deepEqual(await audit(id), []);
+          assert.equal(count(id), 0);
+        }
+        assert.deepEqual(await history(), historyBefore);
+
+        const freshSend = await approve(sendProposal, currentManager);
+        const freshDownload = await approve(exportProposal, currentManager);
+        const afterHistory = await history();
+        const freshIds = [freshSend, freshDownload];
+        assert.deepEqual(afterHistory.filter(row => !freshIds.includes(row.id)), historyBefore);
+        assert.deepEqual(freshIds.map(id => {
+          const row = afterHistory.find(row => row.id === id)!;
+          return { membership: row.membership_id, version: row.membership_version, revision: row.revision_id };
+        }), [sendProposal, exportProposal].map(proposal =>
+          ({ membership: membershipId, version: membershipVersion + 2, revision: proposal.revisionId })));
+
+        const sent = await dispatch(send.id);
+        await reject(dispatch(send.id));
+        assert.equal(count(send.id), 1);
+        assert.deepEqual(await attempts(send.id), [{ id: sent.attemptId, approval_id: freshSend, outcome: 'unknown' }]);
+        const sqlite = new DatabaseSync(join(providerDirectory, 'fake-gbp.sqlite'), { readOnly: true });
+        try {
+          const receipt = sqlite.prepare(`SELECT intent FROM call_intents JOIN calls ON id=call_id
+            WHERE tenant=? AND occurrence=?`).get(tenant.tenant, send.id)!;
+          const { approvalId, revisionId, text } = JSON.parse(String(receipt.intent));
+          assert.deepEqual({ approvalId, revisionId, text },
+            { approvalId: freshSend, revisionId: sendProposal.revisionId, text: approvedText });
+        } finally { sqlite.close(); }
+
+        const result = { state: 'exported', text: approvedText };
+        await denied(download.id, oldManager);
+        assert.deepEqual(await claim(download.id, currentManager), result);
+        assert.deepEqual(await claim(download.id, currentManager), result);
+        assert.deepEqual(await state(download.id), [{ state: 'exported', approval_id: freshDownload }]);
+        assert.deepEqual(await audit(download.id), [{ actor_id: tenant.user, action: 'occurrence_export', outcome: 'exported' }]);
+        assert.deepEqual(await attempts(download.id), []);
+        assert.equal(count(download.id), 0);
+
+        assert.deepEqual(await state(inFlight.id), [{ state: 'in_flight', approval_id: inFlight.approvalId }]);
+        assert.deepEqual(await attempts(inFlight.id), [originalAttempt]);
+        await reject(dispatch(inFlight.id));
+        await owner.query('UPDATE pilot.locations SET grant_active=false,version=version+1 WHERE tenant_id=$1 AND id=$2',
+          [tenant.tenant, connected]);
+        await denied(inFlight.id, currentManager);
+        assert.equal(await reconcileOccurrence(connectFixture, inFlight.id, provider), 'confirmed');
+        assert.deepEqual(await state(inFlight.id), [{ state: 'confirmed', approval_id: inFlight.approvalId }]);
+        assert.deepEqual(await attempts(inFlight.id), [{ ...originalAttempt, outcome: 'confirmed' }]);
+        assert.deepEqual(await audit(inFlight.id), [{ actor_id: tenant.user, action: 'dispatch_claim', outcome: 'in_flight' }]);
+        assert.equal(count(inFlight.id), 1);
+      } finally {
+        await owner.query('UPDATE pilot.dispatch_control SET stopped=$1', [stopped]);
       }
     });
 

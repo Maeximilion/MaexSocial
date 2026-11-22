@@ -14,6 +14,10 @@ Bounded Task 2C [#273](https://github.com/Maeximilion/MaexSocial/issues/273) add
 [private withdrawal of an exact approval by its original Manager](../ops/local/README.md#private-manager-approval-withdrawal-273).
 Authenticated integration and real identity evidence remain under #223 and #131.
 
+Bounded Task 4 [#276](https://github.com/Maeximilion/MaexSocial/issues/276) records
+[local dispatch and export evidence after Manager re-promotion](handovers/sessions/2026-11-22-manager-repromotion-effects.md).
+The test proves renewed approval is required and an existing claim can still be reconciled.
+
 Bounded Task 4 [#271](https://github.com/Maeximilion/MaexSocial/issues/271) binds
 [private approval, dispatch and export to the current tenant lifecycle](../ops/local/README.md#private-approval-across-tenant-reactivation-271).
 The authenticated journey and real identity evidence remain under #223 and #131.
