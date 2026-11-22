@@ -135,8 +135,9 @@ The private `issueEmployeeInvitation` operation runs in the isolated runner. Its
 validates and locks the current customer context on the operation's transaction. The operation checks
 fresh enrolled Manager MFA, binds the normalized recipient and current workspace and issuer, and stores a
 24-hour Employee invitation using only the token hash. An unexpired pending Employee invitation blocks
-a second issue for the same workspace and recipient. An explicit resend supplies the previous ID and
-the same recipient. Resend retires the previous unconsumed invitation and advances the grant version
+a second issue for the same workspace and recipient. A membership-issued invitation stops blocking a
+new issue once the issuer membership version advances past the stored version. An explicit resend
+supplies the previous ID and the same recipient. Resend retires the previous unconsumed invitation and advances the grant version
 in the same transaction. Concurrent operations for the same workspace and recipient are serialized.
 
 After commit the runner submits a single message over certificate-verified HTTPS to the local Mailpit

@@ -72,9 +72,12 @@ export async function issueEmployeeInvitation(
     const now = issuer.clock();
     requireManagerMfa(manager, () => now);
     if (previous && now < previous.created_at) return denied();
-    const pending = await db.query(`SELECT 1 FROM pilot.invitations
-      WHERE tenant_id=$1 AND email=$2 AND role='Employee' AND purpose='membership'
-      AND id IS DISTINCT FROM $3::uuid AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at>$4
+    // A higher membership version permanently invalidates that issuer binding.
+    const pending = await db.query(`SELECT 1 FROM pilot.invitations i
+      WHERE i.tenant_id=$1 AND i.email=$2 AND i.role='Employee' AND i.purpose='membership'
+      AND i.id IS DISTINCT FROM $3::uuid AND i.consumed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>$4
+      AND NOT EXISTS (SELECT 1 FROM pilot.memberships m
+        WHERE m.tenant_id=i.tenant_id AND m.id=i.issuer_membership_id AND m.version>i.issuer_version)
       LIMIT 1`, [manager.tenantId, email, replaces ?? null, now]);
     if (pending.rowCount) return denied();
     if (replaces !== undefined) {

@@ -217,4 +217,42 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.deepEqual(await invitations(), beforeStaleRequests);
   assert.deepEqual(await access(), afterDemotion);
   assert.equal(await countMail(), initialMail + 6);
+
+  const platformIdentity = (await db.query<{ id: string }>(
+    'INSERT INTO pilot.identities(subject,verified) VALUES ($1,true) RETURNING id', [randomUUID()])).rows[0]!.id;
+  const platformGrant = (await db.query<{ id: string }>(
+    'INSERT INTO pilot.platform_grants(identity_id) VALUES ($1) RETURNING id', [platformIdentity])).rows[0]!.id;
+  const platformEmail = `platform-${email}`, futureEmail = `future-${email}`;
+  const futureToken = randomBytes(32).toString('hex');
+  await db.query(`INSERT INTO pilot.invitations
+    (tenant_id,email,role,purpose,issuer_membership_id,issuer_platform_grant_id,issuer_version,grant_version,token_hash,created_at,expires_at)
+    VALUES ($1,$2,'Employee','membership',NULL,$4,1,1,$6,$8::timestamptz,$8 + interval '24 hours'),
+      ($1,$3,'Employee','membership',$5,NULL,3,1,$7,$8,$8 + interval '24 hours')`,
+  [tenantA, platformEmail, futureEmail, platformGrant, manager.membershipId, tokenHash(randomUUID()), tokenHash(futureToken), now]);
+  const beforeIssuerBoundaries = await invitations();
+  const accessBeforeNewIssuer = await access();
+  for (const blockedEmail of [platformEmail, futureEmail]) {
+    await assert.rejects(issueEmployeeInvitation(otherManager.issuer, blockedEmail), { message: 'Denied' });
+  }
+  assert.equal(await previewEmployeeInvitation(db, futureToken, futureEmail), undefined);
+  assert.deepEqual(await invitations(), beforeIssuerBoundaries);
+  assert.equal(await countMail(), initialMail + 6);
+
+  const fromNewIssuer = await issueEmployeeInvitation(otherManager.issuer, email);
+  assert.equal(fromNewIssuer.delivery, 'captured');
+  assert.equal(await countMail(), initialMail + 7);
+  const newIssuerToken = await latestToken();
+  assert.equal(await previewEmployeeInvitation(db, newIssuerToken, email), tenantName);
+  const newRow = (await invitations()).find(row => row.id === fromNewIssuer.id);
+  assert.equal(newRow?.issuer_membership_id, otherManager.membershipId);
+  assert.equal(newRow?.tenant_id, tenantA);
+  assert.deepEqual((await invitations()).find(row => row.id === recovered.id),
+    beforeIssuerBoundaries.find(row => row.id === recovered.id));
+  assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
+  assert.deepEqual(await access(), accessBeforeNewIssuer);
+
+  await db.query("UPDATE pilot.memberships SET role='Manager',version=version+1 WHERE tenant_id=$1 AND id=$2", [tenantA, manager.membershipId]);
+  assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
+  assert.equal(await previewEmployeeInvitation(db, newIssuerToken, email), tenantName);
+  assert.equal(await previewEmployeeInvitation(db, futureToken, futureEmail), tenantName);
 });
