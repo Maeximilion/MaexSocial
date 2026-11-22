@@ -261,7 +261,7 @@ function cleanRevision(): string {
   return git('rev-parse', 'HEAD');
 }
 
-async function capture(disposable: boolean): Promise<void> {
+export async function capture(disposable: boolean, seed?: (fixture: Fixture) => void): Promise<void> {
   const revision = cleanRevision();
   if (!usesLocalDocker()) throw new Error('Cold backup requires a local Docker socket.');
   const f = await initialize('backup');
@@ -277,6 +277,7 @@ async function capture(disposable: boolean): Promise<void> {
     const run = (...args: string[]) => compose(f, ['run', '--rm', '--no-deps', '--pull', 'never', 'runner', 'node', ...args]);
     run('dist/pilot/ops/local/stack.js', 'check');
     run('dist/pilot/scripts/pilot-db.js', 'up');
+    seed?.(f);
     const sources = containers(f);
     validateDatabases(f, sources, postgresId);
     if (sources.get('keycloak')!.Image !== keycloakId) throw new Error('Unknown Keycloak image.');

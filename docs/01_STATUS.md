@@ -10,6 +10,11 @@
 
 ## Current work
 
+Bounded Task 5 [#258](https://github.com/Maeximilion/MaexSocial/issues/258) exercises a
+[cold pair taken before dispatch and terminal export](../ops/local/README.md#restore-before-dispatch-and-terminal-export-258).
+The [drill evidence](handovers/sessions/2026-11-22-restore-before-effects.md) records the original source outcomes,
+independent fake count and offline target refusal. Integrated Task 5 remains under #166.
+
 November 22 bounded Task 5 delivery [#215](https://github.com/Maeximilion/MaexSocial/issues/215) adds
 a [durable local dispatch stop and outstanding attempt count](../ops/local/README.md#local-dispatch-stop-215).
 The integrated sender and stop/restore drill remain under #165 and #166.
