@@ -87,9 +87,10 @@ const compatibleIdpConfigs = new Set([
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
 ]);
 
-// Migration 011 adds a nullable binding. The exact prior schema is still safe to import offline.
+// These migrations add nullable bindings. The exact prior schemas remain safe to import offline.
 const appSchemaBeforeApprovalTenantVersion = '3ae9f21ff752c8ddd96eb7a6d4186f454f9f5aaef66da947b6dc1dc8b8f86ed6';
 const appSchemaWithApprovalTenantVersion = '4541e90e1700eeb4d33a2b6cccfec22a21b952fafa2fd924cdc5f9c527894b5e';
+const appSchemaWithApprovalWithdrawal = '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13';
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair): Promise<void> {
   const idpConfig = pair?.compatibility?.idpConfig;
@@ -97,9 +98,11 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
   if (idpConfig && compatibleIdpConfigs.has(expected.idpConfig) && compatibleIdpConfigs.has(idpConfig)) {
     compatible.idpConfig = idpConfig;
   }
-  if (expected.appSchema === appSchemaWithApprovalTenantVersion
-      && pair?.compatibility?.appSchema === appSchemaBeforeApprovalTenantVersion) {
-    compatible.appSchema = appSchemaBeforeApprovalTenantVersion;
+  const sourceAppSchema = pair?.compatibility?.appSchema;
+  if ((sourceAppSchema === appSchemaBeforeApprovalTenantVersion
+      && [appSchemaWithApprovalTenantVersion, appSchemaWithApprovalWithdrawal].includes(expected.appSchema))
+    || (sourceAppSchema === appSchemaWithApprovalTenantVersion && expected.appSchema === appSchemaWithApprovalWithdrawal)) {
+    compatible.appSchema = sourceAppSchema;
   }
   if ((pair?.format !== 1 && pair?.format !== 2) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
