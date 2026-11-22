@@ -33,11 +33,12 @@ export async function migrate(direction: string): Promise<void> {
       to_regclass('pilot.oidc_attempts') AS oidc,
       to_regclass('pilot.auth_throttle_buckets') AS throttle,
       to_regclass('pilot.business_fact_revisions') AS facts,
+      EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='approvals' AND column_name='provider_location') AS approval_destination,
       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='drafts' AND column_name='initial_location_id') AS draft_location,
       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='pilot' AND table_name='sessions' AND column_name='csrf_hash') AS access`)).rows[0];
     const migrations = direction === 'up'
-      ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access']), ...(installed.oidc ? [] : ['003_oidc_attempts']), ...(installed.draft_location ? [] : ['004_draft_initial_location']), ...(installed.facts ? [] : ['005_business_facts']), ...(installed.throttle ? [] : ['006_auth_throttle'])]
-      : [...(installed.throttle ? ['006_auth_throttle'] : []), ...(installed.facts ? ['005_business_facts'] : []), ...(installed.draft_location ? ['004_draft_initial_location'] : []), ...(installed.oidc ? ['003_oidc_attempts'] : []), ...(installed.access ? ['002_customer_access'] : []), '001_pilot'];
+      ? [...(installed.base ? [] : ['001_pilot']), ...(installed.access ? [] : ['002_customer_access']), ...(installed.oidc ? [] : ['003_oidc_attempts']), ...(installed.draft_location ? [] : ['004_draft_initial_location']), ...(installed.facts ? [] : ['005_business_facts']), ...(installed.throttle ? [] : ['006_auth_throttle']), ...(installed.approval_destination ? [] : ['007_approval_destination'])]
+      : [...(installed.approval_destination ? ['007_approval_destination'] : []), ...(installed.throttle ? ['006_auth_throttle'] : []), ...(installed.facts ? ['005_business_facts'] : []), ...(installed.draft_location ? ['004_draft_initial_location'] : []), ...(installed.oidc ? ['003_oidc_attempts'] : []), ...(installed.access ? ['002_customer_access'] : []), '001_pilot'];
     if (!migrations.length) throw new Error('Pilot migrations already installed');
     for (const name of migrations) await db.query(await readFile(`db/migrations/${name}.${direction}.sql`, 'utf8'));
     await db.query('COMMIT');
