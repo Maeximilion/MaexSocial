@@ -134,9 +134,10 @@ After the strict build and fixture migration, run `node --test dist/pilot/tests/
 The private `issueEmployeeInvitation` operation runs in the isolated runner. Its server-owned callback
 validates and locks the current customer context on the operation's transaction. The operation checks
 fresh enrolled Manager MFA, binds the normalized recipient and current workspace and issuer, and stores a
-24-hour Employee invitation using only the token hash. An explicit resend supplies the previous ID and
+24-hour Employee invitation using only the token hash. An unexpired pending Employee invitation blocks
+a second issue for the same workspace and recipient. An explicit resend supplies the previous ID and
 the same recipient. Resend retires the previous unconsumed invitation and advances the grant version
-in the same transaction. A concurrent resend of that previous ID is denied.
+in the same transaction. Concurrent operations for the same workspace and recipient are serialized.
 
 After commit the runner submits a single message over certificate-verified HTTPS to the local Mailpit
 sink. Only the mailbox receives the raw token, in the fixture preview URL fragment. The private result

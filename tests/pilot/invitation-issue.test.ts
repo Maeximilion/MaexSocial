@@ -86,9 +86,9 @@ test('private Employee invitation issuance and resend use the current issuer and
   const initialAccess = await access();
   const initialMail = await countMail();
 
-  const latestToken = async () => {
+  const latestToken = async (recipient = email) => {
     const message = await mailboxRead<MailpitMessage>(mailboxCa, '/api/v1/message/latest');
-    assert.deepEqual(message.To.map(x => x.Address), [email]);
+    assert.deepEqual(message.To.map(x => x.Address), [recipient]);
     assert.equal(message.Cc?.length ?? 0, 0);
     assert.equal(message.Bcc?.length ?? 0, 0);
     assert.equal(message.From.Address, 'invitations@example.invalid');
@@ -124,6 +124,7 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.deepEqual(await access(), initialAccess);
 
   const beforeDenials = await invitations();
+  await assert.rejects(issueEmployeeInvitation(otherManager.issuer, email.toUpperCase()), { message: 'Denied' });
   await assert.rejects(issueEmployeeInvitation({ ...manager.issuer, clock: () => new Date(now.getTime() - 1) }, email, first.id),
     { message: 'Denied' });
   for (const principal of [employee, expired, future, unenrolled]) {
@@ -156,12 +157,13 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal(await previewEmployeeInvitation(db, replacementToken, email), tenantName);
   assert.deepEqual(await access(), initialAccess);
 
+  const exhaustedEmail = `exhausted-${email}`;
   const exhausted = (await db.query<{ id: string }>(`INSERT INTO pilot.invitations
     (tenant_id,email,role,purpose,issuer_membership_id,issuer_version,grant_version,token_hash,created_at,expires_at)
     VALUES ($1,$2,'Employee','membership',$3,1,2147483647,$4,now()-interval '2 minutes',now()+interval '1 hour') RETURNING id`,
-  [tenantA, email, manager.membershipId, tokenHash(randomUUID())])).rows[0]!.id;
+  [tenantA, exhaustedEmail, manager.membershipId, tokenHash(randomUUID())])).rows[0]!.id;
   const beforeFailure = await invitations();
-  await assert.rejects(issueEmployeeInvitation(manager.issuer, email, exhausted), { code: '22003' });
+  await assert.rejects(issueEmployeeInvitation(manager.issuer, exhaustedEmail, exhausted), { code: '22003' });
   assert.deepEqual(await invitations(), beforeFailure);
   assert.equal(await countMail(), initialMail + 2);
 
@@ -178,6 +180,34 @@ test('private Employee invitation issuance and resend use the current issuer and
   await assertBinding(recovered.id, 4, recoveredToken);
   assert.deepEqual(await access(), initialAccess);
 
+  const contestedEmail = `contested-${email}`;
+  const fresh = await Promise.allSettled([manager, otherManager].map(({ issuer }) => issueEmployeeInvitation(issuer, contestedEmail)));
+  assert.equal(fresh.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(fresh.filter(result => result.status === 'rejected' && result.reason.message === 'Denied').length, 1);
+  assert.equal((await invitations()).filter(row => row.tenant_id === tenantA && row.email === contestedEmail).length, 1);
+  assert.equal(await countMail(), initialMail + 4);
+  const tenantAToken = await latestToken(contestedEmail);
+  assert.equal(await previewEmployeeInvitation(db, tenantAToken, contestedEmail), tenantName);
+  assert.equal((await issueEmployeeInvitation(managerB.issuer, contestedEmail)).delivery, 'captured');
+  assert.equal(await countMail(), initialMail + 5);
+  assert.equal(await previewEmployeeInvitation(db, await latestToken(contestedEmail), contestedEmail), 'Invented studio B');
+  assert.equal(await previewEmployeeInvitation(db, tenantAToken, contestedEmail), tenantName);
+
+  const closedEmail = `closed-${email}`;
+  const expiredId = (await db.query<{ id: string }>(`INSERT INTO pilot.invitations
+    (tenant_id,email,role,purpose,issuer_membership_id,issuer_version,grant_version,token_hash,
+      created_at,expires_at,consumed_at,revoked_at)
+    VALUES ($1,$2,'Employee','membership',$3,1,1,$4,$7::timestamptz - interval '25 hours',$7 - interval '1 hour',NULL,NULL),
+      ($1,$2,'Employee','membership',$3,1,1,$5,$7 - interval '1 hour',$7 + interval '23 hours',$7,NULL),
+      ($1,$2,'Employee','membership',$3,1,1,$6,$7 - interval '1 hour',$7 + interval '23 hours',NULL,$7) RETURNING id`,
+  [tenantA, closedEmail, manager.membershipId, tokenHash(randomUUID()), tokenHash(randomUUID()), tokenHash(randomUUID()), now])).rows[0]!.id;
+  assert.equal((await issueEmployeeInvitation(manager.issuer, closedEmail)).delivery, 'captured');
+  const beforeExpiredResend = await invitations();
+  await assert.rejects(issueEmployeeInvitation(manager.issuer, closedEmail, expiredId), { message: 'Denied' });
+  assert.deepEqual(await invitations(), beforeExpiredResend);
+  assert.equal(await countMail(), initialMail + 6);
+  assert.deepEqual(await access(), initialAccess);
+
   await db.query("UPDATE pilot.memberships SET role='Employee',version=version+1 WHERE tenant_id=$1 AND id=$2", [tenantA, manager.membershipId]);
   const afterDemotion = await access();
   const beforeStaleRequests = await invitations();
@@ -186,5 +216,5 @@ test('private Employee invitation issuance and resend use the current issuer and
   assert.equal(await previewEmployeeInvitation(db, recoveredToken, email), undefined);
   assert.deepEqual(await invitations(), beforeStaleRequests);
   assert.deepEqual(await access(), afterDemotion);
-  assert.equal(await countMail(), initialMail + 3);
+  assert.equal(await countMail(), initialMail + 6);
 });

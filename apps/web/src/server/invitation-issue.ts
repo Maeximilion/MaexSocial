@@ -53,10 +53,13 @@ export async function issueEmployeeInvitation(
   const token = randomBytes(32).toString('hex');
   let id: string;
   try {
-    await db.query('BEGIN');
+    await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
     const manager = await issuer.authorize(db);
     requireManagerMfa(manager, issuer.clock);
     const binding = [manager.tenantId, email, manager.membershipId, manager.membershipVersion];
+    // Different Managers hold different authority locks. Serialize issues and resends for the same recipient here.
+    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
+      [JSON.stringify(['employee-invitation', manager.tenantId, email])]);
     let previous: { grant_version: number; created_at: Date } | undefined;
     if (replaces !== undefined) {
       previous = (await db.query<{ grant_version: number; created_at: Date }>(`SELECT grant_version,created_at FROM pilot.invitations
@@ -69,6 +72,11 @@ export async function issueEmployeeInvitation(
     const now = issuer.clock();
     requireManagerMfa(manager, () => now);
     if (previous && now < previous.created_at) return denied();
+    const pending = await db.query(`SELECT 1 FROM pilot.invitations
+      WHERE tenant_id=$1 AND email=$2 AND role='Employee' AND purpose='membership'
+      AND id IS DISTINCT FROM $3::uuid AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at>$4
+      LIMIT 1`, [manager.tenantId, email, replaces ?? null, now]);
+    if (pending.rowCount) return denied();
     if (replaces !== undefined) {
       await db.query('UPDATE pilot.invitations SET revoked_at=$3 WHERE tenant_id=$1 AND id=$2', [manager.tenantId, replaces, now]);
     }
