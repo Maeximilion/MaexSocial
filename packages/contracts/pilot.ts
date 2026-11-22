@@ -42,3 +42,22 @@ export interface GbpObservation {
 export interface GbpReadback {
   readback(attempt: GbpAttempt & { resourceName?: string }): Promise<GbpObservation>;
 }
+
+export interface GbpCreateIntent extends GbpAttempt {
+  approvalId: string;
+  revisionId: string;
+  text: string;
+  locationId: string;
+  dueAt: string;
+  timezone: string;
+  approverId: string;
+  membershipId: string;
+  membershipVersion: number;
+  grantVersion: number;
+}
+
+export interface GbpReceipt {
+  attemptId: string;
+  location: string;
+  resourceName?: string;
+}
