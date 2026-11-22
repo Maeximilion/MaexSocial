@@ -167,6 +167,8 @@ test('stored GBP attempts reconcile without a second create or a return to expor
         try {
           await assert.rejects(reconcile(intent.occurrenceId, fake), { code: '42501' });
           assert.deepEqual(await stored(intent.occurrenceId), before);
+          assert.equal((await owner.query('SELECT resolved_at FROM pilot.attempts WHERE occurrence_id=$1',
+            [intent.occurrenceId])).rows[0].resolved_at, null);
         } finally { await owner.query('GRANT UPDATE (state) ON pilot.occurrences TO pilot_app'); }
         assert.equal(await reconcile(intent.occurrenceId, fake), 'confirmed');
         assert.equal(fake.createCount(a.tenant, intent.occurrenceId), 1);

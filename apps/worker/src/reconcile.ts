@@ -4,14 +4,14 @@ import type { GbpObservation, GbpReadback } from '../../../packages/contracts/pi
 type Outcome = 'unknown' | 'pending' | 'confirmed' | 'rejected';
 
 interface StoredAttempt {
-  id: string;
+  id: string | null;
   tenant_id: string;
-  approval_id: string;
+  approval_id: string | null;
   state: string;
   provider_location: string | null;
   resource_name: string | null;
   outcome: Outcome;
-  claimed_at: Date;
+  claimed_at: Date | null;
   observed_at: Date | null;
 }
 
@@ -21,7 +21,7 @@ export async function reconcileOccurrence(connect: () => Promise<Client>, occurr
   if (typeof occurrenceId !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(occurrenceId)) return null;
   const reader = await connect();
   const original = await readAttempt(reader, occurrenceId).finally(() => reader.end());
-  if (!original || finalOutcome(original)) return original?.outcome ?? null;
+  if (!original || !original.id || finalOutcome(original)) return original?.outcome ?? null;
 
   const { provider_location: location, resource_name: resourceName, tenant_id: tenantId } = original;
   const observation = location?.trim() ? await provider.readback({ tenantId, occurrenceId, attemptId: original.id, location,
@@ -46,8 +46,9 @@ async function readAttempt(db: Client, occurrenceId: string, lockAttempt = false
   return (await db.query<StoredAttempt>(`SELECT o.state,a.id,a.tenant_id,a.approval_id,a.resource_name,a.outcome,
     a.claimed_at,a.observed_at,p.provider_location FROM pilot.occurrences o
     JOIN pilot.attempts a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id
-    JOIN pilot.approvals p ON p.tenant_id=a.tenant_id AND p.occurrence_id=a.occurrence_id AND p.id=a.approval_id
+    LEFT JOIN pilot.approvals p ON p.tenant_id=a.tenant_id AND p.occurrence_id=a.occurrence_id AND p.id=a.approval_id
     WHERE o.id=$1 AND o.state IN ('in_flight','unknown','pending','confirmed','rejected','quarantined')
+      AND (a.details_retired OR p.id IS NOT NULL)
     ${lockAttempt ? 'FOR UPDATE OF a' : ''}`, [occurrenceId])).rows[0];
 }
 
@@ -63,7 +64,8 @@ async function persist(db: Client, occurrenceId: string, attempt: StoredAttempt,
   if (observation && location) {
     const time = observation.observedAt;
     if (!Number.isSafeInteger(time) || !Number.isFinite(new Date(time).getTime())) throw new Error('Invalid GBP observation time');
-    if (time < attempt.claimed_at.getTime() || (observedAt && time < observedAt.getTime())) return attempt.outcome;
+    if (!attempt.claimed_at || time < attempt.claimed_at.getTime() ||
+      (observedAt && time < observedAt.getTime())) return attempt.outcome;
     observedAt = new Date(time);
     const candidate = observation.location === location && observation.correlation === 'unique' &&
       Array.isArray(observation.candidates) && observation.candidates.length === 1 ? observation.candidates[0] : undefined;

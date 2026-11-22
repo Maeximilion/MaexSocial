@@ -3,7 +3,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { get } from 'node:https';
 import { resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { compose, docker, loadFixture, runIsolated, safeDiagnostics, validateFixture, type Fixture, type FixturePurpose } from './fixture.js';
+import { compose, docker, loadFixture, runIsolated, safeDiagnostics, usesLocalDocker, validateFixture, type Fixture, type FixturePurpose } from './fixture.js';
 
 export const postgresImage = 'postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994';
 const secret = () => randomBytes(32).toString('hex');
@@ -19,7 +19,7 @@ export async function initialize(
   const forBackup = purpose === 'backup';
   const pairedRestore = purpose === 'paired-restore';
   const restoreTarget = purpose === 'restore-target' || pairedRestore;
-  const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness';
+  const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness' || purpose === 'dispatch-retention';
   const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', purpose, expiresAt: Date.now() + 86_400_000,
     ownerPassword: secret(), appPassword: secret(), identityPassword: secret(), keycloakPassword: secret() };
   if (restoreTarget) f.restoreTarget = true;
@@ -166,9 +166,11 @@ async function main(): Promise<void> {
     return;
   }
   const restoreTarget = action === 'up' && process.argv.length <= 5 && process.argv[3] === 'restore-target';
-  if (!restoreTarget && (process.argv.length !== 3 || (action !== 'up' && action !== 'down'))) {
-    throw new Error('Usage: pilot:up [-- restore-target [snapshot-sequence]] or pilot:down');
+  const retention = action === 'up' && process.argv.length === 4 && process.argv[3] === 'dispatch-retention';
+  if (!restoreTarget && !retention && (process.argv.length !== 3 || (action !== 'up' && action !== 'down'))) {
+    throw new Error('Usage: pilot:up [-- restore-target [snapshot-sequence] | dispatch-retention] or pilot:down');
   }
+  if (retention && !usesLocalDocker()) throw new Error('Dispatch retention requires a local Docker socket');
   const snapshotArg = restoreTarget ? process.argv[4] : undefined;
   const snapshotSequence = snapshotArg === undefined ? undefined : Number(snapshotArg);
   if (snapshotArg !== undefined && snapshotArg !== String(snapshotSequence)) {
@@ -181,7 +183,7 @@ async function main(): Promise<void> {
   }
   catch (error) {
     if (action !== 'up' || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    f = await initialize(restoreTarget ? 'restore-target' : 'ordinary', snapshotSequence);
+    f = await initialize(restoreTarget ? 'restore-target' : retention ? 'dispatch-retention' : 'ordinary', snapshotSequence);
   }
   if (action === 'down') {
     compose(f, ['down']);
@@ -189,7 +191,9 @@ async function main(): Promise<void> {
     return;
   }
   if (f.pairedRestore) throw new Error('Paired restore targets cannot be started with pilot:up.');
-  if ((f.restoreTarget === true) !== restoreTarget) throw new Error('Existing fixture has a different purpose.');
+  if ((f.restoreTarget === true) !== restoreTarget || (f.purpose === 'dispatch-retention') !== retention) {
+    throw new Error('Existing fixture has a different purpose.');
+  }
   try {
     if (!(await stat('work/pilot/keycloak-realm.json')).isFile()) throw new Error('Not a file');
   } catch {
@@ -197,7 +201,7 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  compose(f, ['up', '-d', '--wait', '--wait-timeout', '120']);
+  compose(f, ['up', '-d', '--wait', '--wait-timeout', '120', ...(retention ? ['--pull', 'never'] : [])]);
   console.log(await runIsolated(['dist/pilot/ops/local/stack.js', 'check']));
   console.log(restoreTarget ? 'Restore fixture services ready; use pilot:restore-quarantine to verify the target.'
     : 'Isolated fixture ready; no host ports or external runtime route.');
