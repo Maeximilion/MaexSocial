@@ -62,7 +62,7 @@ async function readState(c: Case, target: boolean) {
   const db = await connectFixture(true);
   try {
     await db.query('BEGIN READ ONLY');
-    const { rows: [row] } = await db.query(`SELECT o.state, o.tenant_id, o.approval_id, a.revision_id,
+    const { rows: [row] } = await db.query(`SELECT o.id, o.state, o.tenant_id, o.approval_id, a.revision_id,
       (SELECT stopped FROM pilot.dispatch_control) AS stopped
       ${target ? ', o.restore_previous_state' : ''}
       FROM pilot.occurrences o JOIN pilot.approvals a
@@ -150,9 +150,13 @@ async function drill(targetDir: string) {
   await mkdir(fakeDir);
   await save('wx');
   let targetInput = false;
+  let sourceFixture: Fixture | undefined, targetFixture: Fixture | undefined;
   let phase = 'cold capture';
   try {
-    await capture(true, f => { input.cases = stage(f, 'seed'); });
+    await capture(true, f => {
+      sourceFixture = f;
+      input.cases = stage(f, 'seed');
+    });
     await save('w');
     const pair = await readFile(pairPath);
     const f = await loadFixture();
@@ -195,10 +199,10 @@ async function drill(targetDir: string) {
     await save('wx');
     targetInput = true;
     const restored = JSON.parse(node('dist/pilot/ops/local/restore.js', archive));
+    const t = targetFixture = await loadFixture();
     const topology = { internalNetworks: 2, publishedHostPorts: 0 };
     const quarantine = { stopped: true, applicationLogin: false, topology };
     assert.deepEqual(restored, { verifiedDatabases: 2, quarantined: 5, ...quarantine });
-    const t = await loadFixture();
     assert.equal(compose(t, ['exec', '-T', '--user', 'postgres', 'identity-db', 'psql', '-XAt',
       '-U', 'identity_owner', '-d', 'identity_fixture', '-c', "SELECT NOT rolcanlogin FROM pg_roles WHERE rolname='keycloak'"]), 't');
     const expected = before.map((c: typeof before[number]) => ({
@@ -219,30 +223,29 @@ async function drill(targetDir: string) {
     checkFake();
     assert.ok((await readFile(pairPath)).equals(pair), 'Pair manifest changed');
     assert.equal(node('dist/pilot/ops/local/backup.js', 'verify'), 'Verified synthetic AppDB and IdP backup pair.');
-    console.log(JSON.stringify({ revision, source: after, target: expected, fakeCreates: 1,
-      targetAuthDenials: [...first.authDenials, ...repeated.authDenials], ...quarantine }));
+    return { revision, source: after, target: expected, fakeCreates: 1,
+      targetAuthDenials: [...first.authDenials, ...repeated.authDenials], ...quarantine };
   } catch (error) {
     console.error('Restore drill failed during ' + phase + '.');
     throw error;
   } finally {
-    const stop = async () => {
-      try { await loadFixture(true); }
-      catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
-        throw error;
+    const stop = async (fixture?: Fixture) => {
+      try { await unlink(inputPath); }
+      finally {
+        if (fixture) {
+          assert.equal((await loadFixture(true)).id, fixture.id, 'Fixture ownership changed');
+          compose(fixture, ['down']);
+        }
       }
-      node('dist/pilot/ops/local/stack.js', 'down');
     };
     try {
       if (targetInput) {
         process.chdir(target);
-        await unlink(inputPath);
-        await stop();
+        await stop(targetFixture);
       }
     } finally {
       process.chdir(source);
-      await unlink(inputPath);
-      await stop();
+      await stop(sourceFixture);
     }
   }
 }
@@ -252,7 +255,7 @@ const inRunner = process.env.PILOT_CONTAINER === '1';
 if (!argument || extra.length || (inRunner && !['seed', 'deliver', 'source', 'target'].includes(argument))) {
   throw new Error('Run from a fresh built source worktree with one fresh built target worktree path.');
 }
-(inRunner ? runStage(argument) : drill(argument)).catch(error => {
+(inRunner ? runStage(argument) : drill(argument).then(result => console.log(JSON.stringify(result)))).catch(error => {
   const detail = error instanceof Error
     ? safeDiagnostics(String((error as { stderr?: string }).stderr || error.message)) : 'Unknown drill failure.';
   console.error(detail);
