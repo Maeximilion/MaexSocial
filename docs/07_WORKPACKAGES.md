@@ -17,6 +17,8 @@ authenticated integration and acceptance evidence for [#123](https://github.com/
 
 The local Task 6 receipt supplies a tested candidate for separately authorized staging work under [#82](https://github.com/Maeximilion/MaexSocial/issues/82) and [#163](https://github.com/Maeximilion/MaexSocial/issues/163). #163 covers the owned staging entry and sign-in journey. A public hero and production launch remain separate owner decisions. #10 retains the first real GBP result and operating authority. [#167](https://github.com/Maeximilion/MaexSocial/issues/167) prepares G4 AI candidate scope before #11's separately approved spike and eventual selection. #12 requires G4 acceptance and the applicable operating evidence. [#168](https://github.com/Maeximilion/MaexSocial/issues/168) is maintenance and carries no product-gate dependency.
 
+Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues/213) provides [read-only fake-provider reconciliation](../ops/local/README.md#private-gbp-reconciliation-213) for synthetic stored attempts. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains the sender, export, and integrated Task 4 acceptance.
+
 ## Planning maturity
 
 Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted

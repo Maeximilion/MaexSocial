@@ -40,6 +40,12 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Private GBP reconciliation (#213)
+
+The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
+
+With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate -- up` and `node --test dist/pilot/tests/pilot/reconcile.test.js`. The test seeds attempts, reconnects to the same SQLite fake in a second Node process, checks the stored states and verifies the create counts. Complete the empty migration drill before seeding. Sender, terminal export and integrated evidence remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+
 ## Internal account/source throttles (#154)
 
 `createAuthThrottle(key, connect, flow)` is an **unmounted internal component**. The composition root fixes
