@@ -86,6 +86,12 @@ for either customer role, with tenant-scoped authority invalidation and atomic a
 covers the last Manager and an Employee in a managerless organization. #164 retains private listener,
 device proof and integrated acceptance.
 
+Bounded Task 3 delivery [#269](https://github.com/Maeximilion/MaexSocial/issues/269) adds the
+[private organization directory](../ops/local/README.md#private-organization-directory-269)
+for active and inactive organizations under current synthetic DEV/Admin session authority.
+[#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains the private listener,
+real identity and device proof, Windows target selection and integrated acceptance.
+
 Task 2B's [invitation preview](https://github.com/Maeximilion/MaexSocial/issues/207) and
 [private issuance and resend](https://github.com/Maeximilion/MaexSocial/issues/209) cover the local
 synthetic mailbox and pending invitation lifecycle. [Fixture evidence](../ops/local/README.md#private-employee-invitation-issuance-209)

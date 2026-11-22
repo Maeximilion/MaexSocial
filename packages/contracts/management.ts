@@ -26,13 +26,17 @@ export function managementEvidence(proof: ManagementContext, tenantId: string, r
 }
 
 export function managementSessionEvidence(proof: ManagementSessionContext, reason: string) {
-  const assertedAt = proof.phishingResistantAt instanceof Date ? proof.phishingResistantAt.getTime() : NaN;
+  const assertedAt = managementAssertion(proof);
   const auditReason = typeof reason === 'string' ? reason.trim() : '';
-  if (![proof.sessionId, proof.identityId, proof.deviceId, proof.grantId].every(uuid) ||
-      ![proof.deviceVersion, proof.grantVersion].every(version) ||
-      !Number.isFinite(assertedAt) || !auditReason ||
-      [...auditReason].length > 500 || auditReason.includes('\0')) deny();
+  if (!auditReason || [...auditReason].length > 500 || auditReason.includes('\0')) deny();
   return { auditReason, assertedAt };
+}
+
+export function managementAssertion(proof: ManagementSessionContext): number {
+  const assertedAt = proof.phishingResistantAt instanceof Date ? proof.phishingResistantAt.getTime() : NaN;
+  if (![proof.sessionId, proof.identityId, proof.deviceId, proof.grantId].every(uuid) ||
+      ![proof.deviceVersion, proof.grantVersion].every(version) || !Number.isFinite(assertedAt)) deny();
+  return assertedAt;
 }
 
 export async function lockManagementSession(db: Client, proof: ManagementContext) {
@@ -42,24 +46,41 @@ export async function lockManagementSession(db: Client, proof: ManagementContext
   return lockManagementSessionAuthority(db, proof);
 }
 
-export async function lockManagementSessionAuthority(db: Client, proof: ManagementSessionContext) {
+export function lockManagementSessionAuthority(db: Client, proof: ManagementSessionContext) {
+  return managementSessionAuthority(db, proof, 'lock');
+}
+
+export async function readManagementSessionAuthority(db: Client, proof: ManagementSessionContext) {
+  const session = await managementSessionAuthority(db, proof, 'read');
+  if (!session.verified) deny();
+  return session;
+}
+
+async function managementSessionAuthority(db: Client, proof: ManagementSessionContext, mode: 'lock' | 'read') {
   const { sessionId, identityId, deviceId, deviceVersion, grantId, grantVersion } = proof;
   return (await db.query<{
-    created_at: Date; last_seen_at: Date; expires_at: Date; mfa_at: Date | null;
-  }>(`SELECT s.created_at,s.last_seen_at,s.expires_at,s.mfa_at FROM pilot.sessions s
+    created_at: Date; last_seen_at: Date; expires_at: Date; mfa_at: Date | null; verified: boolean;
+  }>(`SELECT s.created_at,s.last_seen_at,s.expires_at,s.mfa_at,i.verified FROM pilot.sessions s
     JOIN pilot.identities i ON i.id=s.identity_id AND i.version=s.identity_version
     JOIN pilot.devices d ON d.id=s.device_id AND d.identity_id=i.id AND d.version=s.device_version
     JOIN pilot.platform_grants g ON g.id=d.platform_grant_id AND g.identity_id=i.id
     WHERE s.id=$1 AND i.id=$2 AND s.audience='management' AND s.revoked_at IS NULL
       AND d.id=$3 AND d.version=$4 AND d.active AND g.id=$5 AND g.version=$6 AND g.active
-    FOR SHARE OF s,d,g`, [sessionId, identityId, deviceId, deviceVersion, grantId, grantVersion])).rows[0] ?? deny();
+    ${mode === 'lock' ? 'FOR SHARE OF s,d,g' : ''}`,
+  [sessionId, identityId, deviceId, deviceVersion, grantId, grantVersion])).rows[0] ?? deny();
 }
 
-export function requireFreshManagementProof(session: Awaited<ReturnType<typeof lockManagementSessionAuthority>>,
+export function requireValidManagementSession(session: Awaited<ReturnType<typeof managementSessionAuthority>>,
   assertedAt: number, now: Date): void {
   const age = now.getTime() - assertedAt;
-  if (!Number.isFinite(age) || age < 0 || age > 300_000 || session.mfa_at?.getTime() !== assertedAt ||
+  if (!Number.isFinite(age) || age < 0 || session.mfa_at?.getTime() !== assertedAt ||
       assertedAt < session.created_at.getTime() || now < session.last_seen_at || now >= session.expires_at ||
       now.getTime() - session.created_at.getTime() >= 3_600_000 ||
       now.getTime() - session.last_seen_at.getTime() >= 600_000) deny();
+}
+
+export function requireFreshManagementProof(session: Awaited<ReturnType<typeof managementSessionAuthority>>,
+  assertedAt: number, now: Date): void {
+  requireValidManagementSession(session, assertedAt, now);
+  if (now.getTime() - assertedAt > 300_000) deny();
 }
