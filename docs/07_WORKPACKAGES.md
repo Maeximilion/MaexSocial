@@ -19,6 +19,8 @@ The local Task 6 receipt supplies a tested candidate for separately authorized s
 
 Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues/213) provides [read-only fake-provider reconciliation](../ops/local/README.md#private-gbp-reconciliation-213) for synthetic stored attempts. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains the sender, export, and integrated Task 4 acceptance.
 
+The [local candidate manifest](../ops/local/README.md#local-pilot-candidate-manifest-220) for [#220](https://github.com/Maeximilion/MaexSocial/issues/220) binds fixture inputs and migrations to exact-revision Foundation and pilot evidence. Use it as an input to [#82](https://github.com/Maeximilion/MaexSocial/issues/82)'s staged assessment.
+
 ## Planning maturity
 
 Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues/215) supplies
