@@ -4,7 +4,7 @@ import { createReadStream } from 'node:fs';
 import { lstat, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { compose, docker, loadFixture, verifyContainers, type Fixture } from './fixture.js';
+import { compose, docker, loadFixture, usesLocalDocker, verifyContainers, type Fixture } from './fixture.js';
 import { initialize, postgresImage } from './stack.js';
 
 const directory = 'work/pilot/cold-backup';
@@ -174,9 +174,7 @@ function cleanRevision(): string {
 
 async function capture(): Promise<void> {
   const revision = cleanRevision();
-  const endpoint = (!process.env.DOCKER_CONTEXT && process.env.DOCKER_HOST)
-    || JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}']));
-  if (typeof endpoint !== 'string' || !/^(unix|npipe):\/\//.test(endpoint)) throw new Error('Cold backup requires a local Docker socket.');
+  if (!usesLocalDocker()) throw new Error('Cold backup requires a local Docker socket.');
 
   const f = await initialize('backup');
   const expected = await compatibility(f);
