@@ -77,3 +77,28 @@ An image taken before export can legitimately restore an approved row while the
 source audit proves the terminal export happened. Keep the fake receipt and source
 audit independent of the restore. Treat the observed PostgreSQL refusal as an
 authentication check and the quarantined row as separate state evidence.
+
+## Cold-pair fact and device history (#277)
+
+[Issue #277](https://github.com/Maeximilion/MaexSocial/issues/277) extends the same
+[paired drill](../../../ops/local/README.md#restore-before-dispatch-and-terminal-export-258).
+The first physical run on `493fe8ae8249912c2c930240edefdf3dd442dee6` used two fresh
+marked fixtures and the cached pinned images on Windows with Node 24.22.2.
+A second fresh run on `7868b1414e34fddf0c85a7e358b188071dc9f73c` reproduced
+all observations below. It also confirmed the stopped dispatch, quarantine,
+role restrictions and replay receipt immediately after restart, before any replay retry.
+
+| Check | Observed |
+| --- | --- |
+| Source capture | Snapshot history sequence 1. Two distinguishable fact revisions at each of two synthetic locations and two active synthetic devices at version 1. |
+| Continued source | An independent deletion instruction was recorded. The fixture-owner device update made one device inactive at version 2. All four fact rows and the active control device remained intact. |
+| Target before replay | Both archived databases, all four fact rows and both active devices were present. Five occurrences were quarantined and dispatch was stopped. Missing, incomplete and wrong-digest history each failed without a receipt. |
+| Target after replay | Both targeted fact rows were physically absent. Both control rows were unchanged. The revoked device was inactive at version 2 and the control device remained active at version 1. The immutable-facts trigger stayed enabled. |
+| Repeat and restart | The successful replay applied two events. The identical retry and the retry after both target databases restarted each applied zero. The two ordinary operations were denied before and after restart with `28P01`. The target had zero attempts and zero export audits for the two checked occurrences. |
+| Evidence and teardown | The independent fake remained at one source create. The original manifest, both archive hashes, the capture journal and both copies of the later history matched. Both fixture projects finished with zero running containers. |
+
+The source provided a deletion instruction and an observed fixture device revocation.
+The physical fact removal happened on the offline target. Integrated source
+erasure and retention remain with [#166](https://github.com/Maeximilion/MaexSocial/issues/166)
+and [#82](https://github.com/Maeximilion/MaexSocial/issues/82). Signed device operation,
+production custody and product release have separate acceptance evidence.
