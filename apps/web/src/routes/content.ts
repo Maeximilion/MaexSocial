@@ -24,7 +24,7 @@ function draftText(text: string): string {
 }
 
 function draftTextField(text: string, help: string, invalid: boolean): string {
-  const requirement = `Enter 1–${maxDraftCodePoints.toLocaleString('en-US')} Unicode code points.`;
+  const requirement = `Enter 1â€“${maxDraftCodePoints.toLocaleString('en-US')} Unicode code points.`;
   return `<label for="text">Draft text</label>
 <p id="text-help">${invalid ? '' : `${requirement} `}${help}</p>
 ${invalid ? `<p id="text-error">${requirement} Remove any null characters.</p>` : ''}
@@ -33,7 +33,7 @@ ${invalid ? `<p id="text-error">${requirement} Remove any null characters.</p>` 
 
 export function page(title: string, content: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${html(title)} · MaexSocial</title><style>
+<title>${html(title)} Â· MaexSocial</title><style>
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0B0F19;color:#F8FAFC}*{box-sizing:border-box}
 body{margin:0;line-height:1.6}main{max-width:60rem;margin:auto;padding:1.5rem}a,h1{color:#00E5FF}
 form{background:#161F30;padding:1.5rem;border:1px solid #64748B;border-radius:.8rem}label{display:block;font-weight:600}
@@ -91,13 +91,13 @@ ${draft.provider_location !== null ? `<p>Initial location: ${html(draft.provider
 <input type="hidden" name="revisionId" value="${html(draft.id)}">
 ${draftTextField(invalidText ?? draft.text, 'Text only. Saving does not approve or publish.', invalidText !== undefined)}
 <p><button type="submit">Save text</button></p></form>
-${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li><a href="/customer/occurrences/${html(row.id)}">${html(row.provider_location)} — ${html(row.state)}</a></li>`).join('')}</ul>` : ''}
+${occurrences.length ? `<h2>Existing destinations</h2><ul>${occurrences.map(row => `<li><a href="/customer/occurrences/${html(row.id)}">${html(row.provider_location)} â€” ${html(row.state)}</a></li>`).join('')}</ul>` : ''}
 <p><a href="/customer/drafts">All text drafts</a></p>`);
 }
 
 function renderDraftConflict(draftId: string, saved: { revision: number; text: string }, submitted: string): string {
   return page('This draft changed', `<p>Someone saved a newer revision. Your text was not saved. Copy any text you want to keep before opening the current draft.</p>
-<label for="saved-text">Saved text · Revision ${saved.revision}</label>
+<label for="saved-text">Saved text Â· Revision ${saved.revision}</label>
 <textarea id="saved-text" readonly>\n${html(saved.text)}</textarea>
 <label for="unsaved-text">Your unsaved text</label>
 <textarea id="unsaved-text" readonly>\n${html(submitted)}</textarea>
@@ -125,6 +125,7 @@ interface OccurrenceView {
   claimed_at: Date | null;
   observed_at: Date | null;
   approval_id: string | null;
+  approval_tenant_version: number | null;
   due_at: Date;
   due_instant: string;
   timezone: string;
@@ -140,19 +141,25 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
   if (!uuid(occurrenceId)) deny();
   // Keep displayed details and the private approval proposal in the same statement snapshot.
   const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
+    approved.tenant_version AS approval_tenant_version,
     extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
     p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
     a.approval_id=o.approval_id AS attempt_matches_approval FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
+    JOIN pilot.tenants t ON t.id=o.tenant_id AND t.active AND t.version=$5
+    LEFT JOIN pilot.approvals approved ON approved.tenant_id=o.tenant_id AND approved.occurrence_id=o.id AND approved.id=o.approval_id
     LEFT JOIN pilot.attempts a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id
     LEFT JOIN LATERAL (
       SELECT id,revision,text FROM pilot.draft_revisions
       WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND $3::boolean
         AND ((o.state='draft' AND o.approval_id IS NULL) OR ($4::boolean AND o.state='approved' AND o.approval_id IS NOT NULL))
         AND a.occurrence_id IS NULL
+        AND (NOT $4::boolean OR NOT EXISTS (SELECT 1 FROM pilot.audit h
+          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold'))
       ORDER BY revision DESC LIMIT 1
     ) p ON true
-    WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId, context.role === 'Manager', includeApproved])).rows[0];
+    WHERE o.tenant_id=$1 AND o.id=$2`,
+    [context.tenantId, occurrenceId, context.role === 'Manager', includeApproved, context.tenantVersion])).rows[0];
   return occurrence ?? deny();
 }
 
@@ -206,7 +213,7 @@ ${recordedTime('Last observation', occurrence.observed_at)}
 <dt>Due time (UTC)</dt><dd><time datetime="${html(utc)}">${html(utc)}</time></dd>
 <dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>`;
   const content = occurrence.revision === null || occurrence.text === null ? details : `<section aria-labelledby="proposed-text">
-<h2 id="proposed-text">Proposed text · Revision ${occurrence.revision}</h2>
+<h2 id="proposed-text">Proposed text Â· Revision ${occurrence.revision}</h2>
 ${details}
 <p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
   return page('Post occurrence details', `${content}
@@ -215,6 +222,7 @@ ${details}
 
 interface ApprovalProposal {
   tenantId: string;
+  tenantVersion: number;
   membershipId: string;
   membershipVersion: number;
   draftId: string;
@@ -228,11 +236,12 @@ interface ApprovalProposal {
 }
 
 export async function readApprovalProposal(db: Client, context: CustomerContext, occurrenceId: string): Promise<ApprovalProposal> {
-  const occurrence = await readOccurrence(db, context, occurrenceId);
-  if (occurrence.state !== 'draft' || occurrence.approval_id || !occurrence.revision_id) return deny();
+  const occurrence = await readOccurrence(db, context, occurrenceId, true);
+  if (!occurrence.revision_id || occurrence.approval_tenant_version === context.tenantVersion) return deny();
   localDueTime(occurrence);
   return {
-    tenantId: context.tenantId, membershipId: context.membershipId, membershipVersion: context.membershipVersion,
+    tenantId: context.tenantId, tenantVersion: context.tenantVersion,
+    membershipId: context.membershipId, membershipVersion: context.membershipVersion,
     draftId: occurrence.draft_id, occurrenceId, revisionId: occurrence.revision_id, locationId: occurrence.location_id,
     providerLocation: occurrence.provider_location, grantVersion: occurrence.grant_version, dueInstant: occurrence.due_instant,
     timezone: occurrence.timezone
@@ -250,8 +259,8 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
     await db.query('BEGIN');
     const context = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
     requireManagerMfa(context, clock);
-    if (context.tenantId !== proposal.tenantId || context.membershipId !== proposal.membershipId
-      || context.membershipVersion !== proposal.membershipVersion) return deny();
+    if (context.tenantId !== proposal.tenantId || context.tenantVersion !== proposal.tenantVersion
+      || context.membershipId !== proposal.membershipId || context.membershipVersion !== proposal.membershipVersion) return deny();
 
     const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',
       [context.tenantId, proposal.draftId]);
@@ -274,23 +283,25 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
     const current = await requireCustomerRequest(db, binding, clock, inspect);
     requireManagerMfa(current, clock);
     let approvalId: string;
-    if (occurrence.state === 'approved' && occurrence.approval_id) {
+    if (occurrence.approval_id && occurrence.approval_tenant_version === context.tenantVersion) {
       const existing = await db.query(`SELECT 1 FROM pilot.approvals
         WHERE tenant_id=$1 AND occurrence_id=$2 AND id=$3 AND revision_id=$4 AND location_id=$5
           AND provider_location=$6 AND grant_version=$7 AND membership_id=$8 AND membership_version=$9
-          AND due_at=(SELECT due_at FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2) AND timezone=$10`,
+          AND due_at=(SELECT due_at FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2) AND timezone=$10
+          AND tenant_version=$11`,
       [context.tenantId, proposal.occurrenceId, occurrence.approval_id, occurrence.revision_id, target.location_id,
-        occurrence.provider_location, occurrence.grant_version, context.membershipId, context.membershipVersion, occurrence.timezone]);
+        occurrence.provider_location, occurrence.grant_version, context.membershipId, context.membershipVersion,
+        occurrence.timezone, context.tenantVersion]);
       if (!existing.rowCount) return deny();
       approvalId = occurrence.approval_id;
     } else {
-      if (occurrence.state !== 'draft' || occurrence.approval_id) return deny();
+      // A fresh approval replaces only the pointer. Preserve the prior immutable snapshot.
       const inserted = await db.query<{ id: string }>(`INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,
-        location_id,provider_location,membership_id,membership_version,grant_version,due_at,timezone,mfa_at,grant_active_at_approval)
-        SELECT tenant_id,id,draft_id,$3,location_id,$4,$5,$6,$7,due_at,timezone,$8,$9
+        location_id,provider_location,membership_id,membership_version,grant_version,due_at,timezone,mfa_at,grant_active_at_approval,tenant_version)
+        SELECT tenant_id,id,draft_id,$3,location_id,$4,$5,$6,$7,due_at,timezone,$8,$9,$10
         FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2 RETURNING id`,
       [context.tenantId, proposal.occurrenceId, occurrence.revision_id, occurrence.provider_location,
-        context.membershipId, context.membershipVersion, occurrence.grant_version, current.mfaAt, location.grant_active]);
+        context.membershipId, context.membershipVersion, occurrence.grant_version, current.mfaAt, location.grant_active, context.tenantVersion]);
       approvalId = inserted.rows[0]!.id;
       await db.query("UPDATE pilot.occurrences SET approval_id=$3,state='approved' WHERE tenant_id=$1 AND id=$2",
         [context.tenantId, proposal.occurrenceId, approvalId]);
@@ -371,7 +382,7 @@ export async function rescheduleOccurrence(connect: () => Promise<Client>, bindi
   finally { await db.end(); }
 }
 
-// Caller holds authority/session locks and owns the transaction; claims/approval must use draft → sorted occurrences too.
+// Caller holds authority/session locks and owns the transaction; claims/approval must use draft â†’ sorted occurrences too.
 export async function editDraft(db: Client, context: CustomerContext, draftId: string, revisionId: string, text: string): Promise<void> {
   if (!uuid(draftId) || !['Employee', 'Manager'].includes(context.role)) deny();
   if (!uuid(revisionId)) throw new Error('Invalid request');

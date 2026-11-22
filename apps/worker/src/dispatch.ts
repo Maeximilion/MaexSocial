@@ -26,16 +26,17 @@ async function persistClaim(db: Client, occurrenceId: string): Promise<GbpCreate
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
   try {
     // Discover lock keys only. Authority and snapshot bindings are checked again under the locks.
-    const candidate = (await db.query<{ tenant_id: string; draft_id: string; approver_id: string }>(
-      `SELECT o.tenant_id,o.draft_id,m.identity_id AS approver_id FROM pilot.occurrences o
+    const candidate = (await db.query<{ tenant_id: string; draft_id: string; approver_id: string; approval_id: string }>(
+      `SELECT o.tenant_id,o.draft_id,o.approval_id,m.identity_id AS approver_id FROM pilot.occurrences o
         JOIN pilot.approvals a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id AND a.id=o.approval_id
         JOIN pilot.memberships m ON m.tenant_id=a.tenant_id AND m.id=a.membership_id
         WHERE o.id=$1`, [occurrenceId])).rows[0] ?? deny();
     const { tenant_id: tenantId, draft_id: draftId, approver_id: approverId } = candidate;
     const identity = await db.query('SELECT id FROM pilot.identities WHERE id=$1 AND verified FOR SHARE', [approverId]);
-    const tenant = await db.query('SELECT id FROM pilot.tenants WHERE id=$1 AND active FOR SHARE', [tenantId]);
+    const tenant = (await db.query<{ version: number }>('SELECT version FROM pilot.tenants WHERE id=$1 AND active FOR SHARE',
+      [tenantId])).rows[0];
     const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', [tenantId, draftId]);
-    if (identity.rowCount !== 1 || tenant.rowCount !== 1 || draft.rowCount !== 1) return deny();
+    if (identity.rowCount !== 1 || !tenant || draft.rowCount !== 1) return deny();
     const occurrence = await db.query(`SELECT id FROM pilot.occurrences
       WHERE tenant_id=$1 AND id=$2 AND draft_id=$3 AND state='approved' FOR UPDATE`, [tenantId, occurrenceId, draftId]);
     if (occurrence.rowCount !== 1) return deny();
@@ -54,13 +55,14 @@ async function persistClaim(db: Client, occurrenceId: string): Promise<GbpCreate
         AND m.active AND m.role='Manager' AND m.version=a.membership_version
       JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
       WHERE o.tenant_id=$1 AND o.id=$2 AND m.identity_id=$3 AND a.grant_active_at_approval
+        AND a.tenant_version=$4 AND a.id=$5
         AND btrim(l.provider_location)<>''
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
         AND NOT EXISTS (SELECT 1 FROM pilot.audit h
           WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
-      FOR SHARE OF l,m`, [tenantId, occurrenceId, approverId])).rows[0] ?? deny();
+      FOR SHARE OF l,m`, [tenantId, occurrenceId, approverId, tenant.version, candidate.approval_id])).rows[0] ?? deny();
 
     // The stop writer can proceed only before the claim or after its attempt is durable.
     const stop = await db.query('SELECT singleton FROM pilot.dispatch_control WHERE singleton AND NOT stopped FOR SHARE');

@@ -41,7 +41,8 @@ export async function requireCustomer(db: Client, token: string, clock: () => Da
     || now.getTime() - session.created_at.getTime() >= 28_800_000 || now.getTime() - session.last_seen_at.getTime() >= 1_800_000) denied();
   if (activity === 'refresh') await db.query('UPDATE pilot.sessions SET last_seen_at=$1 WHERE id=$2', [now, session.id]);
   return { sessionId: session.id, identityId: located.identity_id, subject: authority.subject, tenantId: located.tenant_id,
-    membershipId: located.membership_id, membershipVersion: authority.membership_version, role: authority.role,
+    tenantVersion: authority.tenant_version, membershipId: located.membership_id,
+    membershipVersion: authority.membership_version, role: authority.role,
     mfaAt: session.mfa_at, mfaEnrolled };
 }
 export function requireManagerMfa(context: CustomerContext, clock: () => Date): void {

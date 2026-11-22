@@ -48,14 +48,14 @@ export async function claimExport(connect: () => Promise<Client>, binding: Custo
         AND m.version=a.membership_version AND m.active AND m.role='Manager'
       JOIN pilot.identities i ON i.id=m.identity_id AND i.verified
       JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
-      WHERE o.tenant_id=$1 AND o.id=$2 AND i.id=$3 AND NOT l.grant_active
+      WHERE o.tenant_id=$1 AND o.id=$2 AND i.id=$3 AND NOT l.grant_active AND a.tenant_version=$4
         AND (a.grant_version=l.version OR (a.grant_active_at_approval AND a.grant_version=l.version-1))
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
         AND NOT EXISTS (SELECT 1 FROM pilot.audit h
           WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
-      FOR SHARE OF m`, [tenantId, occurrenceId, candidate.approver_id])).rows[0] ?? deny();
+      FOR SHARE OF m`, [tenantId, occurrenceId, candidate.approver_id, caller.tenantVersion])).rows[0] ?? deny();
 
     const current = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');
     if (current.tenantId !== tenantId || current.identityId !== caller.identityId
