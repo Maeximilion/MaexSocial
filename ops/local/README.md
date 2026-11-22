@@ -72,7 +72,8 @@ approval and outcome. Dispatch reconciliation continues on the original attempt.
 quarantine deny a new withdrawal and retain their own state.
 
 Migration 012 links withdrawal audit rows to approvals and retains offline restore compatibility
-with the exact 010 and 011 schemas. On an isolated migrated fixture, run
+with the exact 010 and 011 schemas. Downgrade is refused once a withdrawal audit exists.
+On an isolated migrated fixture, run
 `node --test dist/pilot/tests/pilot/occurrence-export.test.js` after building. Public approval UI and
 authenticated integration remain under [#223](https://github.com/Maeximilion/MaexSocial/issues/223).
 

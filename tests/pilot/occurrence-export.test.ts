@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { test } from 'node:test';
@@ -134,8 +134,15 @@ test('private terminal export commits approved text only under current authority
       assert.equal(await withdraw(), false);
       await reject(approve(target.proposal, original));
       assert.deepEqual(await state(target.id), [{ state: 'approved', approval_id: next }]);
-      assert.deepEqual(await history(), [{ actor_id: tenant.user, action: 'approval_withdrawal',
-        approval_id: target.approvalId, outcome: 'withdrawn' }]);
+      const recorded = [{ actor_id: tenant.user, action: 'approval_withdrawal',
+        approval_id: target.approvalId, outcome: 'withdrawn' }];
+      assert.deepEqual(await history(), recorded);
+      const down = await readFile('db/migrations/012_approval_withdrawal.down.sql', 'utf8');
+      await owner.query('BEGIN');
+      try {
+        await assert.rejects(owner.query(down), { code: '23514', message: 'Approval withdrawal history prevents this downgrade' });
+      } finally { await owner.query('ROLLBACK'); }
+      assert.deepEqual(await history(), recorded);
       assert.equal((await rows('SELECT id FROM pilot.approvals WHERE occurrence_id=$1', [target.id])).length, 2);
       assert.deepEqual(await state(control.id), controlState);
       assert.deepEqual(await state(other.id), [{ state: 'approved', approval_id: other.approvalId }]);
