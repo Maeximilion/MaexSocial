@@ -170,6 +170,26 @@ changes, and the fake still reports one create. Keep provider state outside both
 Independent deletion/revocation history, general credential invalidation, recovery targets and
 release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
+## Private tenant role changes (#236)
+
+[The private transaction](../../packages/contracts/management-role-change.ts) consumes already validated
+management context bound to the tenant, membership, selected role and current versions. It rechecks
+stored authority and five-minute proof freshness under lock. A stale membership version or an already
+selected role produces no change. Promotion can create the first Manager and demotion can remove
+the last Manager from that role.
+
+One commit advances the selected membership version, revokes the old customer sessions and outstanding
+invitations issued under the old grant, detaches its unclaimed approvals from draft, approved and held
+occurrences, and writes one audit event with actor, device, target membership, new version, reason
+and outcome. It keeps historical approvals, claimed attempts, exported and quarantined bindings, and
+other memberships. A re-promotion requires a fresh approval.
+
+After the strict build and fresh migration, run
+`node --test dist/pilot/tests/pilot/management-role-change.test.js`. The isolated database test exercises
+customer-session rejection, reapproval and audit rollback with synthetic management context.
+[Task 3](https://github.com/Maeximilion/MaexSocial/issues/164) retains the private listener, device proof,
+Windows entry and integrated acceptance.
+
 ## Private GBP reconciliation (#213)
 
 The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurrence ID and the local fake's readback capability. It resolves the tenant, existing attempt, original approval destination and optional resource name from PostgreSQL. It closes the connection before readback and verifies the stored binding under lock before writing. One matching LIVE result records confirmation, the resource name and observation time. Processing becomes pending, rejection stays distinct, and ambiguous or missing results stay unknown. A legacy approval without a destination snapshot remains unknown. The attempt persists across every result, keeping the occurrence unavailable for export. Existing quarantine and the dispatch stop are preserved.
