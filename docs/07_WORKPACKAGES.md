@@ -19,6 +19,10 @@ The local Task 6 receipt supplies a tested candidate for separately authorized s
 
 ## Planning maturity
 
+Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted
+[occurrence hold transaction and fixture evidence](handovers/sessions/2026-11-22-operator-hold.md).
+[#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains integrated acceptance.
+
 Bounded Task 2B component [#210](https://github.com/Maeximilion/MaexSocial/issues/210) supplies
 [private Employee revocation and isolated regression evidence](../ops/local/README.md#private-employee-membership-revocation-210).
 The auth-dependent mutation and integrated acceptance remain under [#221](https://github.com/Maeximilion/MaexSocial/issues/221) and #123.
