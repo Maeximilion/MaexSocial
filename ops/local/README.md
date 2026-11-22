@@ -302,6 +302,24 @@ tests interruption, repeat execution and PostgreSQL restart. Run it on a separat
 populated #217 regression. The integrated archive, custody, rotation and release drill remains in
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
+## Private customer organization creation (#259)
+
+`createOrganization` takes a trusted, action-scoped private management context and rechecks the verified
+operator, current enrolled device and active platform grant and session under database locks. Freshness is
+checked after the locks. Hold and role changes still require a current, active target tenant.
+
+The organization name is trimmed and limited to 200 Unicode code points without control characters or
+unpaired surrogates. The database assigns the ID, active state and initial version. The same transaction
+records the operator, device, created tenant, reason, time and outcome. The command returns only the committed
+ID and status. The organization starts without memberships, invitations or pending access.
+
+After the strict build and fresh migration, run `node --test --test-concurrency=1
+dist/pilot/tests/pilot/management-organization.test.js dist/pilot/tests/pilot/occurrence-hold.test.js
+dist/pilot/tests/pilot/management-role-change.test.js`. The synthetic tests cover the exact five-minute
+boundary, invalid or stale authority, customer authority, unchanged existing tenants and audit rollback.
+[#164](https://github.com/Maeximilion/MaexSocial/issues/164) retains the listener, Windows client,
+actual device and phishing-resistant proof verification, and separate named-access provisioning.
+
 ## Private tenant role changes (#236)
 
 [The private transaction](../../packages/contracts/management-role-change.ts) consumes already validated
