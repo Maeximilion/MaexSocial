@@ -131,8 +131,8 @@ The focused test invokes the command against an empty and a populated scratch da
 occurrence states, two tenants, a missing attempt after a fake acceptance, a negative worker readback,
 stable independent create counts, repeat execution, and refusal of an ordinary or mismarked database.
 The ordinary pilot suite exercises refusal only. The [paired restore](#offline-restore-of-a-verified-pair-235)
-uses the same quarantine. Deletion/revocation replay and
-a separately authorized release decision remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+and [history replay](#offline-deletion-and-revocation-history-replay-241) use the same quarantine.
+A separately authorized release decision remains in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 ## Offline restore of a verified pair (#235)
 
@@ -167,8 +167,43 @@ create for that occurrence in the independent counting fake, then restore the pa
 restored state is `quarantined`, the saved previous state is `draft`, repeat quarantine reports zero
 changes, and the fake still reports one create. Keep provider state outside both backup and target.
 
-Independent deletion/revocation history, general credential invalidation, recovery targets and
-release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+The [history replay](#offline-deletion-and-revocation-history-replay-241) uses the same marked offline
+target contract. The full paired recovery drill, general credential invalidation, recovery targets
+and release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
+## Offline deletion and revocation history replay (#241)
+
+Use the marked, disposable restore target above. The operation accepts only this fixture's independently
+retained synthetic history. Supply the expected snapshot sequence, inclusive ending sequence and SHA-256
+from the independent fixture record. Keep that record outside the AppDB and its backup. Make the matching
+bytes available read-only to the runner at `work/pilot/restore-history.json`.
+
+```text
+npm run pilot:restore-quarantine -- replay-history <snapshot-sequence> <ending-sequence> <sha256>
+```
+
+History schema 1 contains `schema`, `fixtureId`, `after`, `through` and `records`. Records must
+cover every integer sequence from `after + 1` through `through` in order. Each record includes its
+`seq` and one of these operations:
+
+| `kind` | Target | Effect |
+| --- | --- | --- |
+| `delete-facts` | `tenantId` and location `id` | Remove every synthetic business-fact revision at that location. |
+| `revoke-grant` | `tenantId`, location `id` and current `version` | Disable that location's provider grant and advance its version. |
+| `revoke-device` | Device `id` and current `version` | Disable that admin device and advance its version. |
+
+The command commits quarantine before evaluating history. Missing coverage, byte or target mismatch,
+and incompatible records cause a failed invocation. Any partial history writes roll back.
+The successful transaction stores a receipt with the data changes. An identical retry reports zero
+applied records. A different receipt requires a fresh fixture. Ingress, dispatch and export stay
+unavailable throughout, including after a database restart.
+
+For the regression, start a fresh marked target with the cached, pinned fixture images, build and apply the
+migrations as above, then run `node --test dist/pilot/tests/pilot/restore-history.test.js`. The isolated
+test seeds an invented target and a control tenant, preserves the replay input for equality checks, and
+tests interruption, repeat execution and PostgreSQL restart. Run it on a separate fresh target from the
+populated #217 regression. The integrated archive, custody, rotation and release drill remains in
+[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 ## Private tenant role changes (#236)
 

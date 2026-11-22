@@ -33,13 +33,16 @@ Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues
 [local dispatch stop and outstanding attempt status](../ops/local/README.md#local-dispatch-stop-215).
 [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated stop and restore drill.
 
+Bounded Task 5 component [#241](https://github.com/Maeximilion/MaexSocial/issues/241) supplies
+[idempotent history replay on a disposable target](../ops/local/README.md#offline-deletion-and-revocation-history-replay-241).
+Incomplete history leaves the target quarantined. The integrated archive and release drill remains in #166.
+
 Bounded Task 5 component [#217](https://github.com/Maeximilion/MaexSocial/issues/217) keeps all historical
 occurrences offline in a [disposable restore target](../ops/local/README.md#historical-quarantine-on-a-disposable-restore-target-217).
 Bounded Task 5 component [#235](https://github.com/Maeximilion/MaexSocial/issues/235) restores a verified
 synthetic pair into a [fresh offline target](../ops/local/README.md#offline-restore-of-a-verified-pair-235)
 and applies the existing quarantine before offline inspection.
-[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill, independent
-revocation replay and release acceptance.
+[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill and release acceptance.
 
 Bounded Task 3 component [#212](https://github.com/Maeximilion/MaexSocial/issues/212) supplies the unmounted
 [occurrence hold transaction and fixture evidence](handovers/sessions/2026-11-22-operator-hold.md).

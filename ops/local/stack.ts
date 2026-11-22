@@ -12,7 +12,7 @@ export async function initialize(purpose: 'ordinary' | 'backup' | 'restore-targe
   const forBackup = purpose === 'backup';
   const pairedRestore = purpose === 'paired-restore';
   const restoreTarget = purpose === 'restore-target' || pairedRestore;
-  const cachedImagesOnly = forBackup || purpose === 'readiness' || pairedRestore;
+  const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness';
   await mkdir('work', { recursive: true });
   // Exclusive directory creation preserves existing credentials and database volumes on failure.
   await mkdir('work/pilot', { mode: 0o700 });
