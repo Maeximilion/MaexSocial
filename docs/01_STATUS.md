@@ -34,6 +34,12 @@ November 22 bounded content delivery [#211](https://github.com/Maeximilion/MaexS
 
 Bounded Task 4 component [#213](https://github.com/Maeximilion/MaexSocial/issues/213) records [private local GBP observations](../ops/local/README.md#private-gbp-reconciliation-213) for existing attempts. A single matching fake LIVE result confirms publication in the local fixture. [#165](https://github.com/Maeximilion/MaexSocial/issues/165) retains dispatch, terminal export and integrated acceptance. G3 remains open.
 
+November 22 bounded Task 4 delivery [#214](https://github.com/Maeximilion/MaexSocial/issues/214) shows
+[stored publication outcomes](../ops/local/README.md#customer-publication-outcomes-214) to both customer roles
+in their active workspace. Local HTTPS and browser checks cover missing and conflicting evidence,
+UTC timestamps, keyboard navigation and read-only access. [#165](https://github.com/Maeximilion/MaexSocial/issues/165)
+retains integrated Task 4 acceptance.
+
 November 21 bounded content delivery [#169 / PR #171](https://github.com/Maeximilion/MaexSocial/pull/171) merged at `4391dd4`. The read-only Manager preview shows the proposed current draft revision with the actual destination and both stored time interpretations. The [local handover](handovers/sessions/2026-11-21-approval-preview.md) preserves the inherited [OIDC timing observation](https://github.com/Maeximilion/MaexSocial/issues/155#issuecomment-7064165910). The [Claude API receipt](https://github.com/Maeximilion/MaexSocial/pull/171#issuecomment-7064198446) and [candidate pilot CI](https://github.com/Maeximilion/MaexSocial/actions/runs/44914659252) record the later integration evidence. #124 retains actual approval and #131 retains identity and MFA. G3–G5 remain open.
 
 November 18 bounded Task 2A2 component [#154 / PR #157](https://github.com/Maeximilion/MaexSocial/pull/157) merged at `d2332fe` with internal

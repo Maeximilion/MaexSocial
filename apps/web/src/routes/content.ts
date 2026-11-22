@@ -104,9 +104,26 @@ function renderDraftConflict(draftId: string, saved: { revision: number; text: s
 <p><a href="/customer/drafts/${html(draftId)}">Open current draft</a></p>`);
 }
 
+const publicationOutcomes = {
+  draft: ['Draft', 'This post is awaiting approval.'],
+  approved: ['Approved', 'This post is approved and awaiting submission.'],
+  held: ['Held', 'Submission is paused for this occurrence.'],
+  in_flight: ['Submitting', 'A submission attempt has started. The result is still open.'],
+  pending: ['Processing', 'Google reported that it is processing this submission.'],
+  rejected: ['Rejected', 'Google reported that it rejected this submission.'],
+  confirmed: ['Publication confirmed', 'A recorded check found this post live on Google.'],
+  unknown: ['Outcome unknown', 'This post may already be on Google. Resolve the original attempt before retrying or posting manually.'],
+  exported: ['Exported', 'The approved text was exported for manual posting. No Google publication was confirmed. Automatic submission is closed for this occurrence.'],
+  quarantined: ['Under review', 'This occurrence is blocked while its history is checked.'],
+} as const;
+
 interface OccurrenceView {
   draft_id: string;
-  state: string;
+  state: keyof typeof publicationOutcomes;
+  attempt_outcome: 'unknown' | 'pending' | 'confirmed' | 'rejected' | null;
+  attempt_matches_approval: boolean | null;
+  claimed_at: Date | null;
+  observed_at: Date | null;
   approval_id: string | null;
   due_at: Date;
   due_instant: string;
@@ -124,13 +141,15 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
   // Keep displayed details and the private approval proposal in the same statement snapshot.
   const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
     extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
-    p.id AS revision_id,p.revision,p.text FROM pilot.occurrences o
+    p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
+    a.approval_id=o.approval_id AS attempt_matches_approval FROM pilot.occurrences o
     JOIN pilot.locations l ON l.tenant_id=o.tenant_id AND l.id=o.location_id
+    LEFT JOIN pilot.attempts a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id
     LEFT JOIN LATERAL (
       SELECT id,revision,text FROM pilot.draft_revisions
       WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND $3::boolean
         AND ((o.state='draft' AND o.approval_id IS NULL) OR ($4::boolean AND o.state='approved' AND o.approval_id IS NOT NULL))
-        AND NOT EXISTS (SELECT 1 FROM pilot.attempts a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id)
+        AND a.occurrence_id IS NULL
       ORDER BY revision DESC LIMIT 1
     ) p ON true
     WHERE o.tenant_id=$1 AND o.id=$2`, [context.tenantId, occurrenceId, context.role === 'Manager', includeApproved])).rows[0];
@@ -143,12 +162,45 @@ function localDueTime(occurrence: OccurrenceView): string {
   }).format(occurrence.due_at);
 }
 
+function publicationOutcome(occurrence: OccurrenceView) {
+  const { state, attempt_matches_approval, attempt_outcome, claimed_at, observed_at } = occurrence;
+  switch (state) {
+    case 'pending':
+    case 'confirmed':
+    case 'rejected':
+      if (attempt_matches_approval && attempt_outcome === state && observed_at) return publicationOutcomes[state];
+      break;
+    case 'in_flight':
+      if (attempt_matches_approval && attempt_outcome === 'unknown' && !observed_at) return publicationOutcomes.in_flight;
+      break;
+    case 'draft':
+    case 'approved':
+    case 'held':
+    case 'exported':
+    case 'quarantined':
+      if (!claimed_at) return publicationOutcomes[state];
+      break;
+  }
+  return publicationOutcomes.unknown;
+}
+
+const outcomeTime = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC', dateStyle: 'long', timeStyle: 'long'
+});
+
+function recordedTime(label: string, time: Date | null): string {
+  return time ? `<dt>${label} (UTC)</dt><dd><time datetime="${time.toISOString()}">${outcomeTime.format(time)}</time></dd>` : '';
+}
+
 export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
   const occurrence = await readOccurrence(db, context, occurrenceId);
   const utc = occurrence.due_at.toISOString();
   const local = localDueTime(occurrence);
+  const [label, explanation] = publicationOutcome(occurrence);
   const details = `<dl>
-<dt>Status</dt><dd>${html(occurrence.state)}</dd>
+<dt>Status</dt><dd><strong>${label}</strong><p>${explanation}</p></dd>
+${recordedTime('Attempt started', occurrence.claimed_at)}
+${recordedTime('Last observation', occurrence.observed_at)}
 <dt>Destination</dt><dd>${html(occurrence.provider_location)}</dd>
 <dt>Due time (UTC)</dt><dd><time datetime="${html(utc)}">${html(utc)}</time></dd>
 <dt>Due time (${html(occurrence.timezone)})</dt><dd>${html(local)}</dd></dl>`;

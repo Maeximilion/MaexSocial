@@ -121,6 +121,23 @@ The suite covers both reader roles, shared identities, latest revision per locat
 
 The existing keyboard suite follows workspace → facts → location → empty location → drafts, with customer-only requests. Its private screenshot is `work/portal-preview/facts.png`. Run the complete pilot before and after `pilot:down`/`pilot:up` with retained volumes. [Detailed contract](../../docs/superpowers/plans/2026-11-06-task-2-deliveries.md#synthetic-business-facts-153) and [handover](../../docs/handovers/sessions/2026-11-18-business-facts.md) separate these synthetic checks from #124/#131 and product gates.
 
+## Customer publication outcomes (#214)
+
+Employees and Managers read the details of an occurrence in their active workspace via the existing draft
+destination link. The GET reads the occurrence and its tenant-bound attempt in the same statement and does
+not refresh session activity. Processing, rejection and publication confirmation require a matching approval,
+stored outcome and observation time. A missing or conflicting dispatch record stays unknown. The attempt
+start and last observation display in UTC only when each time is recorded. The due time remains distinct,
+with its UTC instant and occurrence-local time. Export is terminal for automatic submission. It represents
+manual handoff of the approved text with no Google publication confirmed.
+
+After the strict build and fixture migration, run
+`node --test --test-concurrency=1 dist/pilot/tests/pilot/occurrences.test.js dist/pilot/tests/pilot/portal-keyboard.test.js`.
+The HTTPS suite seeds independent stored states, checks both roles and active-tenant isolation, and compares
+domain and session rows across the reads. Chromium follows the existing keyboard path to an unknown result
+and back. The suite uses invented rows and no provider calls. [#165](https://github.com/Maeximilion/MaexSocial/issues/165)
+owns the integrated Task 4 evidence.
+
 ## Private Employee invitation preview (#207)
 
 After the strict build and fixture migration, run `node --test dist/pilot/tests/pilot/invitation-browser.test.js`.
