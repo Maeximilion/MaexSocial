@@ -40,6 +40,24 @@ The focused tests use fresh temporary directories and invented identifiers. The 
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
 
+## Private terminal text export (#252)
+
+The private `claimExport` entry point reuses a bound customer session and the occurrence's immutable approval.
+It locks the caller and approving Manager identities, draft, occurrence and destination before rechecking
+current authority and the approved revision. A first eligible call commits `exported` and one audit row
+before returning text. An eligible repeat returns the same text without another write. A hold, quarantine,
+dispatch attempt, stale binding or currently active Google grant blocks access.
+
+Migration 010 lets new approvals retain the destination's grant status at approval. The local export
+accepts an already-missing grant at the approved version, or one version step from recorded active
+access to missing access at the exact same destination. Older rows keep an unknown status and cannot
+use the version-step path. Reconnecting access prevents further downloads and preserves the terminal state.
+
+On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurrence-export.test.js` after
+`npm run pilot:build`. The test drives the real private operation with synthetic customer authority,
+including a deferred commit failure and a competing claim. The authenticated route, dispatch worker and
+integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+
 ## Local readiness recovery (#219)
 
 Use a fresh task worktree without `work/pilot`, the pinned Node and npm, installed locked dependencies, and the pinned Compose images already present in the local Docker cache.

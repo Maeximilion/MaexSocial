@@ -259,9 +259,9 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
     const target = (await db.query<{ location_id: string }>(`SELECT location_id FROM pilot.occurrences
       WHERE tenant_id=$1 AND draft_id=$2 AND id=$3 FOR UPDATE`, [context.tenantId, proposal.draftId, proposal.occurrenceId])).rows[0];
     if (target?.location_id !== proposal.locationId) return deny();
-    const location = await db.query('SELECT id FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR SHARE',
-      [context.tenantId, target.location_id]);
-    if (!location.rowCount) return deny();
+    const location = (await db.query<{ grant_active: boolean }>(
+      'SELECT grant_active FROM pilot.locations WHERE tenant_id=$1 AND id=$2 FOR SHARE',
+      [context.tenantId, target.location_id])).rows[0] ?? deny();
 
     const occurrence = await readOccurrence(db, context, proposal.occurrenceId, true);
     if (!occurrence.revision_id || occurrence.revision_id !== proposal.revisionId
@@ -286,11 +286,11 @@ export async function approveOccurrence(connect: () => Promise<Client>, binding:
     } else {
       if (occurrence.state !== 'draft' || occurrence.approval_id) return deny();
       const inserted = await db.query<{ id: string }>(`INSERT INTO pilot.approvals(tenant_id,occurrence_id,draft_id,revision_id,
-        location_id,provider_location,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
-        SELECT tenant_id,id,draft_id,$3,location_id,$4,$5,$6,$7,due_at,timezone,$8
+        location_id,provider_location,membership_id,membership_version,grant_version,due_at,timezone,mfa_at,grant_active_at_approval)
+        SELECT tenant_id,id,draft_id,$3,location_id,$4,$5,$6,$7,due_at,timezone,$8,$9
         FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2 RETURNING id`,
       [context.tenantId, proposal.occurrenceId, occurrence.revision_id, occurrence.provider_location,
-        context.membershipId, context.membershipVersion, occurrence.grant_version, current.mfaAt]);
+        context.membershipId, context.membershipVersion, occurrence.grant_version, current.mfaAt, location.grant_active]);
       approvalId = inserted.rows[0]!.id;
       await db.query("UPDATE pilot.occurrences SET approval_id=$3,state='approved' WHERE tenant_id=$1 AND id=$2",
         [context.tenantId, proposal.occurrenceId, approvalId]);
