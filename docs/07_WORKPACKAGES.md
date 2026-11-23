@@ -61,6 +61,11 @@ Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) prot
 synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
+Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) adds
+[AppDB session revocation to mandatory offline quarantine](../ops/local/README.md#restored-appdb-session-revocation-291)
+for both audiences. [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated
+recovery drill and release acceptance.
+
 The [#277 cold-pair drill](../ops/local/README.md#restore-before-dispatch-and-terminal-export-258)
 adds bound replay of a synthetic fact deletion instruction and verified source device revocation
 on a fresh offline target. Integrated erasure, recovery and operating-target work remain under #166 and #82.

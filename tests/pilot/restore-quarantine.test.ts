@@ -10,6 +10,7 @@ import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { connectFixture, databaseConfig, loadFixture, runIsolated } from '../../ops/local/fixture.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
+import { assertRestoredSessions, denySessionRevocation, readRestoreSessions, seedRestoreSessions } from './restore-session-fixture.js';
 
 const command = 'dist/pilot/ops/local/recover.js';
 const runQuarantine = () => promisify(execFile)(process.execPath, [command], { timeout: 20_000 });
@@ -103,16 +104,31 @@ test('the restore quarantine command requires an offline restore target', async 
 
   // A pre-stop snapshot may carry an enabled flag. The database still has no app login.
   await owner.query('UPDATE pilot.dispatch_control SET stopped=false');
-  await owner.query('UPDATE public.fixture_identity SET restore_target=false');
-  try {
-    await assert.rejects(runQuarantine(), { code: 1, stderr: 'Fixture restore quarantine refused or failed.\n' });
+  await seedRestoreSessions(owner, a);
+  const originalSessions = await readRestoreSessions(owner);
+  const assertUnchanged = async () => {
     assert.equal(await state(), false);
     const { rows } = await owner.query('SELECT id,state FROM pilot.occurrences');
     assert.deepEqual(new Map(rows.map(row => [row.id, row.state])), historical);
+    assert.deepEqual(await readRestoreSessions(owner), originalSessions);
+  };
+  await owner.query('UPDATE public.fixture_identity SET restore_target=false');
+  try {
+    await assert.rejects(runQuarantine(), { code: 1, stderr: 'Fixture restore quarantine refused or failed.\n' });
+    await assertUnchanged();
   } finally { await owner.query('UPDATE public.fixture_identity SET restore_target=true'); }
 
+  await owner.query(denySessionRevocation);
+  try {
+    await assert.rejects(runQuarantine(), { code: 1, stderr: 'Fixture restore quarantine refused or failed.\n' });
+    await assertUnchanged();
+  } finally { await owner.query('ALTER TABLE pilot.sessions DROP CONSTRAINT fixture_revocation_fault'); }
+
   await quarantined(historical.size);
+  const revokedSessions = await readRestoreSessions(owner);
+  assertRestoredSessions(originalSessions, revokedSessions);
   await quarantined(0);
+  assert.deepEqual(await readRestoreSessions(owner), revokedSessions);
   assert.equal(await state(), true);
   assert.deepEqual(await history(), originalHistory);
 
