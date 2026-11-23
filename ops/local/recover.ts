@@ -45,6 +45,7 @@ async function main(): Promise<void> {
       const quarantined = await db.query(`UPDATE pilot.occurrences
         SET restore_previous_state=COALESCE(restore_previous_state,state), state='quarantined'
         WHERE restore_previous_state IS NULL OR state<>'quarantined'`);
+      await db.query('UPDATE pilot.sessions SET revoked_at=statement_timestamp() WHERE revoked_at IS NULL');
       return { quarantined: quarantined.rowCount, stopped: dispatch.stopped, applicationLogin: false };
     });
 
