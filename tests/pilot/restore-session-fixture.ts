@@ -16,7 +16,8 @@ export async function seedRestoreSessions(db: Client, tenant: Awaited<ReturnType
     await db.query(`INSERT INTO pilot.sessions
       (audience,token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
        membership_id,membership_version,created_at,last_seen_at,expires_at,revoked_at)
-      VALUES ('customer',$1,$2,$3,$4,$5,1,$6,$7::timestamptz-interval '6 minutes',$7,$7::timestamptz+interval '10 minutes',$8)`,
+      VALUES ('customer',$1,$2,$3,$4,$5,1,$6,1,
+        $7::timestamptz-interval '6 minutes',$7,$7::timestamptz+interval '10 minutes',$8)`,
     [tokenHash(randomBytes(32).toString('hex')), tokenHash(randomBytes(32).toString('hex')),
       tenant.user, identity!.version, tenant.tenant, tenant.membership, now, revokedAt]);
   }

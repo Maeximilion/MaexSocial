@@ -296,6 +296,9 @@ sends the completion digest. Each cluster is extracted and checked without a net
 fingerprints, binds the new fixture identity, and restricts application and Keycloak logins. It starts
 only PostgreSQL on internal networks with no published ports. Dispatch is stopped before either
 database joins those networks, and #217's quarantine runs before the command records readiness.
+The same transaction revokes unrevoked customer and management AppDB sessions using the
+existing `revoked_at` field. Previously recorded revocation times, session bindings and audit
+history are preserved. A quarantine failure rolls back its writes and prevents readiness.
 
 The sanitized output reports two verified databases, the number of historical occurrences quarantined,
 dispatch stop, disabled application login and the network topology. The same summary is recorded
@@ -315,6 +318,24 @@ changes, and the fake still reports one create. Keep provider state outside both
 The [history replay](#offline-deletion-and-revocation-history-replay-241) uses the same marked offline
 target contract. The full paired recovery drill, general credential invalidation, recovery targets
 and release authority remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
+### Restored AppDB session revocation (#291)
+
+Build four fresh, clean worktrees at the same revision with the pinned local images available.
+Set [the external disposable backup key](#synthetic-cold-backup-pair-216) outside all four
+worktrees. Run this command in the source worktree:
+
+    node dist/pilot/tests/pilot/restore-sessions.js <target-worktree> <control-worktree> <failure-target-worktree>
+
+The normal source and a separate control each supply an encrypted physical pair with one
+current and one previously revoked AppDB session per audience. The normal pair restores
+with both database markers, disabled app and IdP service logins, no published ports and all
+historical occurrences quarantined. Read-only checks compare session bindings, revocation
+timestamps and existing audit across repeated quarantine, incomplete history refusal and a
+retained-volume restart. The control pair contains a synthetic constraint that rejects the
+session update. Its restore must fail during quarantine and remove target resources without
+publishing readiness. Both sources and their encrypted pairs are checked independently.
+Real identity, device revocation and operating recovery remain in #131 and #82.
 
 ## Restore before dispatch and terminal export (#258)
 
