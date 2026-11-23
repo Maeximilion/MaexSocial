@@ -80,7 +80,38 @@ use the version-step path. Reconnecting access prevents further downloads and pr
 
 On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurrence-export.test.js` after
 `npm run pilot:build`. The test drives the real private operation with synthetic customer authority,
-including a deferred commit failure and a competing claim. The authenticated route and integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+including a deferred commit failure and a competing claim. The isolated HTTPS consumer is described
+below. Integrated delivery remains in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+
+## Private customer HTTPS download (#289)
+
+The isolated customer HTTPS fixture explicitly enables `POST /customer/occurrences/:id/export`.
+The standard customer app leaves the route and download form disabled. The fixture uses stored
+customer sessions, the existing origin and CSRF checks, and current tenant and membership authority
+on every POST. The only form field is `csrf`.
+
+An Employee or Manager can download `approved-post.txt` when the approved occurrence is eligible
+for manual export. The response is a private, non-cacheable UTF-8 text attachment sent after the
+existing export transaction commits. Reload the occurrence to see **Exported** and the closed
+automatic submission state. Authorized repeats keep the original export audit. Restored Google
+access blocks repeat downloads and preserves the terminal status.
+
+On a fresh isolated fixture, run:
+
+```text
+npm run pilot:build
+npm run pilot:up
+npm run pilot:migrate -- up
+node --test --test-concurrency=1 dist/pilot/tests/pilot/export-browser.test.js dist/pilot/tests/pilot/occurrence-export.test.js
+npm run pilot:down
+```
+
+The browser checks keyboard downloads for both roles, exact bytes and the reloaded terminal state.
+HTTPS checks cover an eligible repeat, restored access, revoked membership, the foreign tenant,
+hold and dispatch attempt records, malformed requests and the default disabled route. Database
+and SQLite counters check the export, dispatch and independent tenant effects. Integrated sign-in
+and Task 4 acceptance remain under [#131](https://github.com/Maeximilion/MaexSocial/issues/131)
+and [#165](https://github.com/Maeximilion/MaexSocial/issues/165).
 
 ## Private Manager approval withdrawal (#273)
 

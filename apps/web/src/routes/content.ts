@@ -133,6 +133,7 @@ interface OccurrenceView {
   timezone: string;
   location_id: string;
   provider_location: string;
+  grant_active: boolean;
   grant_version: number;
   revision_id: string | null;
   revision: number | null;
@@ -146,7 +147,7 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
     approved.tenant_version AS approval_tenant_version,
     CASE WHEN $4::boolean THEN (SELECT count(*)::text FROM pilot.audit w
       WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.action='approval_withdrawal') END AS withdrawal_count,
-    extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.version AS grant_version,
+    extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.grant_active,l.version AS grant_version,
     p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
     a.details_retired AS attempt_details_retired,
     a.approval_id=o.approval_id AS attempt_matches_approval FROM pilot.occurrences o
@@ -208,7 +209,7 @@ function recordedTime(label: string, time: Date | null): string {
   return time ? `<dt>${label} (UTC)</dt><dd><time datetime="${time.toISOString()}">${outcomeTime.format(time)}</time></dd>` : '';
 }
 
-export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string): Promise<string> {
+export async function renderOccurrence(db: Client, context: CustomerContext, occurrenceId: string, exportCsrf?: string): Promise<string> {
   const occurrence = await readOccurrence(db, context, occurrenceId);
   const utc = occurrence.due_at.toISOString();
   const local = localDueTime(occurrence);
@@ -224,7 +225,15 @@ ${recordedTime('Last observation', occurrence.observed_at)}
 <h2 id="proposed-text">Proposed text · Revision ${occurrence.revision}</h2>
 ${details}
 <p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
+  const exportForm = exportCsrf !== undefined && (context.role === 'Employee' || context.role === 'Manager')
+    && (occurrence.state === 'approved' || occurrence.state === 'exported') && !occurrence.attempt_outcome && !occurrence.grant_active
+    && occurrence.approval_tenant_version === context.tenantVersion
+    ? `<form method="post" action="/customer/occurrences/${html(occurrenceId)}/export">
+<input type="hidden" name="csrf" value="${html(exportCsrf)}">
+<p id="export-help">Google access is unavailable. Save the approved text for manual posting.${occurrence.state === 'approved' ? ' Reload this page after the download to see the updated status.' : ''}</p>
+<button type="submit" aria-describedby="export-help">Download approved text</button></form>` : '';
   return page('Post occurrence details', `${content}
+${exportForm}
 <p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`);
 }
 

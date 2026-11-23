@@ -21,8 +21,8 @@ async function serve(): Promise<void> {
   console.log('Portal browser ready.');
 }
 
-export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 'oidc-step-up' | 'invitation' = 'portal'): Promise<string> {
-  if (!['entry', 'portal', 'oidc', 'oidc-step-up', 'invitation'].includes(suite)) throw new Error('Unknown browser test suite');
+export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 'oidc-step-up' | 'invitation' | 'export' = 'portal'): Promise<string> {
+  if (!['entry', 'portal', 'oidc', 'oidc-step-up', 'invitation', 'export'].includes(suite)) throw new Error('Unknown browser test suite');
   const needsKeycloak = suite === 'oidc' || suite === 'oidc-step-up';
   const f = await loadFixture(); verifyContainers(f);
   const alias = `portal-browser-${randomBytes(4).toString('hex')}`;
@@ -30,7 +30,6 @@ export async function runPortalBrowserTest(suite: 'entry' | 'portal' | 'oidc' | 
   const token = randomBytes(32).toString('hex');
   const previous = process.env.PORTAL_BROWSER_ENDPOINT;
   await mkdir('work/portal-preview', { recursive: true, mode: 0o700 });
-  docker(['pull', browserImage]);
   docker(['run', '-d', '--rm', '--name', name, '--label', `org.maexsocial.fixture=${f.id}`, '--network', `${f.project}_identity`, '--network-alias', alias,
     '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--user', '1000:1000', '--shm-size', '256m',
     '--tmpfs', '/tmp:rw,exec,nosuid,size=1g', '-e', 'HOME=/tmp', '-e', 'PORTAL_BROWSER_TOKEN', '-w', '/workspace',
