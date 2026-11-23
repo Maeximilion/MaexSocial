@@ -126,7 +126,7 @@ test('private invitation preview binds the recipient and leaves invitations, acc
     t.mock.method(console, level, (...args: unknown[]) => { diagnostics.push(args.map(String).join(' ')); });
   }
   const inspect = async (subject: string) => ({ subject, verified: true, enabled: true, requiredActions: [], credentials: [] });
-  const app = createCustomerApp(connectFixture, inspect, undefined, { recipientBySubject });
+  const app = createCustomerApp(connectFixture, inspect, undefined, { invitationPreview: { recipientBySubject } });
   const defaultServer = createServer({ cert, key }, createCustomerApp(connectFixture, inspect));
   const server = createServer({ cert, key }, app);
   t.after(async () => {

@@ -7,6 +7,7 @@ import { renderPortal, renderSignedOut } from '../routes/portal.js';
 import { createDraft, DraftConflict, editDraft, InvalidDraftText, renderDraft, renderDrafts, renderNewDraft, renderOccurrence } from '../routes/content.js';
 import { renderFacts } from '../routes/facts.js';
 import { invitationToken, previewInvitation, renderInvitationPreview } from '../routes/employees.js';
+import { claimExport } from './occurrence-export.js';
 
 const cookieOptions = { secure: true, httpOnly: true, sameSite: 'lax' as const, path: '/' };
 const deny = (): never => { throw new Error('Denied'); };
@@ -26,7 +27,9 @@ async function saveDraft<T>(save: () => Promise<T>, render: (invalidText: string
 
 export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity,
   privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string },
-  privateInvitationPreview?: { recipientBySubject: ReadonlyMap<string, string> }): express.Express {
+  privateFixture?: { invitationPreview?: { recipientBySubject: ReadonlyMap<string, string> }; occurrenceExport?: true }): express.Express {
+  const privateInvitationPreview = privateFixture?.invitationPreview;
+  const privateOccurrenceExport = privateFixture?.occurrenceExport === true;
   // This unmounted option belongs only to the isolated, pinned browser fixture.
   if (privateLogout && (privateLogout.issuer !== 'https://keycloak:8443/realms/pilot'
     || privateLogout.clientId !== 'pilot-oidc-test' || privateLogout.postLogoutRedirectUri !== 'https://customer:8443/')) {
@@ -126,8 +129,16 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
   });
   app.get('/customer/occurrences/:occurrenceId', async (request, response) => {
     const binding = customerRequest(request);
-    const page = await transaction(async db => renderOccurrence(db, await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only'), request.params.occurrenceId));
+    const page = await transaction(async db => renderOccurrence(db,
+      await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only'), request.params.occurrenceId,
+      privateOccurrenceExport ? binding.csrf : undefined));
     response.type('html').send(page);
+  });
+  if (privateOccurrenceExport) app.post('/customer/occurrences/:occurrenceId/export', async (request, response) => {
+    if (!request.is('application/x-www-form-urlencoded') || Object.keys(request.query).length) throw new Error('Invalid request');
+    const binding = customerRequest(request, ['csrf']);
+    const { text } = await claimExport(connect, binding, request.params.occurrenceId, () => new Date(), inspect);
+    response.attachment('approved-post.txt').set('Cache-Control', 'private, no-store').type('text/plain').send(text);
   });
   app.post('/customer/drafts/:draftId', async (request, response) => {
     const binding = customerRequest(request, ['text', 'revisionId', 'csrf']);
