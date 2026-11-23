@@ -13,7 +13,7 @@ Delivery checkpoint at 2026-11-21T23:38:27Z. The earlier 22:07 UTC checkpoint is
 - Repository and task — [Maeximilion/MaexSocial, MS-009 issue #199](https://github.com/Maeximilion/MaexSocial/issues/199).
 - Branch — `dev-codex/199-local-handoff`. Work head before the handover commit — `28cc2988625de0f00b48ec9188f7ac90a71f6db1`. Tests covered the working-tree changes on that base.
 - PR — not yet opened. The coordinator assigned this delivery the first publication slot against `main`.
-- [Adapter](../../../tests/pilot/fake-gbp.ts), [tests](../../../tests/pilot/fake-gbp.test.ts) and [fixture and run commands](../../../ops/local/README.md).
+- [Adapter](../../../apps/worker/src/fake-gbp.ts), [tests](../../../tests/pilot/fake-gbp.test.ts) and [fixture and run commands](../../../ops/local/README.md).
 
 ## Decisions
 

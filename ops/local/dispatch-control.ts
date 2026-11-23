@@ -1,6 +1,6 @@
 import type { Client } from 'pg';
 import { installedPilotSchema } from '../../scripts/pilot-db.js';
-import { connectFixture, loadFixture, runIsolatedFixture, usesLocalDocker } from './fixture.js';
+import { connectFixture, loadFixture, requireOrdinaryFixtureDatabase, runIsolatedFixture, usesLocalDocker } from './fixture.js';
 import { httpsReady } from './stack.js';
 
 async function status(db: Client) {
@@ -24,10 +24,9 @@ async function reopen(db: Client, id: string) {
   try {
     // Use the migration lock while checking the schema that claims depend on.
     await db.query('SELECT pg_advisory_xact_lock(114, 1)');
-    const ordinary = await db.query(`SELECT 1 FROM public.fixture_identity WHERE id=$1 AND NOT restore_target
-      AND purpose='ordinary' AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE`, [id]);
-    if (ordinary.rowCount !== 1 || !Object.values(await installedPilotSchema(db)).every(Boolean)) {
-      throw new Error('Current ordinary fixture database required');
+    await requireOrdinaryFixtureDatabase(db, id);
+    if (!Object.values(await installedPilotSchema(db)).every(Boolean)) {
+      throw new Error('Current pilot schema required');
     }
 
     // Stop, reopen and claims serialize on the same control row.

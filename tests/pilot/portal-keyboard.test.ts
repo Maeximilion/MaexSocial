@@ -15,7 +15,7 @@ import { tokenHash } from '../../apps/web/src/server/session.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import type { IdentityStatus } from '../../packages/contracts/pilot.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence as seedOccurrence, seedTenant } from './fixtures.js';
 
 test('dashboard keyboard navigation, session rotation and edited publication in an isolated browser', async () => {

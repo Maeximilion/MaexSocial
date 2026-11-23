@@ -142,6 +142,12 @@ export async function runIsolated(args: string[]): Promise<string> {
   return runIsolatedFixture(await loadFixture(), args).output;
 }
 
+export async function requireOrdinaryFixtureDatabase(db: Client, id: string): Promise<void> {
+  const ordinary = await db.query("SELECT 1 FROM public.fixture_identity WHERE id=$1 AND NOT restore_target"
+    + " AND purpose='ordinary' AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE", [id]);
+  if (ordinary.rowCount !== 1) throw new Error('Ordinary fixture database required');
+}
+
 export async function connectFixture(owner = false): Promise<Client> {
   if (process.env.PILOT_CONTAINER !== '1') throw new Error('Database access requires the isolated runner');
   const f = await loadFixture();
