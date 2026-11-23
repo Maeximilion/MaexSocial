@@ -12,6 +12,7 @@ import type { Client } from 'pg';
 import { providerStateDirectory } from '../../apps/worker/src/fake-gbp.js';
 import { compose, connectFixture, loadFixture, verifyContainers } from '../../ops/local/fixture.js';
 import { binding, seedDispatchApproval } from './dispatch-fixture.js';
+import { fixtureFiles, withMediaAsset } from './media-effects-fixture.js';
 
 const entry = 'dist/pilot/apps/worker/src/main.js';
 const harness = 'dist/pilot/tests/pilot/worker-wake.test.js';
@@ -95,6 +96,39 @@ async function isolated(stage: string, id?: string, controlId?: string) {
       return;
     }
 
+    if (stage === 'media') {
+      assert.ok(id);
+      await withMediaAsset(async asset => {
+        const snapshot = async () => ({
+          applicationRequests: asset.requests(),
+          scratch: await fixtureFiles('/dev/shm'),
+          provider: await fixtureFiles(providerStateDirectory),
+        });
+        const before = await snapshot();
+        const wakes = [
+          [JSON.stringify({ occurrenceId: id, attachment: asset.fields.attachment })],
+          [id, JSON.stringify({ mediaUrl: asset.fields.mediaUrl })],
+          [id, JSON.stringify({ objectRef: asset.fields.objectRef })],
+          [JSON.stringify({ occurrenceId: id, media: [asset.fields.mediaUrl] })],
+          [id, '--media=work/worker-canary.jpg'],
+        ];
+        for (const args of wakes) {
+          // Keep the asset listener responsive while the real worker subprocess runs.
+          await assert.rejects(exec(process.execPath, [entry, ...args], { timeout: 15_000 }),
+            { code: 1, stdout: '', stderr: `${refused}\n` });
+        }
+        const after = await snapshot();
+        assert.deepEqual(after, before);
+        const summarize = ({ applicationRequests, scratch, provider }: typeof before) => ({
+          applicationRequests, scratchFiles: scratch.files.length, scratchBytes: scratch.bytes,
+          providerFiles: provider.files.length, providerBytes: provider.bytes,
+        });
+        console.log(JSON.stringify({ assetControlRequests: asset.controlRequests, mediaDenials: wakes.length,
+          before: summarize(before), after: summarize(after) }));
+      });
+      return;
+    }
+
     assert.equal(stage, 'snapshot');
     const { rows } = await db.query(`
       SELECT o.id, o.state, a.id AS "attemptId", a.approval_id AS "approvalId", p.revision_id AS "revisionId"
@@ -171,19 +205,15 @@ if (process.env.PILOT_CONTAINER === '1' && process.argv[2]) {
       const snapshot = () => runHarness('snapshot', approved.id, eligible.id);
       const preDenial = snapshot();
       const fakeAfter = fakeCounters();
-      const files = await readdir(providerStateDirectory);
-      for (const args of [
-        [JSON.stringify({ occurrenceId: eligible.id, media: ['https://media.invalid/worker-canary'] })],
-        [eligible.id, '--media=work/worker-canary.jpg'],
-        [eligible.id, JSON.stringify({ tenantId: approved.tenant, role: 'Manager', target: 'override',
-          payload: 'worker-canary', adapter: './worker-canary.js' })],
-      ]) assertRefusal(args);
+      const media = runHarness('media', eligible.id);
+      const providerBeforeOverride = await fixtureFiles(providerStateDirectory);
+      assertRefusal([eligible.id, JSON.stringify({ tenantId: approved.tenant, role: 'Manager', target: 'override',
+        payload: 'worker-canary', adapter: './worker-canary.js' })]);
+      assert.deepEqual(await fixtureFiles(providerStateDirectory), providerBeforeOverride);
       const afterDenial = snapshot();
       const fakeAfterDenial = fakeCounters();
-      const filesAfterDenial = await readdir(providerStateDirectory);
       assert.deepEqual(afterDenial, preDenial);
       assert.deepEqual(fakeAfterDenial, fakeAfter);
-      assert.deepEqual(filesAfterDenial, files);
 
       control('stop');
       assert.deepEqual(JSON.parse(node(entry, eligible.id)), { state: 'denied' });
@@ -202,12 +232,9 @@ if (process.env.PILOT_CONTAINER === '1' && process.argv[2]) {
       assert.deepEqual(fakeCounters(), fakeAfter);
       console.log(JSON.stringify({ blockedWorkerSessions: blocked, creates: fakeAfter.calls - fakeBefore.calls,
         attempts: after.counters.attempts - before.attempts, approvedIntents: fakeAfter.intents - fakeBefore.intents,
-        extraWakeDenials: 3, extraEffects: { creates: fakeAfterDenial.calls - fakeAfter.calls,
-          attempts: afterDenial.counters.attempts - preDenial.counters.attempts,
-          exports: afterDenial.counters.exports - preDenial.counters.exports,
-          reservations: afterDenial.counters.reservations - preDenial.counters.reservations,
-          charged: afterDenial.counters.charged - preDenial.counters.charged },
-        mediaRelations: after.counters.mediaRelations, extraProviderFiles: filesAfterDenial.length - files.length,
+        media, otherExtraWakeDenials: 1,
+        beforeDenials: { ...preDenial.counters, ...fakeAfter },
+        afterDenials: { ...afterDenial.counters, ...fakeAfterDenial },
         publishedHostPorts: 0 }));
     } finally {
       if (control('status').stopped !== wasStopped) control(wasStopped ? 'stop' : 'reopen');

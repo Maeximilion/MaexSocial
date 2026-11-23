@@ -11,7 +11,8 @@ import { tokenHash } from '../../apps/web/src/server/session.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { connectFixture } from '../../ops/local/fixture.js';
 import { runPortalBrowserTest } from '../../ops/local/portal-browser.js';
-import { occurrence, seedTenant } from './fixtures.js';
+import { occurrence, seedManagementSession, seedTenant } from './fixtures.js';
+import { fixtureFiles, withMediaAsset } from './media-effects-fixture.js';
 
 const occurrencePath = (id: string) => `/customer/occurrences/${id}`;
 const downloadPath = (id: string) => `${occurrencePath(id)}/export`;
@@ -61,6 +62,11 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
   };
   const employee = await session(a.tenant, 'Employee'), manager = await session(a.tenant, 'Manager');
   const outside = await session(b.tenant, 'Manager');
+  const management = { token: randomBytes(32).toString('hex'), csrf: randomBytes(32).toString('hex') };
+  const now = new Date();
+  const { sessionId } = await seedManagementSession(db, now, now);
+  assert.equal((await db.query("UPDATE pilot.sessions SET token_hash=$1 WHERE id=$2 AND audience='management'",
+    [tokenHash(management.token), sessionId])).rowCount, 1);
   const approved = async (fixture: typeof a) => {
     const id = await occurrence(db, fixture);
     // Prepare the historical approval before the fixture is exposed to either customer session.
@@ -85,7 +91,8 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     (SELECT count(*)::int FROM pilot.approvals WHERE tenant_id=$1 AND occurrence_id=$2) AS approvals,
     (SELECT count(*)::int FROM pilot.attempts WHERE tenant_id=$1 AND occurrence_id=$2) AS attempts,
     (SELECT count(*)::int FROM pilot.audit WHERE tenant_id=$1 AND occurrence_id=$2 AND action='occurrence_export') AS exports,
-    (SELECT count(*)::int FROM pilot.budget_reservations WHERE tenant_id=$1) AS reservations
+    (SELECT count(*)::int FROM pilot.budget_reservations WHERE tenant_id=$1) AS reservations,
+    (SELECT COALESCE(sum(settled_units),0)::int FROM pilot.budget_reservations WHERE tenant_id=$1 AND state='settled') AS charged
     FROM pilot.occurrences WHERE tenant_id=$1 AND id=$2`, [tenant, id])).rows[0];
   const counts = async (target: typeof first) => ({ ...await store(target), creates: fake.createCount(target.tenant, target.id) });
   const controlBefore = await counts(control);
@@ -106,7 +113,7 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
   const port = await listen(enabled, 8443, '0.0.0.0');
   const disabledPort = await listen(disabled, 0, '127.0.0.1');
 
-  const cookieFor = (actor: typeof employee) => `__Host-session=${actor.token}; __Host-csrf=${actor.csrf}`;
+  const cookieFor = (actor: typeof management) => `__Host-session=${actor.token}; __Host-csrf=${actor.csrf}`;
   const send = (path: string, options: { method?: 'GET' | 'POST'; port?: number; cookie?: string; origin?: string;
     type?: string; body?: string } = {}) => {
     const { method = 'POST', port: target = port, cookie = cookieFor(employee),
@@ -129,8 +136,9 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     const response = await send(path, options);
     assert.equal(response.status, status);
     assert.equal(response.headers['content-disposition'], undefined);
-    assert.equal(response.bytes.toString(), status === 404 ? 'Not found.' : 'Request could not be completed.');
+    assert.deepEqual(response.bytes, Buffer.from(status === 404 ? 'Not found.' : 'Request could not be completed.'));
     assert.deepEqual(await counts(target), before);
+    return response.bytes.length;
   };
 
   await t.test('protected HTTP boundary denies malformed, foreign, held and attempted requests with zero release', async () => {
@@ -150,6 +158,42 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     await denied(control, 403);
     await denied(held, 403);
     await denied(attempted, 403);
+  });
+
+  await t.test('disabled media has no export, read, file or budget effects across private HTTPS sessions', async () => {
+    await withMediaAsset(async asset => {
+      const snapshot = async () => ({
+        scratch: await fixtureFiles('/dev/shm'),
+        artifacts: await fixtureFiles('/artifacts'),
+        target: await counts(first),
+        otherTenant: await counts(control),
+        applicationRequests: asset.requests(),
+      });
+      const before = await snapshot();
+      let mediaDenials = 0;
+      let errorResponseBytes = 0;
+      for (const actor of [employee, manager, outside, management]) {
+        for (const [field, value] of Object.entries(asset.fields)) {
+          const body = new URLSearchParams({ csrf: actor.csrf, [field]: value }).toString();
+          errorResponseBytes += await denied(first, 400, { cookie: cookieFor(actor), body });
+          mediaDenials++;
+        }
+      }
+      for (const actor of [outside, management]) {
+        errorResponseBytes += await denied(first, 403, { cookie: cookieFor(actor), body: `csrf=${actor.csrf}` });
+      }
+      const after = await snapshot();
+      assert.deepEqual(after, before);
+      const reportCounts = ({ state, approvals, attempts, exports, reservations, charged, creates }: typeof before.target) =>
+        ({ state, approvals, attempts, exports, reservations, charged, creates });
+      const summarize = ({ scratch, artifacts, target, otherTenant, applicationRequests }: typeof before) => ({
+        applicationRequests, scratchFiles: scratch.files.length, scratchBytes: scratch.bytes,
+        artifactFiles: artifacts.files.length, artifactBytes: artifacts.bytes,
+        target: reportCounts(target), otherTenant: reportCounts(otherTenant),
+      });
+      console.log(JSON.stringify({ assetControlRequests: asset.controlRequests, mediaDenials, errorResponseBytes,
+        before: summarize(before), after: summarize(after) }));
+    });
   });
 
   await t.test('keyboard download for each role ends with a single durable export', async () => {
@@ -178,15 +222,16 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
           assert.equal(download.suggestedFilename(), 'approved-post.txt');
           const chunks: Buffer[] = [];
           for await (const chunk of await download.createReadStream()) chunks.push(chunk);
-          assert.deepEqual(Buffer.concat(chunks), Buffer.from(approvedText));
+          const downloaded = Buffer.concat(chunks);
+          assert.deepEqual(downloaded, Buffer.from(approvedText));
           assert.deepEqual(await counts(target), { state: 'exported', approval_id: target.approval,
-            approvals: 1, attempts: 0, exports: 1, reservations: 0, creates: 0 });
+            approvals: 1, attempts: 0, exports: 1, reservations: 0, charged: 0, creates: 0 });
           assert.equal((await page.reload())?.status(), 200);
           assert.equal(await page.getByText('Exported', { exact: true }).count(), 1);
           assert.equal(await page.getByText(/Automatic submission is closed/).count(), 1);
           assert.equal(await page.getByRole('button', { name: 'Download approved text' }).count(), 1);
           assert.ok(hosts.every(host => host === 'customer:8443'));
-          console.log(`${actor.role}: HTTPS GET 200 and byte-exact keyboard download; terminal export, 1 audit, 0 attempts, 0 creates.`);
+          console.log(`${actor.role}: HTTPS GET 200 and byte-exact keyboard download (${downloaded.length} bytes); terminal export, 1 audit, 0 attempts, 0 creates.`);
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }
