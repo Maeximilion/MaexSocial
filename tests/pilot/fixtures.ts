@@ -12,7 +12,7 @@ export async function withProbeView(db: Client, check: () => Promise<void>): Pro
   } finally { if (created) await db.query('DROP MATERIALIZED VIEW pilot.saved'); }
 }
 
-export async function seedTenant(db: Client) {
+export async function seedTenant(db: Client, text = 'Invented plain text') {
   const tenant = randomUUID();
   const user = randomUUID();
   const membership = randomUUID();
@@ -27,7 +27,7 @@ export async function seedTenant(db: Client) {
   await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES ($1,$2,'Employee')", [tenant, employee]);
   await db.query('INSERT INTO pilot.locations(tenant_id,id,provider_location) VALUES ($1,$2,$3)', [tenant, location, 'fake-location']);
   await db.query('INSERT INTO pilot.drafts(tenant_id,id) VALUES ($1,$2)', [tenant, draft]);
-  await db.query("INSERT INTO pilot.draft_revisions(tenant_id,id,draft_id,revision,text) VALUES ($1,$2,$3,1,'Invented plain text')", [tenant, revision, draft]);
+  await db.query('INSERT INTO pilot.draft_revisions(tenant_id,id,draft_id,revision,text) VALUES ($1,$2,$3,1,$4)', [tenant, revision, draft, text]);
   return { tenant, user, membership, location, draft, revision };
 }
 
