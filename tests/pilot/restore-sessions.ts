@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, readFile, realpath, writeFile } from 'node:fs/promises';
+import { lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Client } from 'pg';
 import { capture, databases, volumeName, type Pair } from '../../ops/local/backup.js';
@@ -15,6 +15,7 @@ const fixtureDir = 'work/pilot';
 const backup = 'dist/pilot/ops/local/backup.js';
 const quarantine = 'dist/pilot/ops/local/recover.js';
 const ready = fixtureDir + '/restore-ready.json';
+const pendingReady = fixtureDir + '/restore-ready.pending';
 const pairFile = fixtureDir + '/cold-backup/pair.json';
 const allOffline = { internalNetworks: 2, publishedHostPorts: 0 };
 const databaseServices = databases.map(db => db.service);
@@ -129,13 +130,13 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
 
     phase = 'paired restore with a session update fault';
     process.chdir(failure);
-    let failedTarget: Fixture | undefined;
-    await assert.rejects(restore(other.dir, f => { failedTarget = f; }), {
+    await assert.rejects(restore(other.dir, f => owned.set(failure, f)), {
       message: 'Paired restore failed during offline quarantine; target storage was removed and has no readiness record.',
     });
+    const failedTarget = owned.get(failure);
     assert.ok(failedTarget);
     await missing(ready);
-    await missing(fixtureDir + '/restore-ready.pending');
+    await missing(pendingReady);
     for (const resource of ['ps', 'volume', 'network']) {
       const args = resource === 'ps' ? ['ps', '-aq'] : [resource, 'ls', '-q'];
       assert.equal(docker([...args, '--filter', 'label=com.docker.compose.project=' + failedTarget.project]), '');
@@ -143,6 +144,7 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
     for (const db of databases) {
       assert.equal(docker(['volume', 'ls', '--format', '{{.Name}}']).split(/\s+/).includes(volumeName(failedTarget, db)), false);
     }
+    owned.delete(failure);
     checkSources();
 
     phase = 'ordinary encrypted paired restore';
@@ -212,7 +214,13 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
       process.chdir(cwd);
       try {
         assert.equal((await loadFixture(true)).id, f.id, 'Fixture ownership changed');
-        compose(f, ['down']);
+        if (cwd === failure) {
+          compose(f, ['down', '--volumes']);
+          await rm(ready, { force: true });
+          await rm(pendingReady, { force: true });
+        } else {
+          compose(f, ['down']);
+        }
       } catch (error) {
         console.error('Owned fixture teardown could not be confirmed.');
         process.exitCode = 1;
