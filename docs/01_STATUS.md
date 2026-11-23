@@ -32,6 +32,10 @@ Bounded Task 5 [#266](https://github.com/Maeximilion/MaexSocial/issues/266) adds
 The local drill covers a committed private claim, stop, readback, retained restart and a new
 claim after checked reopen. Broader Task 5 acceptance remains under #166.
 
+Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) protects new
+synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
+Named operator custody and operating recovery evidence remain in #82 and #10.
+
 Bounded Task 5 [#277](https://github.com/Maeximilion/MaexSocial/issues/277) extends the
 [cold-pair recovery drill](../ops/local/README.md#restore-before-dispatch-and-terminal-export-258)
 with physical fact deletion and device revocation on the isolated restore target. The

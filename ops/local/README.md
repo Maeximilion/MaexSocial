@@ -127,7 +127,13 @@ The three JSON records contain the phase, UTC observation time, component, statu
 
 ## Synthetic cold backup pair (#216)
 
-Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`.
+Start in a separate clean task worktree with the existing pinned pilot images already present in the local Docker cache. Use a worktree without `work/pilot`. Set `MAEX_COLD_BACKUP_KEY_FILE` to an absolute path in a private directory outside the source and target worktrees and outside the copied fixture. On POSIX, the file must be owned by the current user with no group or other permissions. On Windows use a directory whose ACL restricts access to your account. To provision the separate throwaway key from the host after setting that path:
+
+~~~text
+node -e "require('node:fs').writeFileSync(process.env.MAEX_COLD_BACKUP_KEY_FILE, require('node:crypto').randomBytes(32), {mode: 0o600, flag: 'wx'})"
+~~~
+
+Use the same key file for capture, verify, restore and expiry. Keep only its path in the environment. Capture refuses a missing key before creating the source fixture.
 
 ~~~text
 npm run pilot:backup -- capture
@@ -137,7 +143,7 @@ node --test dist/pilot/tests/pilot/cold-backup.test.js
 
 The backup command builds the current source. Capture requires a clean worktree and checks the source revision again before publishing. It initializes its own disposable fixture, migrates AppDB, seeds an invented tenant with draft occurrences and imports a disabled IdP account bound to the same fixture ID. It accepts no source override and refuses an existing `work/pilot`, including a stopped fixture. It stops all fixture services before reading the two complete PostgreSQL data directories through read-only mounts. Both clusters must report clean shutdown. The command fails if a source is active, unrecognized or changes state during copying. Image pulls are disabled.
 
-The verified pair appears under ignored `work/pilot/cold-backup/` with two archives and `pair.json`. The manifest records the source revision, pinned builds, applied schema and configuration fingerprints, separate cluster identifiers and both SHA-256 digests. Verify re-reads both archives and compares the recorded build and configuration constraints with the current worktree. An interrupted capture remains in `cold-backup.pending` and cannot be verified. An existing fixture and its volumes are never overwritten.
+Format 3 publishes `app-db.tar.enc`, `identity-db.tar.enc`, `pair.json` and `pair.auth` together under ignored `work/pilot/cold-backup/`. Each archive streams through Node's AES-256-GCM with its own random nonce and authenticated source fixture ID and database role. The detached manifest tag authenticates the source revision, pinned builds, schema and configuration fingerprints, cluster identifiers, history anchor, UTC retention metadata and both ciphertext digests and seals. Verify streams both archives and checks the same build and configuration constraints. The synthetic limit is 256 MiB per archive. Capture stages ciphertext only and removes pending output on handled failure. A hard interruption can leave an unpublished ciphertext directory. An existing fixture and its volumes are never overwritten.
 
 Keep the pair and the fixture's generated configuration private for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The generated configuration, TLS files, mailbox and independent provider state stay outside the pair. This check establishes local integrity and compatibility with the pinned fixture. The [paired restore](#offline-restore-of-a-verified-pair-235) consumes this input under the bounded Task 5 contract.
 
@@ -159,7 +165,8 @@ npm run pilot:backup -- expire
 
 Run the second command in that same worktree at or after the recorded deadline. It accepts no
 path, touches only the two matching archive files in that fixture's cold-backup directory, and
-retains the manifest for safe retries. Fixture volumes are outside the expiry operation. Preserve
+retains the manifest and its authentication tag for safe retries. Format 3 authenticates the
+expiry decision before removing either archive. Fixture volumes are outside the expiry operation. Preserve
 the #216 reference and existing backups. Copy-wide expiry after online purge, production custody,
 provider caches and integrated recovery acceptance remain in [#166](https://github.com/Maeximilion/MaexSocial/issues/166)
 and [#82](https://github.com/Maeximilion/MaexSocial/issues/82).
@@ -245,9 +252,11 @@ A separately authorized release decision remains in [Task 5](https://github.com/
 
 ## Offline restore of a verified pair (#235)
 
-Run this in a fresh local worktree with no `work/pilot`. Supply a private copy of the #216
-fixture directory containing `fixture.json`, `compose.env`, and `cold-backup/` with the pair manifest and
-both archives. If the legacy manifest records the generated IdP configuration fingerprint, include the
+Run this in a fresh local worktree with no `work/pilot`. Supply a private copy of the source fixture
+directory containing `fixture.json`, `compose.env`, and `cold-backup/` with the pair manifest and
+both archives. For format 3 include `pair.auth` and point `MAEX_COLD_BACKUP_KEY_FILE` to the separate
+key outside the checkout and the copy. Legacy formats 1 and 2 retain their private offline path
+with the original TAR filenames. If the legacy manifest records the generated IdP configuration fingerprint, include the
 copy's `keycloak.conf` and `keycloak-realm.json`. Keep the original configuration, files and volumes
 private and intact. Use the cached pinned images on the local Docker socket.
 
@@ -256,8 +265,10 @@ private and intact. Use the cached pinned images on the local Docker socket.
     npm run pilot:down
 
 The command checks the pair identity, pinned builds, fixture configuration, schema fingerprints
-and both archive hashes before creating storage. Each cluster is extracted and checked without a
-network connection. The command checks the captured AppDB and IdP records and their live schema
+and both archive hashes before creating storage. Format 3 also authenticates the manifest and
+both archives before creating storage. The isolated importer stages each streamed TAR in a
+bounded container tmpfs and opens it only after the host authenticates the entire stream and
+sends the completion digest. Each cluster is extracted and checked without a network connection. The command checks the captured AppDB and IdP records and their live schema
 fingerprints, binds the new fixture identity, and restricts application and Keycloak logins. It starts
 only PostgreSQL on internal networks with no published ports. Dispatch is stopped before either
 database joins those networks, and #217's quarantine runs before the command records readiness.
@@ -266,10 +277,11 @@ The sanitized output reports two verified databases, the number of historical oc
 dispatch stop, disabled application login and the network topology. The same summary is recorded
 privately in `work/pilot/restore-ready.json` after both restores and quarantine finish. An existing fixture
 or target directory is refused. A partial import has no readiness record and the normal `pilot:up`
-command refuses all paired targets. After inspection, stop the databases with `pilot:down`. For a
-failed or completed drill, the owner may remove the volumes for the verified disposable target project
-with Docker Compose `down --volumes` before discarding its local configuration. Retry from a fresh
-target and keep the recovery pair.
+command refuses all paired targets. A handled failure tears down the disposable target's storage.
+After inspection, stop the databases with `pilot:down`. For a completed or externally interrupted
+drill, the owner may remove the volumes for the verified disposable target project with Docker
+Compose `down --volumes` before discarding its local configuration. Retry from a fresh target and
+keep the recovery pair.
 
 For the historical drill, seed a draft occurrence before the disposable snapshot, record one accepted
 create for that occurrence in the independent counting fake, then restore the pair. Check that the
@@ -284,7 +296,8 @@ and release authority remain in [Task 5](https://github.com/Maeximilion/MaexSoci
 
 Use two clean, disposable worktrees at the same revision, each without `work/pilot`.
 Install from the lockfile and run `npm run pilot:build` in both. Use the existing pinned
-Docker images on a local socket. In the source worktree run:
+Docker images on a local socket and provision the [separate disposable key](#synthetic-cold-backup-pair-216)
+outside both worktrees. In the source worktree run:
 
     node dist/pilot/tests/pilot/restore-before-effects.js <absolute-target-worktree>
 

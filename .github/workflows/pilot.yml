@@ -54,11 +54,23 @@ jobs:
           grep -Fx 'Capture requires a clean source worktree.' work/cold-dirty.log
           test ! -e work/pilot
           printf 'throw new Error("Stale backup build executed");\n' > dist/pilot/ops/local/backup.js
+          status=0
+          env -u MAEX_COLD_BACKUP_KEY_FILE npm run pilot:backup -- capture > work/cold-no-key.log 2>&1 || status=$?
+          test "$status" -eq 1
+          grep -Fx 'Set MAEX_COLD_BACKUP_KEY_FILE to a private, external 32-byte synthetic backup key file.' work/cold-no-key.log
+          test ! -e work/pilot
+          key_dir="$(mktemp -d "$RUNNER_TEMP/maex-cold-key.XXXXXXXX")"
+          export MAEX_COLD_BACKUP_KEY_FILE="$key_dir/key"
+          trap 'rm -f -- "$MAEX_COLD_BACKUP_KEY_FILE"; rmdir -- "$key_dir"' EXIT
+          node -e "require('node:fs').writeFileSync(process.env.MAEX_COLD_BACKUP_KEY_FILE, require('node:crypto').randomBytes(32), {mode: 0o600, flag: 'wx'})"
           npm run pilot:backup -- capture
           npm run pilot:backup -- verify
-          for archive in work/pilot/cold-backup/app-db.tar work/pilot/cold-backup/identity-db.tar; do
-            test "$(stat -c '%u:%g:%a' "$archive")" = "$(id -u):$(id -g):600"
+          for file in app-db.tar.enc identity-db.tar.enc pair.json pair.auth; do
+            test "$(stat -c '%u:%g:%a' "work/pilot/cold-backup/$file")" = "$(id -u):$(id -g):600"
           done
+          test ! -e work/pilot/cold-backup/app-db.tar
+          test ! -e work/pilot/cold-backup/identity-db.tar
+          test ! -e work/pilot/cold-backup.pending
       - name: Dedicated dispatch retention fixture
         run: |
           mv work/pilot work/pilot-from-cold-backup

@@ -51,6 +51,10 @@ Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues
 
 [Matched-build rollback #255](handovers/sessions/2026-11-22-pilot-build-rollback.md) supplies local
 loss and recovery measurements for Task 5, including refusal of the unmodified 010 pair by build 009.
+Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) protects new
+synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
+Named operator custody and operating recovery evidence remain in #82 and #10.
+
 The [#277 cold-pair drill](../ops/local/README.md#restore-before-dispatch-and-terminal-export-258)
 adds bound replay of a synthetic fact deletion instruction and verified source device revocation
 on a fresh offline target. Integrated erasure, recovery and operating-target work remain under #166 and #82.

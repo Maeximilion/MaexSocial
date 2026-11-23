@@ -3,11 +3,20 @@ set -eu
 export LC_ALL=C
 service=$1 owner=$2 database=$3 digest=$4 system_id=$5 catalog=$6 source_id=$7 target_id=$8 schema=$9
 shift 9
-expiry=$1 history_after=$2 history_evidence=$3
+expiry=$1 history_after=$2 history_evidence=$3 archive_bytes=$4
 
 # Process a single immutable copy, with no network and no source volume mounted.
 test -z "$(find "$PGDATA" -mindepth 1 -print -quit)"
-cp /archive.tar /tmp/cluster.tar
+install -m 600 /dev/null /tmp/cluster.tar
+if [ -n "$archive_bytes" ]; then
+  cat > /tmp/cluster.tar
+  # The host appends this digest only after authenticating the complete stream.
+  test "$(wc -c < /tmp/cluster.tar)" -eq "$((archive_bytes + 64))"
+  digest=$(tail -c 64 /tmp/cluster.tar)
+  truncate -s "$archive_bytes" /tmp/cluster.tar
+else
+  cp /archive.tar /tmp/cluster.tar
+fi
 printf '%s  %s\n' "$digest" /tmp/cluster.tar | sha256sum -c --status
 tar --quoting-style=escape -tvf /tmp/cluster.tar > /tmp/members
 awk '{
@@ -16,6 +25,7 @@ awk '{
       member !~ /^[a-zA-Z0-9_.\/-]*$/ || member ~ /(^|\/)\.\.?(\/|$)/) exit 1
 }' /tmp/members
 tar --extract --file=/tmp/cluster.tar --directory="$PGDATA" --no-same-owner --no-same-permissions
+rm /tmp/cluster.tar
 test "$(cat "$PGDATA/PG_VERSION")" = "$PG_MAJOR"
 test ! -e "$PGDATA/postmaster.pid"
 control=$(pg_controldata "$PGDATA" 2>/tmp/pg-control)
