@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { Client } from 'pg';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { connectFixture, databaseConfig, loadFixture, runIsolated } from '../../ops/local/fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
 
 const command = 'dist/pilot/ops/local/recover.js';

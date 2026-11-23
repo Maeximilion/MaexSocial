@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { promisify } from 'node:util';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
 
 const location = 'locations/approved-orchard';
@@ -60,7 +60,7 @@ test('stored GBP attempts reconcile without a second create or a return to expor
       const restarted = await promisify(execFile)(process.execPath, ['-e', `
         const { reconcileOccurrence } = require('./dist/pilot/apps/worker/src/reconcile.js');
         const { connectFixture } = require('./dist/pilot/ops/local/fixture.js');
-        const { FakeGbp } = require('./dist/pilot/tests/pilot/fake-gbp.js');
+        const { FakeGbp } = require('./dist/pilot/apps/worker/src/fake-gbp.js');
         const [directory, occurrenceId, observedAt] = process.argv.slice(1);
         const fake = new FakeGbp(directory, { clock: () => Number(observedAt) });
         reconcileOccurrence(connectFixture, occurrenceId, fake)

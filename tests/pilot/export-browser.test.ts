@@ -8,9 +8,9 @@ import { chromium } from 'playwright';
 import { createCustomerApp } from '../../apps/web/src/server/customer.js';
 import { customerOrigin } from '../../apps/web/src/server/request.js';
 import { tokenHash } from '../../apps/web/src/server/session.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { connectFixture } from '../../ops/local/fixture.js';
 import { runPortalBrowserTest } from '../../ops/local/portal-browser.js';
-import { FakeGbp } from './fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
 
 const occurrencePath = (id: string) => `/customer/occurrences/${id}`;

@@ -17,7 +17,7 @@ import { retireDispatchDetails } from '../../ops/local/dispatch-retention.js';
 import { compose, connectFixture, loadFixture, safeDiagnostics, usesLocalDocker, verifyContainers } from '../../ops/local/fixture.js';
 import { migrate } from '../../scripts/pilot-db.js';
 import { binding, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 
 const entry = 'dist/pilot/tests/pilot/dispatch-retention.js';
 const stack = 'dist/pilot/ops/local/stack.js';

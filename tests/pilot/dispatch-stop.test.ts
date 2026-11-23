@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedTenant } from './fixtures.js';
 
 const entry = 'dist/pilot/ops/local/dispatch-control.js';
