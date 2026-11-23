@@ -8,16 +8,17 @@ export async function seedRestoreSessions(db: Client, tenant: Awaited<ReturnType
   const { rows: [clock] } = await db.query<{ now: Date }>('SELECT clock_timestamp() AS now');
   const now = clock!.now;
   const prior = new Date(now.getTime() - 60_000);
-  await db.query('UPDATE pilot.identities SET verified=true WHERE id=$1', [tenant.user]);
+  const { rows: [identity] } = await db.query<{ version: number }>(
+    'UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1 RETURNING version', [tenant.user]);
   for (const revokedAt of [null, prior]) {
     const { sessionId } = await seedManagementSession(db, now, prior);
     if (revokedAt) await db.query('UPDATE pilot.sessions SET revoked_at=$2 WHERE id=$1', [sessionId, revokedAt]);
     await db.query(`INSERT INTO pilot.sessions
       (audience,token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
        membership_id,membership_version,created_at,last_seen_at,expires_at,revoked_at)
-      VALUES ('customer',$1,$2,$3,1,$4,1,$5,$6::timestamptz-interval '6 minutes',$6,$6::timestamptz+interval '10 minutes',$7)`,
+      VALUES ('customer',$1,$2,$3,$4,$5,1,$6,$7::timestamptz-interval '6 minutes',$7,$7::timestamptz+interval '10 minutes',$8)`,
     [tokenHash(randomBytes(32).toString('hex')), tokenHash(randomBytes(32).toString('hex')),
-      tenant.user, tenant.tenant, tenant.membership, now, revokedAt]);
+      tenant.user, identity!.version, tenant.tenant, tenant.membership, now, revokedAt]);
   }
 }
 
