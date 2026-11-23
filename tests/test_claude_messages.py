@@ -64,8 +64,9 @@ class MessagesFailureTests(unittest.TestCase):
             folder = Path(directory)
             (folder / "claude-input.json").write_text(json.dumps(["system", data]), "utf-8")
             output = folder / "outputs"
-            with patch.dict(os.environ, {"GITHUB_OUTPUT": str(output), "RUNNER_TEMP": directory,
-                                         "ANTHROPIC_API_KEY": key, "KIND": "mention"}, clear=True), redirect_stdout(StringIO()) as logs:
+            runner = {"GITHUB_OUTPUT": str(output), "RUNNER_TEMP": directory,
+                      "ANTHROPIC_API_KEY": key, "KIND": "mention"}
+            with patch.object(os, "environ", runner), redirect_stdout(StringIO()) as logs:
                 self.assertEqual(client.main(), 1)
             self.assertEqual(output.read_text("utf-8").strip(), f"failure={expected}")
             self.assertEqual(logs.getvalue().strip(), diagnostic + f"::error::Claude review failed: {expected}")

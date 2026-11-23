@@ -61,7 +61,8 @@ class ClaudeReviewTests(unittest.TestCase):
         input_file.unlink(missing_ok=True)
         event_name = "issue_comment" if env.get("KIND") == "mention" else "pull_request_target"
         runner = self.env | {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": event_name} | env
-        with patch.dict(os.environ, runner, clear=True), patch("subprocess.run", side_effect=gh_api) as gh:
+        # Replacing the Python mapping leaves the native process environment intact.
+        with patch.object(os, "environ", runner), patch("subprocess.run", side_effect=gh_api) as gh:
             self.assertEqual(claude_input.main([]), 0)
         fields = re.findall(r"^(\w+)<<(\w+)\n(.*?)\n\2$", self.output.read_text("utf-8"), re.M | re.S)
         self.system, self.frames = json.loads(input_file.read_text("utf-8")) if input_file.exists() else ("", "")
@@ -73,7 +74,7 @@ class ClaudeReviewTests(unittest.TestCase):
                              "HEAD_SHA": "reviewed", "BASE_SHA": "base"} | env
         response = subprocess.CompletedProcess([], inline_status or 0, stderr="diagnostic fixture")
         with (
-            patch.dict(os.environ, runner, clear=True),
+            patch.object(os, "environ", runner),
             patch("subprocess.run", return_value=response) as gh,
             patch("builtins.print"),
         ):
@@ -89,6 +90,15 @@ class ClaudeReviewTests(unittest.TestCase):
         command = gh.call_args.args[0]
         self.assertEqual(command[:-1], ["gh", "pr", "comment", "7", "--repo", REPO, "--body-file"])
         return Path(command[-1]).read_text("utf-8")
+
+    def test_runner_fixtures_do_not_write_the_process_environment(self):
+        def reject_native_write(*_):
+            self.fail("runner fixture attempted to change the native environment")
+
+        with patch.object(os, "putenv", reject_native_write), patch.object(os, "unsetenv", reject_native_write):
+            self.prepare()
+            result = self.transport({"findings": [], "overflow": False})
+            self.post(0, OUTPUT=json.dumps(result))
 
     def test_auto_uses_event_shas_and_mentions_use_current_pr_shas(self):
         for kind, env, base, head in [
@@ -397,7 +407,7 @@ class ClaudeReviewTests(unittest.TestCase):
                     "content": [{"type": "text", "text": json.dumps(clean)}],
                     "usage": {"input_tokens": 17, "output_tokens": 32_768},
                 }).encode()
-                with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key"}, clear=True), \
+                with patch.object(os, "environ", self.env | {"ANTHROPIC_API_KEY": "fixture-key"}), \
                         patch("sys.stdout", new_callable=io.StringIO):
                     self.assertEqual(client.main(), 1)
                 self.assertFalse(result_file.exists())
@@ -449,7 +459,7 @@ class ClaudeReviewTests(unittest.TestCase):
             reply = connect.return_value.getresponse.return_value
             reply.status, reply.length = 200, 0
             reply.read.return_value = json.dumps(response).encode()
-            with patch.dict(os.environ, self.env | {"ANTHROPIC_API_KEY": "fixture-key", "KIND": kind}, clear=True):
+            with patch.object(os, "environ", self.env | {"ANTHROPIC_API_KEY": "fixture-key", "KIND": kind}):
                 self.assertEqual(client.main(), 0)
             output = json.loads(self.output.with_name("claude-result.json").read_text("ascii"))
             connect.assert_called_once_with("api.anthropic.com", timeout=960)
