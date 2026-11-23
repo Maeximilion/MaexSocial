@@ -109,6 +109,8 @@ async function isolated(stage: string, id?: string, controlId?: string) {
           [JSON.stringify({ occurrenceId: id, attachment: asset.fields.attachment })],
           [id, JSON.stringify({ mediaUrl: asset.fields.mediaUrl })],
           [id, JSON.stringify({ objectRef: asset.fields.objectRef })],
+          [JSON.stringify({ occurrenceId: id, media: [asset.fields.mediaUrl] })],
+          [id, '--media=work/worker-canary.jpg'],
         ];
         for (const args of wakes) {
           // Keep the asset listener responsive while the real worker subprocess runs.
@@ -204,8 +206,10 @@ if (process.env.PILOT_CONTAINER === '1' && process.argv[2]) {
       const preDenial = snapshot();
       const fakeAfter = fakeCounters();
       const media = runHarness('media', eligible.id);
+      const providerBeforeOverride = await fixtureFiles(providerStateDirectory);
       assertRefusal([eligible.id, JSON.stringify({ tenantId: approved.tenant, role: 'Manager', target: 'override',
         payload: 'worker-canary', adapter: './worker-canary.js' })]);
+      assert.deepEqual(await fixtureFiles(providerStateDirectory), providerBeforeOverride);
       const afterDenial = snapshot();
       const fakeAfterDenial = fakeCounters();
       assert.deepEqual(afterDenial, preDenial);
