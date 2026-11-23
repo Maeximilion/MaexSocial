@@ -136,8 +136,9 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     const response = await send(path, options);
     assert.equal(response.status, status);
     assert.equal(response.headers['content-disposition'], undefined);
-    assert.equal(response.bytes.toString(), status === 404 ? 'Not found.' : 'Request could not be completed.');
+    assert.deepEqual(response.bytes, Buffer.from(status === 404 ? 'Not found.' : 'Request could not be completed.'));
     assert.deepEqual(await counts(target), before);
+    return response.bytes.length;
   };
 
   await t.test('protected HTTP boundary denies malformed, foreign, held and attempted requests with zero release', async () => {
@@ -170,15 +171,16 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
       });
       const before = await snapshot();
       let mediaDenials = 0;
+      let errorResponseBytes = 0;
       for (const actor of [employee, manager, outside, management]) {
         for (const [field, value] of Object.entries(asset.fields)) {
           const body = new URLSearchParams({ csrf: actor.csrf, [field]: value }).toString();
-          await denied(first, 400, { cookie: cookieFor(actor), body });
+          errorResponseBytes += await denied(first, 400, { cookie: cookieFor(actor), body });
           mediaDenials++;
         }
       }
       for (const actor of [outside, management]) {
-        await denied(first, 403, { cookie: cookieFor(actor), body: `csrf=${actor.csrf}` });
+        errorResponseBytes += await denied(first, 403, { cookie: cookieFor(actor), body: `csrf=${actor.csrf}` });
       }
       const after = await snapshot();
       assert.deepEqual(after, before);
@@ -189,7 +191,7 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
         artifactFiles: artifacts.files.length, artifactBytes: artifacts.bytes,
         target: reportCounts(target), otherTenant: reportCounts(otherTenant),
       });
-      console.log(JSON.stringify({ assetControlRequests: asset.controlRequests, mediaDenials, unauthorizedTextBytes: 0,
+      console.log(JSON.stringify({ assetControlRequests: asset.controlRequests, mediaDenials, errorResponseBytes,
         before: summarize(before), after: summarize(after) }));
     });
   });
@@ -220,7 +222,8 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
           assert.equal(download.suggestedFilename(), 'approved-post.txt');
           const chunks: Buffer[] = [];
           for await (const chunk of await download.createReadStream()) chunks.push(chunk);
-          assert.deepEqual(Buffer.concat(chunks), Buffer.from(approvedText));
+          const downloaded = Buffer.concat(chunks);
+          assert.deepEqual(downloaded, Buffer.from(approvedText));
           assert.deepEqual(await counts(target), { state: 'exported', approval_id: target.approval,
             approvals: 1, attempts: 0, exports: 1, reservations: 0, charged: 0, creates: 0 });
           assert.equal((await page.reload())?.status(), 200);
@@ -228,7 +231,7 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
           assert.equal(await page.getByText(/Automatic submission is closed/).count(), 1);
           assert.equal(await page.getByRole('button', { name: 'Download approved text' }).count(), 1);
           assert.ok(hosts.every(host => host === 'customer:8443'));
-          console.log(`${actor.role}: HTTPS GET 200 and byte-exact keyboard download; terminal export, 1 audit, 0 attempts, 0 creates.`);
+          console.log(`${actor.role}: HTTPS GET 200 and byte-exact keyboard download (${downloaded.length} bytes); terminal export, 1 audit, 0 attempts, 0 creates.`);
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }
