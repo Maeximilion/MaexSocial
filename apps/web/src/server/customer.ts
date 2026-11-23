@@ -27,8 +27,8 @@ async function saveDraft<T>(save: () => Promise<T>, render: (invalidText: string
 
 export function createCustomerApp(connect: () => Promise<Client>, inspect: InspectIdentity,
   privateLogout?: { issuer: string; clientId: string; postLogoutRedirectUri: string },
-  privateFixture?: { invitationPreview?: { recipientBySubject: ReadonlyMap<string, string> }; occurrenceExport?: true }): express.Express {
-  const privateInvitationPreview = privateFixture?.invitationPreview;
+  privateFixture?: { recipientBySubject?: ReadonlyMap<string, string>; occurrenceExport?: true }): express.Express {
+  const invitationRecipients = privateFixture?.recipientBySubject;
   const privateOccurrenceExport = privateFixture?.occurrenceExport === true;
   // This unmounted option belongs only to the isolated, pinned browser fixture.
   if (privateLogout && (privateLogout.issuer !== 'https://keycloak:8443/realms/pilot'
@@ -84,7 +84,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
     response.type('html').send(page);
   });
   // #221 owns the public link and real identity proof. Only the isolated fixture supplies this binding.
-  if (privateInvitationPreview) app.get('/customer/invitations/preview', async (request, response) => {
+  if (invitationRecipients) app.get('/customer/invitations/preview', async (request, response) => {
     response.set('Referrer-Policy', 'no-referrer');
     const token = invitationToken(request.headers.cookie);
     let invitation: Awaited<ReturnType<typeof previewInvitation>>;
@@ -93,7 +93,7 @@ export function createCustomerApp(connect: () => Promise<Client>, inspect: Inspe
         const binding = customerRequest(request);
         invitation = await transaction(async db => {
           const { subject } = await requireCustomerRequest(db, binding, () => new Date(), inspect, 'read-only');
-          const email = privateInvitationPreview.recipientBySubject.get(subject);
+          const email = invitationRecipients.get(subject);
           return email === undefined ? undefined : previewInvitation(db, token, email);
         });
       } catch (error) {

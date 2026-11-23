@@ -142,7 +142,10 @@ retains integrated Task 4 acceptance.
 Bounded Task 4 delivery [#252](https://github.com/Maeximilion/MaexSocial/issues/252) commits a
 [private terminal export](../ops/local/README.md#private-terminal-text-export-252) of the exact approved
 revision when Google access is missing. The isolated fixture covers authorized repeats, rollback and a competing
-attempt. The authenticated route, dispatch worker and integrated acceptance remain in [#165](https://github.com/Maeximilion/MaexSocial/issues/165).
+attempt. [#289](https://github.com/Maeximilion/MaexSocial/issues/289) adds the
+[private HTTPS download](../ops/local/README.md#private-customer-https-download-289) and customer-visible
+terminal state using stored synthetic Employee and Manager sessions. Integrated Task 4 acceptance
+remains in [#165](https://github.com/Maeximilion/MaexSocial/issues/165).
 
 Bounded Task 4 delivery [#253](https://github.com/Maeximilion/MaexSocial/issues/253) claims a due
 [private synthetic dispatch](../ops/local/README.md#private-synthetic-dispatch-claim-253) and sends its

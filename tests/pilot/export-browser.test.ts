@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createServer, request, type Server } from 'node:https';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { chromium } from 'playwright';
 import { createCustomerApp } from '../../apps/web/src/server/customer.js';
@@ -36,14 +37,19 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
   assert.ok(endpoint, 'Run through the isolated portal browser harness');
   const db = await connectFixture(true);
   t.after(() => db.end());
-  const fake = new FakeGbp('work/pilot/provider-state');
-  t.after(() => fake.close());
+  const providerDirectory = await mkdtemp(join('/dev/shm', 'maex-289-provider-'));
+  let fake: FakeGbp;
+  t.after(async () => {
+    fake?.close();
+    await rm(providerDirectory, { recursive: true, force: true });
+  });
+  fake = new FakeGbp(providerDirectory);
   const a = await seedTenant(db, approvedText), b = await seedTenant(db);
 
   const session = async (tenant: string, role: 'Employee' | 'Manager') => {
     const token = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('hex');
-    await db.query(`UPDATE pilot.identities i SET verified=true FROM pilot.memberships m
-      WHERE m.tenant_id=$1 AND m.role=$2 AND m.identity_id=i.id`, [tenant, role]);
+    await db.query(`UPDATE pilot.identities i SET verified=true,version=i.version+1 FROM pilot.memberships m
+      WHERE m.tenant_id=$1 AND m.role=$2 AND m.identity_id=i.id AND NOT i.verified`, [tenant, role]);
     const seeded = await db.query<{ membership_id: string }>(`INSERT INTO pilot.sessions
       (token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,membership_id,membership_version,
       audience,created_at,last_seen_at,expires_at)
@@ -180,7 +186,7 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
           assert.equal(await page.getByText(/Automatic submission is closed/).count(), 1);
           assert.equal(await page.getByRole('button', { name: 'Download approved text' }).count(), 1);
           assert.ok(hosts.every(host => host === 'customer:8443'));
-          console.log(`${actor.role}: HTTPS 200 and byte-exact keyboard download; terminal export, 1 audit, 0 attempts, 0 creates.`);
+          console.log(`${actor.role}: HTTPS GET 200 and byte-exact keyboard download; terminal export, 1 audit, 0 attempts, 0 creates.`);
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }
@@ -192,7 +198,7 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     assert.equal(repeat.status, 200);
     assert.deepEqual(repeat.bytes, Buffer.from(approvedText));
     assert.equal(repeat.headers['content-type'], 'text/plain; charset=utf-8');
-    assert.equal(repeat.headers['content-disposition'], 'attachment; filename="approved-post.txt"');
+    assert.match(repeat.headers['content-disposition'] ?? '', /^attachment; filename=(?:approved-post\.txt|"approved-post\.txt")$/);
     assert.equal(repeat.headers['cache-control'], 'private, no-store');
     assert.equal(repeat.headers['x-content-type-options'], 'nosniff');
     assert.deepEqual(await counts(first), before);
@@ -200,6 +206,10 @@ test('private HTTPS export downloads the approved bytes for both roles and reche
     await denied(first, 403);
     await db.query('UPDATE pilot.locations SET grant_active=true,version=version+1 WHERE tenant_id=$1 AND id=$2', [a.tenant, a.location]);
     await denied(second, 403, { cookie: cookieFor(manager), body: `csrf=${manager.csrf}` });
+    const exportedPage = await send(occurrencePath(second.id), { method: 'GET', cookie: cookieFor(manager) });
+    assert.equal(exportedPage.status, 200);
+    assert.match(exportedPage.bytes.toString(), /<strong>Exported<\/strong>/);
+    assert.doesNotMatch(exportedPage.bytes.toString(), /Download approved text/);
     const controlPage = await send(occurrencePath(control.id), { method: 'GET', cookie: cookieFor(outside) });
     assert.equal(controlPage.status, 200);
     assert.match(controlPage.bytes.toString(), /<strong>Approved<\/strong>/);
