@@ -68,6 +68,16 @@ function refused(args: string[]) {
   assert.equal(result.stderr.trim(), 'Fixture restore quarantine refused or failed.');
 }
 
+function readSource(f: Fixture) {
+  try {
+    compose(f, ['up', '-d', '--pull', 'never', '--wait', '--wait-timeout', '120']);
+    refused([]);
+    return stage(f, 'read');
+  } finally {
+    compose(f, ['down']);
+  }
+}
+
 async function drill(targetPath: string, controlPath: string, failurePath: string) {
   const [source, target, control, failure] = await Promise.all([
     realpath(process.cwd()), realpath(resolve(targetPath)), realpath(resolve(controlPath)), realpath(resolve(failurePath)),
@@ -101,15 +111,12 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
     assert.ok(pair.historyAnchor);
     assert.equal(pair.fixtureId, f.id);
     const beforeHistory = await readFile(fixtureDir + '/capture-history.json', 'utf8');
-    compose(f, ['start', '--wait', '--wait-timeout', '120']);
-    const before = stage(f, 'read');
+    const before = readSource(f);
     assert.deepEqual(before, { ...seeded, occurrences: 3 });
     assert.deepEqual([before.target, before.login, before.can_connect, before.held], [false, true, true, 0]);
     assert.deepEqual(before.sessions.map(({ audience, revocations }) =>
       [audience, revocations.length, revocations.filter(value => value === null).length]),
     [['customer', 2, 1], ['management', 2, 1]]);
-    refused([]);
-    assert.deepEqual(stage(f, 'read'), before);
     return { f, before, pair, original, beforeHistory, dir: resolve(fixtureDir) };
   };
 
@@ -118,15 +125,12 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
     const other = await captureSource(control, true);
     assert.notEqual(other.f.id, normal.f.id);
     assert.notDeepEqual(other.before.sessions.map(row => row.bindings), normal.before.sessions.map(row => row.bindings));
-    const checkSources = () => {
-      const previous = process.cwd();
-      try {
-        for (const [cwd, fixture] of [[source, normal], [control, other]] as const) {
-          process.chdir(cwd);
-          assert.deepEqual(stage(fixture.f, 'read'), fixture.before);
-        }
-      } finally { process.chdir(previous); }
+    const sourcesOffline = () => {
+      for (const f of [normal.f, other.f]) {
+        assert.equal(docker(['ps', '-q', '--filter', 'label=com.docker.compose.project=' + f.project]), '');
+      }
     };
+    sourcesOffline();
 
     phase = 'paired restore with a session update fault';
     process.chdir(failure);
@@ -145,7 +149,7 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
       assert.equal(docker(['volume', 'ls', '--format', '{{.Name}}']).split(/\s+/).includes(volumeName(failedTarget, db)), false);
     }
     owned.delete(failure);
-    checkSources();
+    sourcesOffline();
 
     phase = 'ordinary encrypted paired restore';
     process.chdir(target);
@@ -169,7 +173,7 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
       held: normal.before.occurrences, sessions: after.sessions,
     });
     assertRestoredSessions(normal.before.sessions, after.sessions);
-    checkSources();
+    sourcesOffline();
     const noSessionChanges = async () => {
       assert.deepEqual(stage(t, 'read'), after);
       assert.equal(await readFile(ready, 'utf8'), receipt);
@@ -182,7 +186,7 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
     await writeFile(fixtureDir + '/restore-history.json', incomplete, { mode: 0o600, flag: 'wx' });
     refused(['replay-history', String(afterSequence), String(afterSequence + 1), createHash('sha256').update(incomplete).digest('hex')]);
     await noSessionChanges();
-    checkSources();
+    sourcesOffline();
     compose(t, ['stop', ...databaseServices]);
     compose(t, ['start', '--wait', '--wait-timeout', '90', ...databaseServices]);
     checkIdentityMarker();
@@ -194,11 +198,14 @@ async function drill(targetPath: string, controlPath: string, failurePath: strin
     });
     assert.equal(reopen.status, 1);
     assert.equal(reopen.stderr.trim(), 'Dispatch reopen requires an ordinary fixture manifest.');
+    sourcesOffline();
+    compose(t, ['down']);
+    owned.delete(target);
 
     phase = 'source and independent control readback';
-    checkSources();
     for (const [cwd, fixture] of [[source, normal], [control, other]] as const) {
       process.chdir(cwd);
+      assert.deepEqual(readSource(fixture.f), fixture.before);
       assert.equal(await readFile(pairFile, 'utf8'), fixture.original);
       assert.equal(await readFile(fixtureDir + '/capture-history.json', 'utf8'), fixture.beforeHistory);
       assert.equal(run(backup, 'verify'), 'Verified synthetic AppDB and IdP backup pair.');

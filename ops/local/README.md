@@ -365,7 +365,8 @@ historical occurrences quarantined. Read-only checks compare session bindings, r
 timestamps and existing audit across repeated quarantine, incomplete history refusal and a
 retained-volume restart. The control pair contains a synthetic constraint that rejects the
 session update. Its restore must fail during quarantine and remove target resources without
-publishing readiness. Both sources and their encrypted pairs are checked independently.
+publishing readiness. The two sources stay stopped during restore and are read independently
+before and after. This also limits Docker network allocation to one fixture at a time.
 Real identity, device revocation and operating recovery remain in #131 and #82.
 
 ## Restore before dispatch and terminal export (#258)
