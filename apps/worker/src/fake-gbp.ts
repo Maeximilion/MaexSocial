@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { GbpAttempt, GbpCreateIntent, GbpObservation, GbpProviderState, GbpReadback } from '../../packages/contracts/pilot.js';
+import type { GbpAttempt, GbpCreateIntent, GbpObservation, GbpProviderState, GbpReadback } from '../../../packages/contracts/pilot.js';
 
 type Frame = { afterMs: number; candidates: readonly GbpProviderState[] };
 
@@ -10,6 +10,8 @@ interface Scenario {
   loseReply?: boolean;
 }
 
+export const providerStateDirectory = 'work/pilot/provider-state';
+
 export class FakeGbp implements GbpReadback {
   readonly policy = 'synthetic-organic-text';
   private readonly db: DatabaseSync;
@@ -17,7 +19,7 @@ export class FakeGbp implements GbpReadback {
   private readonly framesJson: string;
   private readonly loseReply: boolean;
 
-  constructor(directory = 'work/pilot/provider-state', scenario: Scenario = {}) {
+  constructor(directory = providerStateDirectory, scenario: Scenario = {}) {
     const frames = scenario.frames ?? [{ afterMs: 0, candidates: ['PROCESSING'] }];
     if (frames[0]?.afterMs !== 0 || frames.some((frame, index) =>
       !Number.isSafeInteger(frame.afterMs) || (index > 0 && frame.afterMs <= frames[index - 1]!.afterMs))) {

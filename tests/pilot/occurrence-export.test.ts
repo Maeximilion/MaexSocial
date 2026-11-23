@@ -15,7 +15,7 @@ import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { changeMembershipRole } from '../../packages/contracts/management-role-change.js';
 import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedManagementContext, seedTenant } from './fixtures.js';
 
 const clock = () => new Date('2030-01-01T10:00:00Z');

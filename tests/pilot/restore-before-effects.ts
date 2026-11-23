@@ -12,7 +12,7 @@ import { capture, type Pair } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
 import { restore } from '../../ops/local/restore.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 
 const command = 'dist/pilot/tests/pilot/restore-before-effects.js';
 const inputPath = 'work/restore-before-effects.json';

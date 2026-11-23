@@ -10,6 +10,12 @@
 
 ## Current work
 
+Bounded Task 4 [#286](https://github.com/Maeximilion/MaexSocial/issues/286) adds the
+[isolated stored-occurrence worker wake](../ops/local/README.md#isolated-text-worker-wake-286).
+The local process test records one claim and fake create for the approved revision, plus
+zero additional dispatch or budget effects from malformed wakes. Integrated acceptance
+remains under [#165](https://github.com/Maeximilion/MaexSocial/issues/165).
+
 Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) adds
 [dedicated fixture evidence for expired dispatch details](../ops/local/README.md#resolved-dispatch-detail-retention-282).
 The permanent claim slot survives a retained restart, with a minimal terminal result on the

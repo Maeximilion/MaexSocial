@@ -27,7 +27,7 @@ Docker 29.9.2 on the development host accepted internal-network port declaration
 
 Application login is a non-superuser with no role/database creation, bypass-RLS or identity-database access. It receives explicit table/column privileges, including generated-only occurrence IDs and no delete permission. Composite keys prevent cross-tenant references; they do not replace the later API's active-tenant and role checks. Approval/revision/audit snapshots are immutable. Membership and grant changes advance a version. Later tasks must atomically check current versions and serialize approval, hold/export/claim, revocation and audit. This delivery does not claim those transitions or tenant row-level read authorization.
 
-`work/pilot/provider-state/` holds the [local GBP counting fake](../../tests/pilot/fake-gbp.ts) separately from both database volumes. Each accepted `create` commits one SQLite row, even when its reply is lost. Reopening the directory retains counts and scripted observations. Task 5 must exclude this independent state from application restore.
+`work/pilot/provider-state/` holds the [local GBP counting fake](../../apps/worker/src/fake-gbp.ts) separately from both database volumes. Each accepted `create` commits one SQLite row, even when its reply is lost. Reopening the directory retains counts and scripted observations. Task 5 must exclude this independent state from application restore.
 
 From the worktree root with the pinned Node 24.22.2 and dependencies installed, run:
 
@@ -39,6 +39,31 @@ node --test dist/pilot/tests/pilot/fake-gbp.test.js
 The focused tests use fresh temporary directories and invented identifiers. The default adapter directory is created by `pilot:up`. A scenario supplies timed frames relative to acceptance, each with zero, one or several candidate states. Polling selects a frame using the injected clock and the original attempt identifiers, plus the resource name when known. The fake returns observations for worker tests. Real Manager approval, provider access and publication decisions remain separate.
 
 For a fresh run after expiry or a failed initialization, stop the fixture, preserve the complete `work/pilot/` directory under another ignored name, then run `pilot:up` again. Never repoint the manifest at an existing database or reuse a namespace with different credentials. Stopped volumes remain for deliberate recovery/cleanup. Do not print or attach manifests, generated SQL, private keys or raw logs. No certificate is installed in the host trust store. Fixture credentials and device records provide no production assurance.
+
+## Isolated text worker wake (#286)
+
+From this worktree, build and migrate a fresh ordinary fixture using the commands above.
+When local dispatch is deliberately enabled using the [checked reopen](#explicit-reopen-266),
+wake one stored global occurrence ID in its own worker process:
+
+```text
+node dist/pilot/apps/worker/src/main.js <occurrence-uuid>
+```
+
+The command binds the worker to its own worktree and local Docker fixture. It validates the
+ordinary database marker, resolves approval and destination in PostgreSQL, and mounts only
+the existing provider-state directory for writes. A successful claim commits before the local
+SQLite fake accepts a create. Later wakes use readback for the stored attempt, including
+while dispatch is stopped. The normal fake supplies PROCESSING. The command reports only
+the state, such as `in_flight`, `pending` or `denied`. Invalid inputs and fixture failures
+exit with a fixed error.
+
+Run `node --test dist/pilot/tests/pilot/worker-wake.test.js` on the migrated ordinary fixture.
+The test holds a PostgreSQL draft lock until two worker processes are waiting, then exercises
+fresh process and container invocations after stop. It compares PostgreSQL and SQLite counters
+and checks the provider-state directory across rejected structured and media wake inputs.
+The [handover](../../docs/handovers/sessions/2026-11-23-isolated-worker-wake.md) records the
+measured scope and the open integrated acceptance work.
 
 ## Private terminal text export (#252)
 
@@ -55,8 +80,7 @@ use the version-step path. Reconnecting access prevents further downloads and pr
 
 On an isolated migrated fixture, run `node --test dist/pilot/tests/pilot/occurrence-export.test.js` after
 `npm run pilot:build`. The test drives the real private operation with synthetic customer authority,
-including a deferred commit failure and a competing claim. The authenticated route, dispatch worker and
-integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
+including a deferred commit failure and a competing claim. The authenticated route and integrated delivery remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
 ## Private Manager approval withdrawal (#273)
 

@@ -14,7 +14,7 @@ import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { connectFixture, runIsolated } from '../../ops/local/fixture.js';
 import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import type { InspectIdentity } from '../../packages/contracts/pilot.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { occurrence, seedManagementContext, seedTenant } from './fixtures.js';
 
 const clock = () => new Date('2020-01-01T10:00:00Z');
@@ -245,7 +245,7 @@ test('private dispatch claims the immutable approved text once on the isolated f
       const child = spawnSync(process.execPath, ['-e', `
         const { claimDispatch } = require('./dist/pilot/apps/worker/src/dispatch.js');
         const { connectFixture } = require('./dist/pilot/ops/local/fixture.js');
-        const { FakeGbp } = require('./dist/pilot/tests/pilot/fake-gbp.js');
+        const { FakeGbp } = require('./dist/pilot/apps/worker/src/fake-gbp.js');
         const [dir, occurrenceId, mode] = process.argv.slice(1);
         const fake = new FakeGbp(dir, { loseReply: true, frames: [{ afterMs: 0, candidates: ['LIVE'] }] });
         const create = mode === 'before-create' ? () => process.exit(41) : fake.create.bind(fake);

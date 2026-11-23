@@ -8,7 +8,7 @@ import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { reconcileOccurrence } from '../../apps/worker/src/reconcile.js';
 import { compose, connectFixture, loadFixture, safeDiagnostics, usesLocalDocker, verifyContainers } from '../../ops/local/fixture.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
-import { FakeGbp } from './fake-gbp.js';
+import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 
 const control = 'dist/pilot/ops/local/dispatch-control.js';
 const stack = 'dist/pilot/ops/local/stack.js';
