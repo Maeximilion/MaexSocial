@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
-import { approveOccurrence, createDraft, editDraft, readApprovalProposal, renderDraft, renderDrafts, renderOccurrence } from '../../apps/web/src/routes/content.js';
+import { approveOccurrence, createDraft, editDraft, readApprovalProposal, renderDraft, renderDrafts, renderOccurrence, withdrawApproval } from '../../apps/web/src/routes/content.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
 import { claimExport } from '../../apps/web/src/server/occurrence-export.js';
 import { claimDispatch } from '../../apps/worker/src/dispatch.js';
@@ -10,12 +10,14 @@ import { wake } from '../../apps/worker/src/main.js';
 import { connectFixture, loadFixture } from '../../ops/local/fixture.js';
 import { eraseBoundDraft } from '../../ops/local/restore-history.js';
 import { applySourceDraftErasure } from '../../ops/local/source-draft-erasure.js';
+import { holdOccurrence } from '../../packages/contracts/occurrence.js';
+import { seedManagementContext } from './fixtures.js';
 import { binding, clock, inspect, seedDispatchApproval } from './dispatch-fixture.js';
 
 type Binding = ReturnType<typeof binding>;
 type Proposal = Awaited<ReturnType<typeof readApprovalProposal>>;
 type Draft = { draft: string; id: string; proposal: Proposal; hashes: string[] };
-export type Samples = { auth: Binding; other: Binding; drafts: Draft[]; attempts: string[] };
+export type Samples = { auth: Binding; other: Binding; drafts: Draft[]; attempts: string[]; decisions: { id: string; approval: string; state: 'held' | 'draft' }[] };
 const digest = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
 
 async function withContext<T>(auth: Binding, action: (db: Client, ctx: Awaited<ReturnType<typeof requireCustomerRequest>>) => Promise<T>) {
@@ -54,24 +56,34 @@ export async function seedSamples(): Promise<Samples> {
       drafts.push({ draft: sample.draft, id: sample.id, proposal: sample.proposal, hashes: texts.map(digest) });
     }
     await owner.query('UPDATE pilot.dispatch_control SET stopped=false WHERE singleton');
-    const attempts = [];
+    const attempts = [], decisions: Samples['decisions'] = [];
     const fake = new FakeGbp(undefined, { frames: [{ afterMs: 0, candidates: ['LIVE'] }] });
     try {
       const d = drafts[0]!;
-      for (let i = 0; i < 2; i++) {
+      for (const outcome of ['confirmed', 'unresolved', 'held', 'withdrawn']) {
         const p = await withContext(auth, async (db, ctx) => {
           const { rows: [o] } = await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
             VALUES($1,$2,$3,$4,'2020-01-01T10:00Z','UTC') RETURNING id`,
           [ctx.tenantId, d.draft, d.proposal.locationId, randomUUID()]);
           return readApprovalProposal(db, ctx, o.id);
         });
-        await approveOccurrence(connectFixture, auth, p, clock, inspect);
-        await claimDispatch(connectFixture, p.occurrenceId, fake);
-        if (i === 0) assert.equal(await wake(p.occurrenceId), 'confirmed');
-        attempts.push(p.occurrenceId);
+        const approval = await approveOccurrence(connectFixture, auth, p, clock, inspect);
+        const id = p.occurrenceId;
+        if (outcome === 'held') {
+          const context = await seedManagementContext(owner, p.tenantId, clock(), clock());
+          assert.equal(await holdOccurrence(connectFixture, { ...context, occurrenceId: id }, p.tenantId, id, 'Local hold', clock), 'held');
+          decisions.push({ id, approval, state: 'held' });
+        } else if (outcome === 'withdrawn') {
+          assert.equal(await withdrawApproval(connectFixture, auth, id, approval, clock, inspect), true);
+          decisions.push({ id, approval, state: 'draft' });
+        } else {
+          await claimDispatch(connectFixture, id, fake);
+          if (outcome === 'confirmed') assert.equal(await wake(id), 'confirmed');
+          attempts.push(id);
+        }
       }
     } finally { fake.close(); }
-    return { auth, other, drafts, attempts };
+    return { auth, other, drafts, attempts, decisions };
   } finally { await owner.end(); }
 }
 
@@ -107,7 +119,7 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       'Revision payloads differ from scoped expectations');
     const proof = await db.query(`SELECT num_nonnulls(mfa_at,created_at,grant_version,grant_active_at_approval) AS fields
       FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
-    assert.equal(proof.rowCount, i === 0 ? 3 : 1);
+    assert.equal(proof.rowCount, i === 0 ? 5 : 1);
     assert.ok(proof.rows.every(row => row.fields === (removed ? 0 : 4)));
     const { rows: [copies] } = await db.query(`SELECT count(*)::int AS n FROM (
         SELECT to_jsonb(a)::text AS body FROM pilot.approvals a WHERE tenant_id=$1 AND draft_id=$2
@@ -157,6 +169,20 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       const page = await withContext(request, (db, ctx) => renderDraft(db, ctx, d.draft, 'local'));
       assert.ok(page.includes(rows[1].text));
       if (i !== 0) assert.ok(digest((await claimExport(connectFixture, request, d.id, clock, inspect)).text) === d.hashes[1]);
+    }
+  }
+  for (const d of samples.decisions) {
+    const held = d.state === 'held';
+    const result = await db.query(`SELECT o.state,o.approval_id,to_jsonb(o)->>'restore_previous_state' AS prior,
+      (SELECT count(*)::int FROM pilot.audit a WHERE a.occurrence_id=o.id AND a.action=$2
+        AND a.approval_id IS NOT DISTINCT FROM $3::uuid) AS decisions,
+      (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=o.id) AS attempts
+      FROM pilot.occurrences o WHERE o.id=$1`, [d.id, held ? 'occurrence_hold' : 'approval_withdrawal', held ? null : d.approval]);
+    assert.deepEqual(result.rows, [{ state: target ? 'quarantined' : d.state, approval_id: held ? d.approval : null,
+      prior: target ? d.state : null, decisions: 1, attempts: 0 }]);
+    if (erased && !target) {
+      assert.equal(await wake(d.id), 'denied');
+      if (!held) assert.equal(await withdrawApproval(connectFixture, samples.auth, d.id, d.approval, clock, inspect), false);
     }
   }
   for (const [i, id] of samples.attempts.entries()) {
