@@ -149,7 +149,7 @@ async function drill() {
     assert.deepEqual(await originals(archive), prior);
     assert.deepEqual(await originals(archive + '/issued-draft-backup'), savedInterval);
     return { revision: pair.revision, authorization: results[0]!.authorizedAt, confirmedBy: results.map(r => r.confirmedBy),
-      continuedBackupDeadline: new Date(backupDeadline).toISOString(), elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 2,
+      continuedBackupDeadline: new Date(backupDeadline).toISOString(), elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 3,
       restoredDatabases: target.verifiedDatabases, held: target.quarantined, postSnapshotRemoved: later.removed, postSnapshotAuthorizedAt: later.authorizedAt, postSnapshotConfirmedBy: later.confirmedBy, historyApplied: [3, 0] };
   } finally {
     if (active && (await loadFixture(true)).id === active.id) compose(active, ['down']);

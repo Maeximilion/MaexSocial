@@ -18,7 +18,7 @@ import { binding, clock, inspect, seedDispatchApproval } from './dispatch-fixtur
 type Binding = ReturnType<typeof binding>;
 type Proposal = Awaited<ReturnType<typeof readApprovalProposal>>;
 type Draft = { draft: string; id: string; proposal: Proposal; hashes: string[] };
-export type Samples = { auth: Binding; other: Binding; drafts: Draft[]; attempts: string[]; decisions: { id: string; approval: string; state: 'held' | 'draft' }[] };
+export type Samples = { auth: Binding; other: Binding; drafts: Draft[]; attempts: string[]; rejected: string; decisions: { id: string; approval: string; state: 'held' | 'draft' }[] };
 const digest = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
 
 async function withContext<T>(auth: Binding, action: (db: Client, ctx: Awaited<ReturnType<typeof requireCustomerRequest>>) => Promise<T>) {
@@ -59,9 +59,11 @@ export async function seedSamples(): Promise<Samples> {
     await owner.query('UPDATE pilot.dispatch_control SET stopped=false WHERE singleton');
     const attempts = [], decisions: Samples['decisions'] = [];
     const fake = new FakeGbp(undefined, { frames: [{ afterMs: 0, candidates: ['LIVE'] }] });
+    let rejected = '';
+    const reject = new FakeGbp(undefined, { frames: [{ afterMs: 0, candidates: ['REJECTED'] }] });
     try {
       const d = drafts[0]!;
-      for (const outcome of ['confirmed', 'unresolved', 'held', 'withdrawn']) {
+      for (const outcome of ['confirmed', 'unresolved', 'rejected', 'held', 'withdrawn']) {
         const p = await withContext(auth, async (db, ctx) => {
           const { rows: [o] } = await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
             VALUES($1,$2,$3,$4,'2020-01-01T10:00Z','UTC') RETURNING id`,
@@ -77,14 +79,19 @@ export async function seedSamples(): Promise<Samples> {
         } else if (outcome === 'withdrawn') {
           assert.equal(await withdrawApproval(connectFixture, auth, id, approval, clock, inspect), true);
           decisions.push({ id, approval, state: 'draft' });
+        } else if (outcome === 'rejected') {
+          await claimDispatch(connectFixture, id, reject);
+          assert.equal(await wake(id), 'rejected');
+          rejected = id;
         } else {
           await claimDispatch(connectFixture, id, fake);
           if (outcome === 'confirmed') assert.equal(await wake(id), 'confirmed');
           attempts.push(id);
         }
       }
-    } finally { fake.close(); }
-    return { auth, other, drafts, attempts, decisions };
+    } finally { fake.close(); reject.close(); }
+    assert.ok(rejected);
+    return { auth, other, drafts, attempts, rejected, decisions };
   } finally { await owner.end(); }
 }
 
@@ -125,7 +132,7 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       'Revision payloads differ from scoped expectations');
     const proof = await db.query(`SELECT num_nonnulls(mfa_at,created_at,grant_version,grant_active_at_approval) AS fields
       FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
-    assert.equal(proof.rowCount, i === 0 ? 5 : 1);
+    assert.equal(proof.rowCount, i === 0 ? 6 : 1);
     assert.ok(proof.rows.every(row => row.fields === (removed ? 0 : 4)));
     const authority = await db.query(`SELECT num_nonnulls(membership_id,membership_version,tenant_version) AS authority,
       num_nonnulls(location_id,due_at,timezone,provider_location) AS destination FROM pilot.approvals
@@ -205,6 +212,19 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       assert.equal(await wake(d.id), 'denied');
       if (!held) assert.equal(await withdrawApproval(connectFixture, samples.auth, d.id, d.approval, clock, inspect), false);
     }
+  }
+  const rejected = await db.query(`SELECT a.outcome,a.details_retired,
+    num_nonnulls(p.location_id,p.due_at,p.timezone,p.provider_location) AS destination
+    FROM pilot.attempts a JOIN pilot.occurrences o ON (o.tenant_id,o.id)=(a.tenant_id,a.occurrence_id)
+    JOIN pilot.approvals p ON (p.tenant_id,p.occurrence_id,p.id)=(o.tenant_id,o.id,o.approval_id)
+    WHERE o.id=$1`, [samples.rejected]);
+  assert.equal(rejected.rows[0].outcome, 'rejected');
+  assert.equal(rejected.rows[0].destination, erased ? 0 : 4);
+  if (!target) {
+    assert.equal(await wake(samples.rejected), 'rejected');
+    const fake = new FakeGbp();
+    try { assert.equal(fake.createCount(samples.drafts[0]!.proposal.tenantId, samples.rejected), 1); }
+    finally { fake.close(); }
   }
   for (const [i, id] of samples.attempts.entries()) {
     const readBinding = async () => (await db.query(`SELECT a.outcome,p.provider_location
