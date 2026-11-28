@@ -317,7 +317,8 @@ async function seedAndRetire(db: Client) {
   const exportTarget = await seedDispatchApproval(binding(), false);
   await verifyExport(db, exportTarget, true);
   const controls = [incident, ambiguous, pending, unknown, legacy, holdControl, exportTarget];
-  const snapshots = await Promise.all(controls.map(target => preservedEvidence(db, target.id)));
+  const snapshots = [];
+  for (const target of controls) snapshots.push(await preservedEvidence(db, target.id));
   for (const control of controls) assert.equal(await retireDispatchDetails(control.id, farFuture), 'ineligible');
   await db.query('DROP TRIGGER witness_claim_clock ON pilot.attempts; DROP FUNCTION public.witness_claim_clock()');
   await db.query('ALTER TABLE pilot.fixture_audit_disposition RENAME TO unavailable_test');
@@ -329,13 +330,14 @@ async function seedAndRetire(db: Client) {
   await db.query(`UPDATE pilot.fixture_audit_disposition SET event_at=event_at-interval '1 microsecond' WHERE audit_id=$1`,
     [confirmed.event]);
   const fixture = await loadFixture();
-  await db.query(`INSERT INTO public.fixture_identity(id,purpose,restore_target)
-    VALUES('other-dispatch-fixture','dispatch-retention',false)`);
   await db.query("UPDATE pilot.fixture_audit_disposition SET fixture_id='other-dispatch-fixture' WHERE audit_id=$1",
     [confirmed.event]);
   assert.equal(await retireDispatchDetails(confirmed.id, farFuture), 'ineligible');
+  await db.query(`INSERT INTO public.fixture_identity(id,purpose,restore_target)
+    VALUES('other-dispatch-fixture','dispatch-retention',false)`);
+  try { await assert.rejects(retireDispatchDetails(confirmed.id, farFuture), /Fixture database identity mismatch/); }
+  finally { await db.query("DELETE FROM public.fixture_identity WHERE id='other-dispatch-fixture'"); }
   await db.query('UPDATE pilot.fixture_audit_disposition SET fixture_id=$1 WHERE audit_id=$2', [fixture.id, confirmed.event]);
-  await db.query("DELETE FROM public.fixture_identity WHERE id='other-dispatch-fixture'");
   const unrelated = await preservedEvidence(db, confirmed.id);
   for (const target of targets) {
     await proveExpiry(db, target);
