@@ -401,7 +401,11 @@ The owner appends records to the same compact JSON interval. Earlier permits pin
 
 The private operator command is `node dist/pilot/ops/local/source-draft-erasure.js SEQUENCE`.
 It accepts an existing instruction on a disposable backup source. It locks the draft,
-erases every revision payload and clears four historical approval fields in one transaction.
+locks its occurrences, erases every revision payload and minimizes the approval rows in one transaction.
+A terminal export loses its approver, schedule and destination snapshot. An original unresolved
+attempt keeps the approved provider destination until readback settles. Current and withdrawn
+approvals retain the authority required for withdrawal or invalidation. The [field inventory and
+physical test](../../docs/handovers/sessions/2026-11-28-erased-approval-minimization.md) list the retained keys and open integration evidence.
 The receipt commits with the updates. A post-commit observation bounds the elapsed time from
 authorization on the same database clock. A repeated command reports the existing application.
 The operator invokes the command manually. See the [Task 5 evidence](../../docs/handovers/sessions/2026-11-28-authorized-draft-erasure.md)
