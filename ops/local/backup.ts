@@ -100,6 +100,7 @@ const forwardAppSchemas = [
   '4541e90e1700eeb4d33a2b6cccfec22a21b952fafa2fd924cdc5f9c527894b5e', // 011
   '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13', // 012
   '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
+  '459bf0884e01499bfc2568026aa24b728776efae865932aa9766bb4cdc7cf341', // 014
 ];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,
@@ -250,7 +251,7 @@ function query(container: Container, db: Database, sql: string): string {
     '-U', db.owner, '-d', db.database, '-c', sql]);
 }
 
-async function captureHistory(f: Fixture, app: Container): Promise<NonNullable<Pair['historyAnchor']>> {
+async function captureHistory(f: Fixture, app: Container, disposable: boolean): Promise<NonNullable<Pair['historyAnchor']>> {
   const db = databases[0];
   const tenantId = randomUUID(), prior = randomUUID(), draft = randomUUID();
   query(app, db, `BEGIN;
@@ -282,6 +283,7 @@ async function captureHistory(f: Fixture, app: Container): Promise<NonNullable<P
   const evidenceSha256 = createHash('sha256').update(evidence).digest('hex');
   query(app, db, `ALTER TABLE public.fixture_identity
     ADD COLUMN restore_history_after bigint NOT NULL DEFAULT ${through},
+    ADD COLUMN disposable_backup boolean NOT NULL DEFAULT ${disposable},
     ADD COLUMN restore_history_evidence text NOT NULL DEFAULT '${evidenceSha256}'`);
   return { after: through, evidenceSha256 };
 }
@@ -355,7 +357,7 @@ export async function capture(disposable: boolean, seed?: (fixture: Fixture) => 
     const [app, identity] = databases;
     const appContainer = sources.get(app.service)!;
     if (query(appContainer, app, 'SELECT id FROM public.fixture_identity') !== f.id) throw new Error('AppDB fixture identity mismatch.');
-    const historyAnchor = await captureHistory(f, appContainer);
+    const historyAnchor = await captureHistory(f, appContainer, disposable);
     const schema = docker(['exec', '--user', 'postgres', appContainer.Id, 'pg_dump', '-U', app.owner, '-d', app.database,
       '--schema=pilot', '--schema-only', '--restrict-key=MaexSocialColdBackupSchema']);
     const appliedAppSchema = createHash('sha256').update(schema).digest('hex');

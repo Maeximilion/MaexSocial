@@ -10,6 +10,7 @@ import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { loadBackupKey } from '../../ops/local/backup-crypto.js';
 import { capture, type Pair } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
+import { applySourceFactErasure } from '../../ops/local/source-fact-erasure.js';
 import { restore } from '../../ops/local/restore.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
@@ -64,7 +65,8 @@ async function inspectHistory(revoke?: string) {
         AND tgname='immutable_business_facts') AS trigger,
       marker.restore_history_after::int AS after, marker.restore_history_evidence AS evidence,
       to_jsonb(marker)->>'restore_history_source_id' AS source,
-      to_jsonb(marker)->>'restore_history_digest' AS receipt
+      COALESCE(to_jsonb(marker)->>'restore_history_digest',
+        (SELECT history_digest FROM pilot.fixture_fact_erasure WHERE fixture_id=marker.id AND applied_xid IS NOT NULL)) AS receipt
       FROM pilot.dispatch_control d CROSS JOIN public.fixture_identity marker`);
     return { facts, devices, state };
   } finally { await db.end(); }
@@ -91,7 +93,7 @@ async function readState(c: Case, target: boolean) {
 
 async function runStage(stage: string) {
   const input = JSON.parse(await readFile(inputPath, 'utf8')) as
-    { a: CustomerRequest; b: CustomerRequest; cases: [HistoryCase, HistoryCase] };
+    { a: CustomerRequest; b: CustomerRequest; cases: [HistoryCase, HistoryCase]; permitDigest?: string };
   if (stage === 'seed') {
     const cases = [await seedHistory(await seedDispatchApproval(input.a, true), 'target'),
       await seedHistory(await seedDispatchApproval(input.b, false), 'control')];
@@ -100,6 +102,52 @@ async function runStage(stage: string) {
     return;
   }
   const [a, b] = input.cases;
+  if (stage === 'erase' || stage === 'issue-erasure' || stage === 'abort-erasure' || stage === 'refuse-erasure') {
+    if (stage === 'erase') {
+      console.log(JSON.stringify(await applySourceFactErasure()));
+      return;
+    }
+    if (stage === 'refuse-erasure') {
+      await assert.rejects(applySourceFactErasure, /Source erasure|incompatible restore history/);
+    } else {
+      const f = await loadFixture();
+      assert.equal(f.purpose, 'backup');
+      assert.equal(f.restoreTarget, undefined);
+      const db = await connectFixture(true);
+      try {
+        if (stage === 'issue-erasure') {
+          // Model the independent authority. The operation itself can only consume this fixed scope.
+          const issued = await db.query(`INSERT INTO pilot.fixture_fact_erasure(fixture_id,tenant_id,location_id,sequence,history_digest)
+            SELECT id,$2,$3,restore_history_after+1,$4 FROM public.fixture_identity
+            WHERE id=$1 AND purpose='backup' AND NOT restore_target AND disposable_backup
+            ON CONFLICT (fixture_id) DO UPDATE SET history_digest=excluded.history_digest
+              WHERE pilot.fixture_fact_erasure.applied_xid IS NULL`, [f.id, a.tenant, a.location, input.permitDigest]);
+          assert.equal(issued.rowCount, 1);
+        } else {
+          const app = await connectFixture();
+          try {
+            await assert.rejects(app.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',
+              [a.tenant,a.location]), { code: '42501' });
+            await assert.rejects(app.query('UPDATE pilot.fixture_fact_erasure SET applied_xid=pg_current_xact_id()'), { code: '42501' });
+          } finally { await app.end(); }
+          await assert.rejects(db.query('UPDATE pilot.business_fact_revisions SET text=text WHERE location_id=$1',
+            [a.location]), { code: '23514' });
+          await db.query('BEGIN');
+          try {
+            await db.query('UPDATE pilot.fixture_fact_erasure SET applied_xid=pg_current_xact_id() WHERE fixture_id=$1', [f.id]);
+            await assert.rejects(db.query('DELETE FROM pilot.business_fact_revisions WHERE location_id=$1',
+              [b.location]), { code: '23514' });
+          } finally { await db.query('ROLLBACK'); }
+          await db.query(`CREATE CONSTRAINT TRIGGER reject_test_commit AFTER UPDATE ON pilot.fixture_fact_erasure
+            DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION pilot.reject_mutation()`);
+          try { await assert.rejects(applySourceFactErasure, { code: '23514' }); }
+          finally { await db.query('DROP TRIGGER reject_test_commit ON pilot.fixture_fact_erasure'); }
+        }
+      } finally { await db.end(); }
+    }
+    console.log('null');
+    return;
+  }
   if (stage === 'history' || stage === 'revoke-device') {
     const fixture = await loadFixture();
     const revoke = stage === 'revoke-device';
@@ -167,7 +215,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
   const revision = await freshWorktree(source);
   assert.equal(await freshWorktree(target), revision, 'Source and target builds must use the same revision');
   await loadBackupKey(target);
-  const input = { a: binding(), b: binding(), cases: [] as HistoryCase[] };
+  const input = { a: binding(), b: binding(), cases: [] as HistoryCase[], permitDigest: undefined as string | undefined };
   const fakeDir = resolve('work/restore-before-effects-fake');
   const save = (flag: 'w' | 'wx') => writeFile(inputPath, JSON.stringify(input), { flag, mode: 0o600 });
   const stage = (fixture: Fixture, name: string) => {
@@ -223,11 +271,37 @@ async function drill(targetDir: string, eraseSource: boolean) {
     stage(f, 'revoke-device');
     const revokedDevices = snapshot.devices.map(row => row.id === a.device ? { ...row, active: false, version: 2 } : row);
     assert.deepEqual(stage(f, 'history'), { ...snapshot, devices: revokedDevices });
+    const controls = snapshot.facts.filter(row => row.location_id === b.location);
+    let sourceFacts = snapshot.facts;
     if (eraseSource) {
-      const current = stage(f, 'history') as typeof snapshot;
-      assert.equal(current.facts.filter(row => row.tenant_id === a.tenant && row.location_id === a.location).length, 0,
-        'Authorized source erasure must remove both A revisions before restore');
-      assert.deepEqual(current.facts, snapshot.facts.filter(row => row.location_id === b.location));
+      const prior = { ...snapshot, devices: revokedDevices };
+      stage(f, 'refuse-erasure');
+      const issue = async (bytes: string) => {
+        await writeFile(replayPath, bytes, { mode: 0o600 });
+        input.permitDigest = sha256(bytes);
+        await save('w');
+        stage(f, 'issue-erasure');
+      };
+      for (const invalid of [
+        { ...history, fixtureId: 'wrong-source' },
+        { ...history, records: [{ ...history.records[0], tenantId: b.tenant }, history.records[1]] },
+        { ...history, records: [{ ...history.records[0], tenantId: b.tenant, id: b.location }, history.records[1]] },
+      ]) {
+        await issue(JSON.stringify(invalid));
+        stage(f, 'refuse-erasure');
+        assert.deepEqual(stage(f, 'history'), prior);
+      }
+      await issue(historyBytes);
+      stage(f, 'abort-erasure');
+      assert.deepEqual(stage(f, 'history'), prior);
+      for (const removed of [2, 0]) {
+        assert.deepEqual(stage(f, 'erase'), { sequence: snapshotSequence + 1, removed });
+        const current = stage(f, 'history') as typeof snapshot;
+        assert.equal(current.facts.filter(row => row.tenant_id === a.tenant && row.location_id === a.location).length, 0,
+          'Authorized source erasure must remove both A revisions before restore');
+        assert.deepEqual(current, { facts: controls, devices: revokedDevices, state: { ...prior.state, receipt: historyDigest } });
+        sourceFacts = current.facts;
+      }
     }
     const before = stage(f, 'source');
     for (const c of before) {
@@ -258,6 +332,18 @@ async function drill(targetDir: string, eraseSource: boolean) {
       } finally { fake.close(); }
     };
     checkFake();
+    const finalSource = { facts: sourceFacts, devices: revokedDevices,
+      state: { ...snapshot.state, stopped: false, receipt: eraseSource ? historyDigest : null } };
+    assert.deepEqual(stage(f, 'history'), finalSource);
+    if (eraseSource) {
+      compose(f, ['stop']);
+      assert.equal(compose(f, ['ps', '--status', 'running', '-q']), '');
+      for (const service of ['postgres', 'identity-db']) {
+        const status = JSON.parse(compose(f, ['ps', '-a', '--format', 'json', service]));
+        assert.equal(status.State, 'exited');
+        assert.equal(status.ExitCode, 0);
+      }
+    }
     const archive = resolve(fixturePath);
     phase = 'offline paired restore';
     process.chdir(target);
@@ -307,7 +393,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
     refuseReplay('0'.repeat(64));
 
     const appliedState = {
-      facts: snapshot.facts.filter(row => row.location_id === b.location),
+      facts: eraseSource ? sourceFacts : controls,
       devices: revokedDevices,
       state: { ...held.state, receipt: historyDigest },
     };
@@ -332,10 +418,10 @@ async function drill(targetDir: string, eraseSource: boolean) {
 
     phase = 'archive, source and fake comparison';
     process.chdir(source);
-    assert.deepEqual(stage(f, 'source'), after);
-    assert.deepEqual(stage(f, 'history'), {
-      ...snapshot, devices: revokedDevices, state: { ...snapshot.state, stopped: false },
-    });
+    if (!eraseSource) {
+      assert.deepEqual(stage(f, 'source'), after);
+      assert.deepEqual(stage(f, 'history'), finalSource);
+    }
     assert.ok((await readFile(captureHistoryPath)).equals(captureHistory), 'Capture history changed');
     assert.equal(await readFile(historyPath, 'utf8'), historyBytes);
     checkFake();
@@ -343,7 +429,8 @@ async function drill(targetDir: string, eraseSource: boolean) {
     assert.equal(node('dist/pilot/ops/local/backup.js', 'verify'), 'Verified synthetic AppDB and IdP backup pair.');
     return { revision, source: after, target: expected, fakeCreates: 1,
       targetAuthDenials: [...first.authDenials, ...repeated.authDenials], ...quarantine,
-      history: { snapshotSequence, sourceFactsRetained: 4, targetFactsRemoved: 2, controlFactsRetained: 2,
+      history: { snapshotSequence, sourceFactsRetained: sourceFacts.length, sourceRemoved: snapshot.facts.length - sourceFacts.length,
+        controlDigest: sha256(JSON.stringify(controls)), journalDigest: historyDigest, targetFactsRemoved: 2, controlFactsRetained: 2,
         revokedDeviceVersion: 2, controlDeviceVersion: 1, invalidReplaysRefused: 3,
         applied: 2, repeatApplied: 0, restartApplied: 0, originalInputsVerified: true } };
   } catch (error) {
@@ -374,7 +461,8 @@ async function drill(targetDir: string, eraseSource: boolean) {
 const [argument, ...extra] = process.argv.slice(2);
 const inRunner = process.env.PILOT_CONTAINER === '1';
 const eraseSource = !inRunner && extra.length === 1 && extra[0] === '--erase-source';
-if (!argument || (extra.length && !eraseSource) || (inRunner && !['seed', 'deliver', 'source', 'target', 'history', 'revoke-device'].includes(argument))) {
+if (!argument || (extra.length && !eraseSource) || (inRunner && !['seed', 'deliver', 'source', 'target', 'history', 'revoke-device',
+  'issue-erasure', 'erase', 'refuse-erasure', 'abort-erasure'].includes(argument))) {
   throw new Error('Run from a fresh built source worktree with one fresh built target worktree path.');
 }
 (inRunner ? runStage(argument) : drill(argument, eraseSource).then(result => console.log(JSON.stringify(result)))).catch(error => {
