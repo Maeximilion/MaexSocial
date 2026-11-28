@@ -37,6 +37,11 @@ directory. Standard shutdown stopped the containers and retained disposable volu
 
 ## Gate
 
+The first candidate after the Claude fixes failed the synthetic cold-pair test. The new
+fixture selector changed the bootstrap source digest while preserving realm and IdP
+configuration. Adding that exact digest to the existing compatibility set restored all
+five cold-pair tests, including their rejection cases. Existing backup files were untouched.
+
 This is on-demand local evidence for the grant subcase. Integrated [G3 Task 5](https://github.com/Maeximilion/MaexSocial/issues/166)
 and [G3](https://github.com/Maeximilion/MaexSocial/issues/16) remain open. Deployed
 scheduling, credential custody, provider consent and media erasure remain outside the drill.
