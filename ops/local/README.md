@@ -395,7 +395,7 @@ From a clean, built task checkout with fresh fixture paths, set the separate pri
 `MAEX_COLD_BACKUP_KEY_FILE` as for the encrypted backup drill and run
 `node dist/pilot/tests/pilot/draft-erasure.js`. The drill creates two new local databases
 and restores the captured pair into a separate, offline Docker project in the same checkout.
-Its fixture owner issues two exact draft instructions. Each binds the source, tenant,
+Its fixture owner issues three exact draft instructions, including one for a draft created after capture. Each binds the source, tenant,
 draft, sequence, journal digest and millisecond timestamp on the source database clock.
 The independently retained journal precedes replay. A location fact deletion has its own event type.
 

@@ -5,33 +5,34 @@
 [Issue #312](https://github.com/Maeximilion/MaexSocial/issues/312) supplies local draft-payload
 evidence for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The implementation
 and physical drill ran in Maeximilion/MaexSocial on `dev-codex/312-authorized-draft-erasure`.
-At work head `5c344f9d3c4fcdf268c327191bb97bc4e922d86c`, the PR was pending serial integration.
+The physical regression ran on `f894d98b9b83d1fa8d369d3e6df13429d9cdedab` in [PR #319](https://github.com/Maeximilion/MaexSocial/pull/319) after the initial automatic review.
 Codex GPT-6.2 Astra High implemented this slice. The PR records the subsequent actual Claude
 API review, integration base, candidate checks and thread disposition.
 
 ## Artifacts
 
 The [private operator command and physical drill](../../../ops/local/README.md#authorized-draft-text-erasure-312)
-use Node 24.22.2 and npm 11.19.1. Four new synthetic drafts each had two distinct revisions.
+use Node 24.22.2 and npm 11.19.1. Four drafts in the snapshot each had two distinct revisions. A fifth draft with one revision was created after capture.
 One selected draft had a dispatch-eligible occurrence, a confirmed attempt, an unresolved
 attempt, a management hold and a withdrawn approval. The other had an already committed private export. Same-tenant and other-tenant controls
 each had an authorized repeatable download.
 
 | Observation on the above work head | Result |
 | --- | --- |
-| Source database authorization, UTC | 13:54:35.598 |
-| Committed purge confirmed by the source database, UTC | 13:54:50.366 and 13:54:50.445 |
-| Authorization to confirmed removal | 14,768 ms and 14,847 ms |
+| Source database authorization, UTC | 14:01:59.610 |
+| Committed purge confirmed by the source database, UTC | 14:02:13.900 and 14:02:13.978 |
+| Authorization to confirmed removal | 14,290 ms and 14,368 ms |
 | Scoped revision payloads | 4 present before, 0 present after source purge and target replay |
 | Unaffected payloads | 4 matched their original digests on the source and the restored AppDB |
 | Approved snapshots | 6 selected approvals lost 4 historical proof/grant fields each. Both control approvals retained all four |
 | Provider outcomes | 2 original fake creates, 0 further creates. The confirmed result survived. The open attempt reached confirmed by readback |
 | Holds and withdrawals | The held and withdrawn occurrences kept the original decision and zero attempts. Repeating withdrawal added zero decisions |
-| Continued physical backup | The format-4 copy inherited the original deadline of 2026-12-28T13:54:23.676Z |
-| Offline recovery | 2 encrypted clusters restored, 13 occurrences quarantined, 2 events applied, 0 on replay after restart |
+| Continued physical backup | The format-4 copy inherited the original deadline of 2026-12-28T14:01:47.918Z |
+| Draft created after capture | Its single revision was erased on the source by 14:02:15.571Z, 15,961 ms after authorization. Its absence on the offline target satisfied this event without an insert |
+| Offline recovery | 2 encrypted clusters restored, 13 occurrences quarantined, 3 events processed, 0 on replay after restart |
 
 On the preceding integrated code `b2157f5`, migration up/down/up, a populated downgrade refusal and historical approval upgrade passed.
-The export suite passed there. On the final integrated code above, all five cold-pair tests passed,
+The export suite passed there. On integrated code `5c344f9`, all five cold-pair tests passed,
 including the historical stack fingerprint and both schema compatibility directions. The Python foundation suite ran 134 tests
 with 32 skips. The preceding implementation on the #307 base passed all 63 pilot tests.
 
