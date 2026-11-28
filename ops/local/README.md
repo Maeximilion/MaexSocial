@@ -391,6 +391,13 @@ it reads the pair's actual history sequence, writes a separate two-event interva
 and revokes the first source device through the fixture-owner control. The source retains
 all four fact revisions. The deletion record is a synthetic instruction for recovery.
 
+To apply the deletion to the continuing source as well, add `--erase-source` to the drill
+command. This variant needs another fresh disposable pair. Its synthetic issuer pins the
+journal digest, sequence, tenant and location in the owner-only instruction table.
+The source checks both fixture markers, locks the instruction and location, and commits
+the erasure and receipt together. The drill stops the source before offline import.
+Both variants use the same independent replay format and preserve the control location.
+
 The ordinary importer restores both databases, all four revisions and both active devices
 into the offline target. Missing history, a correctly hashed incomplete interval, and a wrong
 digest each leave the target held without a replay receipt. The complete source-bound interval
