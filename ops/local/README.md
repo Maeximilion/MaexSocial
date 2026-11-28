@@ -204,12 +204,18 @@ Keep the pair and the fixture's generated configuration private for [Task 5](htt
 
 ## Rolling expiry of disposable backup pairs (#250)
 
-New pairs record the UTC snapshot time once the cold source has stopped. Verify and paired restore
-refuse new access at or after that instant plus 30 × 24 hours. The deadline uses elapsed UTC time
-regardless of local time or daylight saving changes. Legacy pairs whose format carries no capture
-time remain eligible for compatible offline verification and quarantine with unknown retention
-eligibility. A copy's filesystem timestamps do not establish age. History replay still requires
-the independent capture evidence and replay interval described below.
+A fresh pair records its UTC capture time after the source stops. Formats 2 and 3 expire
+30 elapsed days after capture. Format 1 has no trustworthy capture time and remains eligible
+for compatible offline inspection and quarantine with unknown retention eligibility.
+
+New disposable format-3 pairs authenticate their capture time as `lineageCapturedAt`.
+A continued format-4 pair records its own actual `capturedAt` and inherits the authenticated
+`lineageCapturedAt` from its parent. Both PostgreSQL system identifiers, catalog versions
+and the original capture journal must match. At the lineage start plus 30 elapsed days,
+capture publication, verification and restore admission refuse the pair. Older readers
+refuse format 4. Existing format-3 pairs without the lineage start retain their recorded
+lifetime and cannot seed another capture. Historical copies require separate disposition.
+History replay requires the independent capture evidence and replay interval described below.
 
 To test physical expiry, create a fresh disposable pair in its own clean local worktree:
 
@@ -220,7 +226,7 @@ npm run pilot:backup -- expire
 
 Run the second command in that same worktree at or after the recorded deadline. It accepts no
 path, touches only the two matching archive files in that fixture's cold-backup directory, and
-retains the manifest and its authentication tag for safe retries. Format 3 authenticates the
+retains the manifest and its authentication tag for safe retries. Formats 3 and 4 authenticate the
 expiry decision before removing either archive. Fixture volumes are outside the expiry operation. Preserve
 the #216 reference and existing backups. Copy-wide expiry after online purge, production custody,
 provider caches and integrated recovery acceptance remain in [#166](https://github.com/Maeximilion/MaexSocial/issues/166)
@@ -309,7 +315,7 @@ A separately authorized release decision remains in [Task 5](https://github.com/
 
 Run this in a fresh local worktree with no `work/pilot`. Supply a private copy of the source fixture
 directory containing `fixture.json`, `compose.env`, and `cold-backup/` with the pair manifest and
-both archives. For format 3 include `pair.auth` and point `MAEX_COLD_BACKUP_KEY_FILE` to the separate
+both archives. For formats 3 and 4 include `pair.auth` and point `MAEX_COLD_BACKUP_KEY_FILE` to the separate
 key outside the checkout and the copy. Legacy formats 1 and 2 retain their private offline path
 with the original TAR filenames. If the legacy manifest records the generated IdP configuration fingerprint, include the
 copy's `keycloak.conf` and `keycloak-realm.json`. Keep the original configuration, files and volumes
@@ -320,7 +326,7 @@ private and intact. Use the cached pinned images on the local Docker socket.
     npm run pilot:down
 
 The command checks the pair identity, pinned builds, fixture configuration, schema fingerprints
-and both archive hashes before creating storage. Format 3 also authenticates the manifest and
+and both archive hashes before creating storage. Formats 3 and 4 also authenticate the manifest and
 both archives before creating storage. The isolated importer stages each streamed TAR in a
 bounded container tmpfs and opens it only after the host authenticates the entire stream and
 sends the completion digest. Each cluster is extracted and checked without a network connection. The command checks the captured AppDB and IdP records and their live schema
@@ -421,11 +427,13 @@ at the same revision and provision the same external disposable key. Run from th
 
     node dist/pilot/tests/pilot/restore-before-effects.js <first-target> --last-copy-expiry <later-target>
 
-This variant applies the source erasure, cold-copies both continuing volumes again, and imports
-both pairs offline. It verifies each capture deadline to the millisecond and expires only the
-earlier disposable pair. A one-run synthetic fact marker distinguishes remaining archive bytes
-from rows visible to SQL after restore. The result reports booleans, counts and elapsed times.
-See the [measured retention gap](../../docs/handovers/sessions/2026-11-28-last-copy-expiry.md).
+This variant applies the source erasure, captures both continuing volumes twice, and imports
+the original and first later pair offline. The three pairs share the original cutoff.
+It tests verification, restore admission and explicit expiry at controlled instants while
+keeping the host clock intact. It explicitly removes all six owned ciphertext files and
+checks the retained metadata on retry. A synthetic marker identifies affected archives.
+The [earlier drill](../../docs/handovers/sessions/2026-11-28-last-copy-expiry.md) records the
+capture-only deadline on the previous reader.
 
 The ordinary importer restores both databases, all four revisions and both active devices
 into the offline target. Missing history, a correctly hashed incomplete interval, and a wrong
