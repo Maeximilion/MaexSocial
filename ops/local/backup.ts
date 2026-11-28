@@ -330,6 +330,48 @@ function cleanRevision(): string {
   return git('rev-parse', 'HEAD');
 }
 
+type CaptureMetadata = Pick<Pair, 'fixtureId' | 'revision' | 'compatibility' | 'appliedAppSchema'
+  | 'identitySchema' | 'postgresImage' | 'historyAnchor' | 'disposable'>;
+
+async function writeStoppedPair(f: Fixture, sources: Map<string, Container>, pending: string, destination: string,
+  key: KeyObject, metadata: CaptureMetadata): Promise<void> {
+  const before = stoppedState(f, sources);
+  const capturedAt = new Date().toISOString();
+  const archives: Pair['archives'] = {};
+  for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
+  if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
+  const pair: Pair = { ...metadata, format: 3, capturedAt, archives };
+  await sealManifest(pending, pair, key);
+  await verifyPair(pending, f.id, await compatibility(f), pair, key);
+  if (cleanRevision() !== metadata.revision) throw new Error('The source revision changed during capture.');
+  await writeFile(join(pending, 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
+  await rename(pending, destination);
+}
+
+// The physical drill continues its own disposable source without reinitializing or reseeding either database.
+export async function captureContinuedFixture(expectedId: string, destination: string): Promise<void> {
+  const f = await loadFixture();
+  if (f.id !== expectedId || f.purpose !== 'backup' || f.restoreTarget || !usesLocalDocker()) {
+    throw new Error('Continued capture requires the original local backup fixture.');
+  }
+  const original: Pair = JSON.parse(await readFile(join(directory, 'pair.json'), 'utf8'));
+  const key = await loadBackupKey();
+  if (original.format !== 3 || !original.disposable || original.revision !== cleanRevision()) {
+    throw new Error('Continued capture requires a disposable encrypted pair at the same revision.');
+  }
+  await verifyPair(directory, f.id, await compatibility(f), original, key);
+  const sources = containers(f);
+  validateDatabases(f, sources, docker(['image', 'inspect', '--format', '{{.Id}}', postgresImage]));
+  const pending = destination + '.pending';
+  await mkdir(pending, { mode: 0o700 });
+  try {
+    await writeStoppedPair(f, sources, pending, destination, key, original);
+  } catch (error) {
+    await rm(pending, { recursive: true, force: true });
+    throw error;
+  }
+}
+
 export async function capture(disposable: boolean, seed?: (fixture: Fixture) => void): Promise<void> {
   const revision = cleanRevision();
   const key = await loadBackupKey();
@@ -370,20 +412,11 @@ export async function capture(disposable: boolean, seed?: (fixture: Fixture) => 
       + "E'\\n' ORDER BY orderexecuted), 'UTF8')), 'hex') FROM databasechangelog");
 
     compose(f, ['stop']);
-    const before = stoppedState(f, sources);
-    stopped = true;
-    const capturedAt = new Date().toISOString();
-    const archives: Pair['archives'] = {};
-    for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
-    if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
-    const pair: Pair = { format: 3, capturedAt, ...(disposable ? { disposable: true } : {}),
+    await writeStoppedPair(f, sources, pending, directory, key, {
       fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
-      postgresImage, historyAnchor, archives };
-    await sealManifest(pending, pair, key);
-    await verifyPair(pending, f.id, await compatibility(f), pair, key);
-    if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
-    await writeFile(join(pending, 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
-    await rename(pending, directory);
+      postgresImage, historyAnchor, ...(disposable ? { disposable: true } : {}),
+    });
+    stopped = true;
     published = true;
   } finally {
     try { if (!stopped) compose(f, ['stop']); }

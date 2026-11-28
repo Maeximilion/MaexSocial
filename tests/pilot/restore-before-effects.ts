@@ -13,6 +13,7 @@ import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers
 import { applySourceFactErasure } from '../../ops/local/source-fact-erasure.js';
 import { restore } from '../../ops/local/restore.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
+import { captureAfterPurge, proveExpiry } from './final-copy-expiry.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 
 const command = 'dist/pilot/tests/pilot/restore-before-effects.js';
@@ -66,7 +67,7 @@ async function inspectHistory(revoke?: string) {
       marker.restore_history_after::int AS after, marker.restore_history_evidence AS evidence,
       to_jsonb(marker)->>'restore_history_source_id' AS source,
       COALESCE(to_jsonb(marker)->>'restore_history_digest',
-        (SELECT history_digest FROM pilot.fixture_fact_erasure WHERE fixture_id=marker.id AND applied_xid IS NOT NULL)) AS receipt
+        (SELECT history_digest FROM pilot.fixture_fact_erasure WHERE fixture_id=COALESCE(to_jsonb(marker)->>'restore_history_source_id',marker.id) AND applied_xid IS NOT NULL)) AS receipt
       FROM pilot.dispatch_control d CROSS JOIN public.fixture_identity marker`);
     return { facts, devices, state };
   } finally { await db.end(); }
@@ -93,9 +94,9 @@ async function readState(c: Case, target: boolean) {
 
 async function runStage(stage: string) {
   const input = JSON.parse(await readFile(inputPath, 'utf8')) as
-    { a: CustomerRequest; b: CustomerRequest; cases: [HistoryCase, HistoryCase]; permitDigest?: string };
+    { a: CustomerRequest; b: CustomerRequest; cases: [HistoryCase, HistoryCase]; permitDigest?: string; label: string };
   if (stage === 'seed') {
-    const cases = [await seedHistory(await seedDispatchApproval(input.a, true), 'target'),
+    const cases = [await seedHistory(await seedDispatchApproval(input.a, true), input.label),
       await seedHistory(await seedDispatchApproval(input.b, false), 'control')];
     assert.notEqual(cases[0]!.id, cases[1]!.id);
     console.log(JSON.stringify(cases));
@@ -104,7 +105,8 @@ async function runStage(stage: string) {
   const [a, b] = input.cases;
   if (stage === 'erase' || stage === 'issue-erasure' || stage === 'abort-erasure' || stage === 'refuse-erasure') {
     if (stage === 'erase') {
-      console.log(JSON.stringify(await applySourceFactErasure()));
+      const result = await applySourceFactErasure();
+      console.log(JSON.stringify({ ...result, completedAt: Date.now() }));
       return;
     }
     if (stage === 'refuse-erasure') {
@@ -208,14 +210,19 @@ async function freshWorktree(cwd: string) {
   return git('rev-parse', 'HEAD');
 }
 
-async function drill(targetDir: string, eraseSource: boolean) {
+async function drill(targetDir: string, eraseSource: boolean, laterTarget?: string) {
   const source = process.cwd();
   const target = resolve(targetDir);
   assert.notEqual(source.toLowerCase(), target.toLowerCase());
   const revision = await freshWorktree(source);
   assert.equal(await freshWorktree(target), revision, 'Source and target builds must use the same revision');
+  if (laterTarget) {
+    assert.ok(![source, target].some(dir => dir.toLowerCase() === laterTarget.toLowerCase()));
+    assert.equal(await freshWorktree(laterTarget), revision);
+    await loadBackupKey(laterTarget);
+  }
   await loadBackupKey(target);
-  const input = { a: binding(), b: binding(), cases: [] as HistoryCase[], permitDigest: undefined as string | undefined };
+  const input = { label: laterTarget ? 'synthetic-' + randomUUID() : 'target', a: binding(), b: binding(), cases: [] as HistoryCase[], permitDigest: undefined as string | undefined };
   const fakeDir = resolve('work/restore-before-effects-fake');
   const save = (flag: 'w' | 'wx') => writeFile(inputPath, JSON.stringify(input), { flag, mode: 0o600 });
   const stage = (fixture: Fixture, name: string) => {
@@ -225,7 +232,9 @@ async function drill(targetDir: string, eraseSource: boolean) {
   await mkdir('work', { recursive: true });
   await mkdir(fakeDir);
   await save('wx');
-  let targetInput = false;
+  let targetInput = false, laterInput = false;
+  let laterFixture: Fixture | undefined;
+  let purgedAt = 0;
   let sourceFixture: Fixture | undefined, targetFixture: Fixture | undefined;
   let phase = 'cold capture';
   try {
@@ -250,7 +259,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
     const snapshot: NonNullable<Awaited<ReturnType<typeof inspectHistory>>> = stage(f, 'history');
     assert.equal(snapshot.facts.length, 4);
     assert.equal(snapshot.devices.length, 2);
-    for (const [c, label] of [[a, 'target'], [b, 'control']] as const) {
+    for (const [c, label] of [[a, input.label], [b, 'control']] as const) {
       assert.deepEqual(snapshot.facts.filter(row => row.tenant_id === c.tenant && row.location_id === c.location)
         .map(row => [row.revision, row.text]), [[1, label + '-1'], [2, label + '-2']]);
       const device = snapshot.devices.find(row => row.id === c.device);
@@ -296,7 +305,9 @@ async function drill(targetDir: string, eraseSource: boolean) {
       stage(f, 'abort-erasure');
       assert.deepEqual(stage(f, 'history'), prior);
       for (const removed of [2, 0]) {
-        assert.deepEqual(stage(f, 'erase'), { sequence: snapshotSequence + 1, removed });
+        const { completedAt, ...result } = stage(f, 'erase');
+        assert.deepEqual(result, { sequence: snapshotSequence + 1, removed });
+        if (removed) purgedAt = completedAt;
         const current = stage(f, 'history') as typeof snapshot;
         assert.equal(current.facts.filter(row => row.tenant_id === a.tenant && row.location_id === a.location).length, 0,
           'Authorized source erasure must remove both A revisions before restore');
@@ -345,6 +356,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
         assert.equal(status.ExitCode, 0);
       }
     }
+    const laterArchive = laterTarget ? await captureAfterPurge(f.id) : undefined;
     const archive = resolve(fixturePath);
     phase = 'offline paired restore';
     process.chdir(target);
@@ -357,10 +369,10 @@ async function drill(targetDir: string, eraseSource: boolean) {
     const quarantine = { stopped: true, applicationLogin: false, topology };
     assert.deepEqual(restored, { verifiedDatabases: 2, quarantined: 5, ...quarantine });
     assert.notEqual(t.id, fixtureId);
-    const checkIdentityLock = () => assert.equal(compose(t, ['exec', '-T', '--user', 'postgres', 'identity-db',
+    const checkIdentityLock = (target: Fixture) => assert.equal(compose(target, ['exec', '-T', '--user', 'postgres', 'identity-db',
       'psql', '-XAt', '-U', 'identity_owner', '-d', 'identity_fixture', '-c',
       "SELECT NOT rolcanlogin FROM pg_roles WHERE rolname='keycloak'"]), 't');
-    checkIdentityLock();
+    checkIdentityLock(t);
     const expected = before.map((c: typeof before[number]) => ({
       ...c, row: { ...c.row, state: 'quarantined', restore_previous_state: 'approved' },
     }));
@@ -409,7 +421,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
     phase = 'offline target restart';
     compose(t, ['stop', 'postgres', 'identity-db']);
     compose(t, ['start', '--wait', '--wait-timeout', '90', 'postgres', 'identity-db']);
-    checkIdentityLock();
+    checkIdentityLock(t);
     assert.deepEqual(stage(t, 'history'), appliedState);
     checkReplay(0);
     assert.equal(await readFile(replayPath, 'utf8'), historyBytes);
@@ -429,6 +441,33 @@ async function drill(targetDir: string, eraseSource: boolean) {
     checkFake();
     assert.ok((await readFile(pairPath)).equals(pair), 'Pair manifest changed');
     assert.equal(node('dist/pilot/ops/local/backup.js', 'verify'), 'Verified synthetic AppDB and IdP backup pair.');
+    if (laterTarget && laterArchive) {
+      phase = 'last recoverable copy expiry';
+      const expiry = await proveExpiry(laterTarget, purgedAt, input.label);
+      process.chdir(laterTarget);
+      await mkdir('work', { recursive: true });
+      await save('wx');
+      laterInput = true;
+      phase = 'later same-source offline restore';
+      assert.deepEqual(await restore(laterArchive, owned => { laterFixture = owned; }), restored);
+      const later = await loadFixture();
+      assert.ok(later.id !== t.id && later.id !== f.id);
+      assert.deepEqual(stage(later, 'history'), {
+        facts: controls, devices: revokedDevices, state: { ...held.state, receipt: historyDigest },
+      });
+      const laterState = stage(later, 'target');
+      assert.equal(laterState.authDenials.length, 2);
+      assert.deepEqual(laterState.states, after.map((c: typeof after[number]) => ({
+        ...c, row: { ...c.row, stopped: true, state: 'quarantined', restore_previous_state: c.row.state },
+      })));
+      checkIdentityLock(later);
+      process.chdir(source);
+      assert.equal(await readFile(historyPath, 'utf8'), historyBytes);
+      assert.equal(await readFile(replayPath, 'utf8'), historyBytes);
+      assert.ok((await readFile(captureHistoryPath)).equals(captureHistory));
+      checkFake();
+      return { revision, expiry, preReplay: { a: 2, b: 2 }, laterImport: { a: 0, b: 2 }, ...quarantine };
+    }
     return { revision, source: after, target: expected, fakeCreates: 1,
       targetAuthDenials: [...first.authDenials, ...repeated.authDenials], ...quarantine,
       history: { snapshotSequence, sourceFactsRetained: sourceFacts.length, sourceRemoved: snapshot.facts.length - sourceFacts.length,
@@ -449,9 +488,16 @@ async function drill(targetDir: string, eraseSource: boolean) {
       }
     };
     try {
-      if (targetInput) {
-        process.chdir(target);
-        await stop(targetFixture);
+      try {
+        if (laterInput && laterTarget) {
+          process.chdir(laterTarget);
+          await stop(laterFixture);
+        }
+      } finally {
+        if (targetInput) {
+          process.chdir(target);
+          await stop(targetFixture);
+        }
       }
     } finally {
       process.chdir(source);
@@ -462,12 +508,13 @@ async function drill(targetDir: string, eraseSource: boolean) {
 
 const [argument, ...extra] = process.argv.slice(2);
 const inRunner = process.env.PILOT_CONTAINER === '1';
-const eraseSource = !inRunner && extra.length === 1 && extra[0] === '--erase-source';
+const laterTarget = !inRunner && extra.length === 2 && extra[0] === '--last-copy-expiry' ? resolve(extra[1]!) : undefined;
+const eraseSource = !!laterTarget || !inRunner && extra.length === 1 && extra[0] === '--erase-source';
 if (!argument || (extra.length && !eraseSource) || (inRunner && !['seed', 'deliver', 'source', 'target', 'history', 'revoke-device',
   'issue-erasure', 'erase', 'refuse-erasure', 'abort-erasure'].includes(argument))) {
   throw new Error('Run from a fresh built source worktree with one fresh built target worktree path.');
 }
-(inRunner ? runStage(argument) : drill(argument, eraseSource).then(result => console.log(JSON.stringify(result)))).catch(error => {
+(inRunner ? runStage(argument) : drill(argument, eraseSource, laterTarget).then(result => console.log(JSON.stringify(result)))).catch(error => {
   const detail = error instanceof Error
     ? safeDiagnostics(String((error as { stderr?: string }).stderr || error.message)) : 'Unknown drill failure.';
   console.error(detail);
