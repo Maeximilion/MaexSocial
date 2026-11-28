@@ -65,6 +65,20 @@ and checks the provider-state directory across rejected structured and media wak
 The [handover](../../docs/handovers/sessions/2026-11-23-isolated-worker-wake.md) records the
 measured scope and the open integrated acceptance work.
 
+## Disposable grant retirement (#310)
+
+Use a fresh worktree with no active fixture and the pinned, cached pilot images. Build, run
+`npm run pilot:up -- grant-retirement`, `npm run pilot:migrate -- up`, then
+`node dist/pilot/tests/pilot/grant-retirement.js` and `npm run pilot:down`.
+The drill requires a new database and creates its own external temporary directory. Only the
+drill and its worker runners mount that directory. The database holds fixture-only digests
+and version-bound revocation records. A location lock covers verification and the fake call.
+The drill brackets the revocation commit on the database clock, exercises denial and restart,
+then measures on-demand removal. A controlled as-of check uses the committed revocation time:
+it changes from not due to overdue at the 24-hour boundary while the file exists, then confirms
+absence for the same deadline after removal and restart. The drill removes the temporary store on exit. Scheduling, physical
+media sanitization and deployed credential custody remain open.
+
 ## Private terminal text export (#252)
 
 The private `claimExport` entry point reuses a bound customer session and the occurrence's immutable approval.
@@ -374,6 +388,36 @@ session update. Its restore must fail during quarantine and remove target resour
 publishing readiness. The two sources stay stopped during restore and are read independently
 before and after. This also limits Docker network allocation to one fixture at a time.
 Real identity, device revocation and operating recovery remain in #131 and #82.
+
+## Authorized draft text erasure (#312)
+
+From a clean, built task checkout with fresh fixture paths, set the separate private
+`MAEX_COLD_BACKUP_KEY_FILE` as for the encrypted backup drill and run
+`node dist/pilot/tests/pilot/draft-erasure.js`. The drill creates two new local databases
+and restores the captured pair into a separate, offline Docker project in the same checkout.
+Its fixture owner issues three exact draft instructions, including one for a draft created after capture. Each binds the source, tenant,
+draft, sequence, journal digest and millisecond timestamp on the source database clock.
+The owner appends records to the same compact JSON interval. Earlier permits pin the complete interval as originally issued. Both source erasure and restore verify that prefix, including every earlier record. Restore also verifies the independently supplied SHA-256 of the complete current file. A location fact deletion has its own event type.
+
+The private operator command is `node dist/pilot/ops/local/source-draft-erasure.js SEQUENCE`.
+It accepts an existing instruction on a disposable backup source. It locks the draft,
+erases every revision payload and clears four historical approval fields in one transaction.
+The receipt commits with the updates. A post-commit observation bounds the elapsed time from
+authorization on the same database clock. A repeated command reports the existing application.
+The operator invokes the command manually. See the [Task 5 evidence](../../docs/handovers/sessions/2026-11-28-authorized-draft-erasure.md)
+for concurrency, retained fields, provider boundaries and restoration.
+
+### Bound customer access erasure (#314)
+
+In one clean, built task checkout, use the pinned local images and the external disposable backup key described above. The drill requires fresh `work/pilot`, `work/customer-erasure-source` and `work/customer-erasure-case.json` paths.
+
+    node dist/pilot/tests/pilot/customer-erasure-drill.js
+
+The drill issues one owner-only instruction after capturing the physical pair. The subject binding covers the source fixture, pilot issuer, local identity and exact issuer subject. The instruction also pins the identity version, journal sequence and whole-journal digest. The on-demand operation locks the identity before deleting customer sessions and bound challenges. It removes unreferenced memberships and identities. A foreign key required by an invitation, approval, business fact or audit event keeps its historical key. The retained identity loses its issuer subject and verification. A retained membership becomes inactive. Its unclaimed current approval links are cleared so another tenant Manager can review the draft. Claimed and quarantined occurrence bindings retain their history. The application receives no maintenance permission.
+
+An issued invitation keeps the other recipient's data and loses the departing issuer's authority. An incoming invitation or unbound challenge carrying the same mailbox alone cannot establish subject ownership. The independent journal, restricted receipt and historical keys remain linkable. The ordinary fixture status client can read the separate Keycloak account. The issuer lifecycle decision remains with [#131](https://github.com/Maeximilion/MaexSocial/issues/131) and [#82](https://github.com/Maeximilion/MaexSocial/issues/82).
+
+The source and restored target run sequentially. The drill captures the original encrypted pair and two continued pairs, one with a pending instruction and one with its committed receipt. It stops the source, moves its directory under `work/customer-erasure-source`, and imports each pair into a fresh `work/pilot`. Replay verifies the full current interval and digest. Each captured owner instruction must still match its original entry and issued interval. Later records may extend the owner's canonical journal without changing the authorized prefix. Both application and IdP access stay locked on the target. Test bindings and account material stay in ignored `work/`. The existing same-source backup cutoff applies. The drill reports an upper bound between authorization and confirmed logical cleanup on one database clock.
 
 ## Restore before dispatch and terminal export (#258)
 

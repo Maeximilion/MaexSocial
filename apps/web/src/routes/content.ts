@@ -46,7 +46,7 @@ button{font:inherit;font-weight:700;min-height:44px;padding:.6rem .9rem;backgrou
 
 export async function renderDrafts(db: Client, context: CustomerContext): Promise<string> {
   const drafts = (await db.query(`SELECT d.id,r.text FROM pilot.drafts d JOIN LATERAL
-    (SELECT text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON true
+    (SELECT text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON r.text IS NOT NULL
     WHERE d.tenant_id=$1 ORDER BY d.id`, [context.tenantId])).rows;
   return page('Text drafts', '<p><a href="/customer/drafts/new">New draft</a></p><p><a href="/customer/facts">Business facts</a></p>' + (drafts.length ? `<ul>${drafts.map(draft => `<li><a href="/customer/drafts/${html(draft.id)}">${html(draft.text)}</a></li>`).join('')}</ul>` : '<p>No text drafts yet.</p>'));
 }
@@ -78,7 +78,7 @@ export async function renderDraft(db: Client, context: CustomerContext, draftId:
   if (!uuid(draftId)) deny();
   const draft = (await db.query(`SELECT r.id,r.revision,r.text,t.name,l.provider_location FROM pilot.drafts d JOIN pilot.tenants t ON t.id=d.tenant_id
     LEFT JOIN pilot.locations l ON l.tenant_id=d.tenant_id AND l.id=d.initial_location_id JOIN LATERAL
-    (SELECT id,revision,text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON true
+    (SELECT id,revision,text FROM pilot.draft_revisions WHERE tenant_id=d.tenant_id AND draft_id=d.id ORDER BY revision DESC LIMIT 1) r ON r.text IS NOT NULL
     WHERE d.tenant_id=$1 AND d.id=$2`, [context.tenantId, draftId])).rows[0];
   if (!draft) deny();
   const occurrences = (await db.query(`SELECT o.id,o.state,l.provider_location FROM pilot.occurrences o
@@ -119,6 +119,7 @@ const publicationOutcomes = {
 
 interface OccurrenceView {
   draft_id: string;
+  erased: boolean;
   state: keyof typeof publicationOutcomes;
   attempt_outcome: 'unknown' | 'pending' | 'confirmed' | 'rejected' | null;
   attempt_details_retired: boolean | null;
@@ -144,6 +145,8 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
   if (!uuid(occurrenceId)) deny();
   // Keep displayed details and the private approval proposal in the same statement snapshot.
   const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
+    EXISTS (SELECT 1 FROM pilot.draft_revisions r
+      WHERE r.tenant_id=o.tenant_id AND r.draft_id=o.draft_id AND r.text IS NULL) AS erased,
     approved.tenant_version AS approval_tenant_version,
     CASE WHEN $4::boolean THEN (SELECT count(*)::text FROM pilot.occurrence_decisions w
       WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.approval_id IS NOT NULL) END AS withdrawal_count,
@@ -157,7 +160,7 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
     LEFT JOIN pilot.attempts a ON a.tenant_id=o.tenant_id AND a.occurrence_id=o.id
     LEFT JOIN LATERAL (
       SELECT id,revision,text FROM pilot.draft_revisions
-      WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND $3::boolean
+      WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND text IS NOT NULL AND $3::boolean
         AND ((o.state='draft' AND o.approval_id IS NULL) OR ($4::boolean AND o.state='approved' AND o.approval_id IS NOT NULL))
         AND a.occurrence_id IS NULL
         AND (NOT $4::boolean OR NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
@@ -213,7 +216,8 @@ export async function renderOccurrence(db: Client, context: CustomerContext, occ
   const occurrence = await readOccurrence(db, context, occurrenceId);
   const utc = occurrence.due_at.toISOString();
   const local = localDueTime(occurrence);
-  const [label, explanation] = publicationOutcome(occurrence);
+  const [label, explanation] = occurrence.erased && ['draft', 'approved'].includes(occurrence.state)
+    ? ['Text erased', 'This occurrence has no text available for submission.'] : publicationOutcome(occurrence);
   const details = `<dl>
 <dt>Status</dt><dd><strong>${label}</strong><p>${explanation}</p></dd>
 ${recordedTime('Attempt started', occurrence.claimed_at)}
@@ -225,7 +229,7 @@ ${recordedTime('Last observation', occurrence.observed_at)}
 <h2 id="proposed-text">Proposed text · Revision ${occurrence.revision}</h2>
 ${details}
 <p style="white-space:pre-wrap;overflow-wrap:anywhere">${html(occurrence.text)}</p></section>`;
-  const exportForm = exportCsrf !== undefined && (context.role === 'Employee' || context.role === 'Manager')
+  const exportForm = !occurrence.erased && exportCsrf !== undefined && (context.role === 'Employee' || context.role === 'Manager')
     && (occurrence.state === 'approved' || occurrence.state === 'exported') && !occurrence.attempt_outcome && !occurrence.grant_active
     && occurrence.approval_tenant_version === context.tenantVersion
     ? `<form method="post" action="/customer/occurrences/${html(occurrenceId)}/export">
@@ -234,7 +238,7 @@ ${details}
 <button type="submit" aria-describedby="export-help">Download approved text</button></form>` : '';
   return page('Post occurrence details', `${content}
 ${exportForm}
-<p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`);
+${occurrence.erased ? '<p><a href="/customer/drafts">All text drafts</a></p>' : `<p><a href="/customer/drafts/${html(occurrence.draft_id)}">Back to draft</a></p>`}`);
 }
 
 interface ApprovalProposal {
@@ -459,7 +463,7 @@ export async function editDraft(db: Client, context: CustomerContext, draftId: s
   if (!draft.rowCount) deny();
   const current = (await db.query<{ id: string; revision: number; text: string }>(`SELECT id,revision,text FROM pilot.draft_revisions
     WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision DESC LIMIT 1`, [context.tenantId, draftId])).rows[0];
-  if (!current) return deny();
+  if (!current || current.text === null) return deny();
   const stale = current.id !== revisionId;
   try { text = draftText(text); }
   catch (error) {

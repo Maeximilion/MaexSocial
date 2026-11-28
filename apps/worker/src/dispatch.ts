@@ -53,7 +53,7 @@ async function persistClaim(db: Client, occurrenceId: string): Promise<GbpCreate
         AND l.provider_location=a.provider_location AND l.grant_active AND l.version=a.grant_version
       JOIN pilot.memberships m ON m.tenant_id=a.tenant_id AND m.id=a.membership_id
         AND m.active AND m.role='Manager' AND m.version=a.membership_version
-      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
+      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id AND r.text IS NOT NULL
       WHERE o.tenant_id=$1 AND o.id=$2 AND m.identity_id=$3 AND a.grant_active_at_approval
         AND a.tenant_version=$4 AND a.id=$5
         AND btrim(l.provider_location)<>''

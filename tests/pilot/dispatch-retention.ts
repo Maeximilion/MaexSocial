@@ -350,7 +350,7 @@ async function seedAndRetire(db: Client) {
   await assert.rejects(migrate('down'), /Populated fixture/);
   await assert.rejects(db.query(await readFile('db/migrations/013_attempt_retention.down.sql', 'utf8')),
     /Retired dispatch claims prevent this downgrade/);
-  await assert.rejects(db.query(await readFile('db/migrations/017_dispatch_claim_expiry.down.sql', 'utf8')),
+  await assert.rejects(db.query(await readFile('db/migrations/019_dispatch_claim_expiry.down.sql', 'utf8')),
     /Expired dispatch audit detail prevents this downgrade/);
   return { targets, controls: controls.map(t => t.id), snapshots, exportTarget, pendingId: pending.id };
 }
