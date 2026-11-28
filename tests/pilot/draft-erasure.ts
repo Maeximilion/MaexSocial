@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { capture, hashFile, type Pair } from '../../ops/local/backup.js';
+import { capture, captureContinuedFixture, hashFile, type Pair } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
 import { restore } from '../../ops/local/restore.js';
 import { applySourceDraftErasure } from '../../ops/local/source-draft-erasure.js';
@@ -96,6 +96,15 @@ async function drill() {
       assert.deepEqual([retry.removed, retry.timing], [0, 'already-applied']);
     }
     run(f, 'after');
+    compose(f, ['stop']);
+    const continuedPath = 'work/pilot/continued-draft-backup';
+    await captureContinuedFixture(f.id, continuedPath);
+    const continued: Pair = JSON.parse(await readFile(continuedPath + '/pair.json', 'utf8'));
+    assert.equal(continued.format, 4);
+    assert.equal(continued.lineageCapturedAt, pair.capturedAt);
+    assert.ok(Date.parse(continued.capturedAt!) > Date.parse(pair.capturedAt!));
+    const backupDeadline = Date.parse(continued.lineageCapturedAt!) + 30 * 86400_000;
+    assert.ok(backupDeadline <= Date.parse(results[0]!.authorizedAt) + 30 * 86400_000);
     compose(f, ['down']);
     active = undefined;
     await rename('work/pilot', archive);
@@ -119,7 +128,7 @@ async function drill() {
     run(t, 'after');
     assert.deepEqual(await originals(archive), prior);
     return { revision: pair.revision, authorization: results[0]!.authorizedAt, confirmedBy: results.map(r => r.confirmedBy),
-      elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 2,
+      continuedBackupDeadline: new Date(backupDeadline).toISOString(), elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 2,
       restoredDatabases: target.verifiedDatabases, held: target.quarantined, historyApplied: [2, 0] };
   } finally {
     if (active && (await loadFixture(true)).id === active.id) compose(active, ['down']);
