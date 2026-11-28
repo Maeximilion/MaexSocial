@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { copyFile, lstat, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { capture, captureContinuedFixture, hashFile, type Pair } from '../../ops/local/backup.js';
 import { compose, connectFixture, loadFixture, verifyContainers, type Fixture } from '../../ops/local/fixture.js';
@@ -25,6 +25,7 @@ async function stage(name: string) {
     const { rows: [m] } = await db.query('SELECT restore_history_after::int AS after FROM public.fixture_identity');
     const seq = m.after + 1;
     if (name === 'issue') return await issue(db, samples, m.after);
+    if (name === 'append') return await issue(db, samples, m.after, await readFile(journal, 'utf8'));
     if (name === 'abort') await abortPurge(db, seq, samples);
     else if (name === 'race') {
       return [await racePurge(db, samples, seq, 0), await racePurge(db, samples, seq + 1, 1)];
@@ -69,9 +70,22 @@ async function drill() {
     compose(f, ['start', '--wait', '--wait-timeout', '120']);
     run(f, 'before');
     run(f, 'refuse');
-    const history: string = run(f, 'issue');
+    const earlier: string = run(f, 'issue');
+    await writeFile(journal, earlier, { flag: 'wx', mode: 0o600 });
+    compose(f, ['stop']);
+    const intervalPair = 'work/pilot/issued-draft-backup';
+    await mkdir(intervalPair, { mode: 0o700 });
+    for (const file of ['fixture.json', 'compose.env', 'keycloak.conf', 'keycloak-realm.json', 'capture-history.json']) {
+      await copyFile('work/pilot/' + file, intervalPair + '/' + file);
+    }
+    await captureContinuedFixture(f.id, intervalPair + '/cold-backup');
+    const savedInterval = await originals(intervalPair);
+    compose(f, ['start', '--wait', '--wait-timeout', '120']);
+    const history: string = run(f, 'append');
     const log = JSON.parse(history);
+    const changedEarlier = { ...log, records: [log.records[0], { ...log.records[1], id: samples.drafts[2]!.draft }, log.records[2]] };
     for (const wrong of [
+      changedEarlier,
       { ...log, fixtureId: 'wrong' },
       { ...log, records: [{ ...log.records[0], kind: 'delete-facts' }, ...log.records.slice(1)] },
       { ...log, records: [{ ...log.records[0], id: samples.drafts[2]!.draft }, ...log.records.slice(1)] },
@@ -111,7 +125,7 @@ async function drill() {
     active = undefined;
     await rename('work/pilot', archive);
 
-    const target = await restore(archive, f => { active = f; });
+    const target = await restore(archive + '/issued-draft-backup', f => { active = f; });
     assert.ok(target.stopped && !target.applicationLogin && target.verifiedDatabases === 2);
     const t = await loadFixture();
     run(t, 'before');
@@ -121,6 +135,10 @@ async function drill() {
     await writeFile(journal, incomplete, { flag: 'wx', mode: 0o600 });
     assert.throws(() => replay(sha(incomplete)));
     run(t, 'before');
+    const changed = JSON.stringify(changedEarlier);
+    await writeFile(journal, changed);
+    assert.throws(() => replay(sha(changed)));
+    run(t, 'before');
     await writeFile(journal, history);
     assert.equal(replay(sha(history)).history.applied, 3);
     run(t, 'after');
@@ -129,9 +147,10 @@ async function drill() {
     assert.equal(replay(sha(history)).history.applied, 0);
     run(t, 'after');
     assert.deepEqual(await originals(archive), prior);
+    assert.deepEqual(await originals(archive + '/issued-draft-backup'), savedInterval);
     return { revision: pair.revision, authorization: results[0]!.authorizedAt, confirmedBy: results.map(r => r.confirmedBy),
       continuedBackupDeadline: new Date(backupDeadline).toISOString(), elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 2,
-      restoredDatabases: target.verifiedDatabases, held: target.quarantined, postSnapshotRemoved: later.removed, postSnapshotConfirmedBy: later.confirmedBy, historyApplied: [3, 0] };
+      restoredDatabases: target.verifiedDatabases, held: target.quarantined, postSnapshotRemoved: later.removed, postSnapshotAuthorizedAt: later.authorizedAt, postSnapshotConfirmedBy: later.confirmedBy, historyApplied: [3, 0] };
   } finally {
     if (active && (await loadFixture(true)).id === active.id) compose(active, ['down']);
   }

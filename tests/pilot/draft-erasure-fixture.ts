@@ -87,21 +87,22 @@ export async function seedSamples(): Promise<Samples> {
   } finally { await owner.end(); }
 }
 
-export async function issue(db: Client, samples: Samples, after: number) {
+export async function issue(db: Client, samples: Samples, after: number, earlier?: string) {
   const f = await loadFixture();
   assert.ok(f.purpose === 'backup' && !f.restoreTarget);
   const selected = samples.drafts[0]!.proposal;
-  const laterDraft = await withContext(samples.auth, (app, ctx) =>
+  const laterDraft = earlier && await withContext(samples.auth, (app, ctx) =>
     createDraft(app, ctx, selected.locationId, 'Invented after the snapshot'));
   await db.query('BEGIN');
   try {
     const authorizedAt = (await db.query('SELECT transaction_timestamp() AS instant')).rows[0].instant.toISOString();
-    const records = samples.drafts.slice(0, 2).map((d, i) => ({
-      seq: after + 1 + i, kind: 'erase-draft', tenantId: d.proposal.tenantId, id: d.draft, authorizedAt,
-    }));
-    records.push({ seq: after + 3, kind: 'erase-draft', tenantId: selected.tenantId, id: laterDraft, authorizedAt });
+    const appended = laterDraft ? [{ seq: after + 3, kind: 'erase-draft', tenantId: selected.tenantId, id: laterDraft, authorizedAt }]
+      : samples.drafts.slice(0, 2).map((d, i) => ({
+        seq: after + 1 + i, kind: 'erase-draft', tenantId: d.proposal.tenantId, id: d.draft, authorizedAt,
+      }));
+    const records = [...(earlier ? JSON.parse(earlier).records : []), ...appended];
     const history = JSON.stringify({ schema: 1, fixtureId: f.id, after, through: after + records.length, records });
-    for (const e of records) {
+    for (const e of appended) {
       await db.query(`INSERT INTO pilot.fixture_draft_erasure(source_id,tenant_id,draft_id,sequence,authorized_at,history_digest)
         VALUES($1,$2,$3,$4,$5,$6)`, [f.id, e.tenantId, e.id, e.seq, authorizedAt, digest(history)]);
     }

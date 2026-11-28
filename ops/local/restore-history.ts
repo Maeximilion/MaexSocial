@@ -35,7 +35,7 @@ function parseEvent(value: unknown, seq: number): Event {
   return incompatible();
 }
 
-export async function readBoundHistory(source: string, after: number, digest: string): Promise<Event[]> {
+async function readJournal(source: string, after: number) {
   const file = await open(historyPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let bytes: Buffer;
   try {
@@ -43,9 +43,7 @@ export async function readBoundHistory(source: string, after: number, digest: st
     const buffer = Buffer.alloc(65_537);
     if (!stat.isFile() || stat.size >= buffer.length) return incompatible();
     const { bytesRead } = await file.read(buffer);
-    if (bytesRead !== stat.size || createHash('sha256').update(buffer.subarray(0, bytesRead)).digest('hex') !== digest) {
-      return incompatible();
-    }
+    if (bytesRead !== stat.size) return incompatible();
     bytes = buffer.subarray(0, bytesRead);
   } finally { await file.close(); }
   const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
@@ -53,7 +51,30 @@ export async function readBoundHistory(source: string, after: number, digest: st
   const history = value as Record<string, unknown>;
   if (history.schema !== 1 || history.fixtureId !== source || history.after !== after || !Number.isSafeInteger(history.through) || Number(history.through) < after
       || !Array.isArray(history.records) || history.records.length !== Number(history.through) - after) return incompatible();
-  return history.records.map((row, i) => parseEvent(row, after + i + 1));
+  const records = history.records;
+  const events = records.map((row, i) => parseEvent(row, after + i + 1));
+  const digest = createHash('sha256').update(bytes).digest('hex');
+  const through = after + events.length;
+  const ends = new Map<string, number>();
+  function covers(issuedDigest: string, sequence: number) {
+    if (sequence <= after || sequence > through) return false;
+    if (issuedDigest === digest) return true;
+    // The owner serializes each interval this way. Only append-only growth preserves its issued digest.
+    if (!ends.size) {
+      for (let n = 1; n < records.length; n++) {
+        const prefix = JSON.stringify({ schema: 1, fixtureId: source, after, through: after + n, records: records.slice(0, n) });
+        ends.set(createHash('sha256').update(prefix).digest('hex'), after + n);
+      }
+    }
+    return (ends.get(issuedDigest) ?? after) >= sequence;
+  }
+  return { events, digest, covers };
+}
+
+export async function readBoundHistory(source: string, after: number, digest: string, draftSequence?: number): Promise<Event[]> {
+  const journal = await readJournal(source, after);
+  if (draftSequence === undefined ? journal.digest !== digest : !journal.covers(digest, draftSequence)) return incompatible();
+  return journal.events;
 }
 
 // Caller owns the transaction. Claim, download, edit and approval use this same draft lock.
@@ -91,12 +112,27 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     FROM public.fixture_identity AS marker WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
   if (!anchor?.source) return incompatible();
 
-  const events = await readBoundHistory(anchor.source, after, digest);
-  if (events.length !== through - after) return incompatible();
+  const journal = await readJournal(anchor.source, after);
+  const { events } = journal;
+  if (journal.digest !== digest || events.length !== through - after) return incompatible();
 
   if (anchor.restore_history_digest !== null) {
     if (anchor.restore_history_digest !== digest) return incompatible();
     return { applied: 0 };
+  }
+
+  const issued = new Map<number, string>();
+  // A continued snapshot can contain permits from an earlier interval, even with no purge yet.
+  if ((await db.query("SELECT to_regclass('pilot.fixture_draft_erasure') IS NOT NULL AS present")).rows[0].present) {
+    const permits = await db.query('SELECT source_id,sequence,tenant_id,draft_id,authorized_at,history_digest FROM pilot.fixture_draft_erasure');
+    for (const row of permits.rows) {
+      const sequence = Number(row.sequence);
+      const event = events[sequence - after - 1];
+      if (row.source_id !== anchor.source || event?.kind !== 'erase-draft' || row.tenant_id !== event.tenantId
+          || row.draft_id !== event.id || row.authorized_at.toISOString() !== event.authorizedAt
+          || !journal.covers(row.history_digest, sequence)) return incompatible();
+      issued.set(sequence, row.history_digest);
+    }
   }
 
   for (const [index, event] of events.entries()) {
@@ -118,7 +154,7 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       const seq = after + index + 1;
       await db.query(`INSERT INTO pilot.fixture_draft_erasure(source_id,sequence,tenant_id,draft_id,authorized_at,history_digest)
         VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`, [anchor.source, seq, event.tenantId, event.id, event.authorizedAt, digest]);
-      await eraseBoundDraft(db, anchor.source, seq, event, digest);
+      await eraseBoundDraft(db, anchor.source, seq, event, issued.get(seq) ?? digest);
     } else if (event.kind === 'revoke-grant') {
       const revoked = await db.query(`UPDATE pilot.locations SET grant_active=false,version=version+1
         WHERE tenant_id=$1 AND id=$2 AND grant_active AND version=$3`, [event.tenantId, event.id, event.version]);

@@ -15,7 +15,7 @@ export async function applySourceDraftErasure(sequence: number) {
       WHERE m.id=$1 AND e.sequence=$2 AND m.purpose='backup' AND m.disposable_backup AND NOT m.restore_target
         AND current_user='pilot_owner' AND current_database()='pilot_fixture' FOR SHARE OF m`, [f.id, sequence]);
     if (!permit) throw new Error('Source draft erasure instruction required');
-    const history = await readBoundHistory(f.id, permit.after, permit.history_digest);
+    const history = await readBoundHistory(f.id, permit.after, permit.history_digest, sequence);
     const event = history[sequence - permit.after - 1];
     if (event?.kind !== 'erase-draft') throw new Error('Source draft erasure instruction mismatch');
     const removed = await eraseBoundDraft(db, f.id, sequence, event, permit.history_digest);

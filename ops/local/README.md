@@ -397,7 +397,7 @@ From a clean, built task checkout with fresh fixture paths, set the separate pri
 and restores the captured pair into a separate, offline Docker project in the same checkout.
 Its fixture owner issues three exact draft instructions, including one for a draft created after capture. Each binds the source, tenant,
 draft, sequence, journal digest and millisecond timestamp on the source database clock.
-The independently retained journal precedes replay. A location fact deletion has its own event type.
+The owner appends records to the same compact JSON interval. Earlier permits pin the complete interval as originally issued. Both source erasure and restore verify that prefix, including every earlier record. Restore also verifies the independently supplied SHA-256 of the complete current file. A location fact deletion has its own event type.
 
 The private operator command is `node dist/pilot/ops/local/source-draft-erasure.js SEQUENCE`.
 It accepts an existing instruction on a disposable backup source. It locks the draft,
