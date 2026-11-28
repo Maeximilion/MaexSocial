@@ -39,7 +39,8 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
         id=NULL,approval_id=NULL,claimed_at=NULL,observed_at=NULL,resolved_at=NULL,resource_name=NULL
         FROM pilot.occurrences o JOIN pilot.approvals p
           ON p.tenant_id=o.tenant_id AND p.occurrence_id=o.id AND p.id=o.approval_id
-            AND p.draft_id=o.draft_id AND p.location_id=o.location_id AND p.due_at=o.due_at AND p.timezone=o.timezone
+            AND p.draft_id=o.draft_id AND ((p.location_id=o.location_id AND p.due_at=o.due_at AND p.timezone=o.timezone)
+              OR (p.mfa_at IS NULL AND p.location_id IS NULL AND p.due_at IS NULL AND p.timezone IS NULL))
         WHERE a.tenant_id=$1 AND a.occurrence_id=$2 AND a.outcome=$3
           AND o.tenant_id=a.tenant_id AND o.id=a.occurrence_id AND o.state=a.outcome AND p.id=a.approval_id
           AND isfinite(a.claimed_at) AND isfinite(a.observed_at) AND a.observed_at>=a.claimed_at

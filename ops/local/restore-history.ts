@@ -77,12 +77,20 @@ export async function readBoundHistory(source: string, after: number, digest: st
   return journal.events;
 }
 
+async function requireApprovalMinimization(db: Client) {
+  const schema = await db.query("SELECT to_regprocedure('pilot.minimize_erased_approval()') IS NOT NULL AS current");
+  if (!schema.rows[0].current) return incompatible();
+}
+
 // Caller owns the transaction. Claim, download, edit and approval use this same draft lock.
 export async function eraseBoundDraft(db: Client, source: string, sequence: number,
   event: Extract<Event, { kind: 'erase-draft' }>, digest: string) {
   const scope = [event.tenantId, event.id];
   const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', scope);
   if (draft.rowCount !== 1) return incompatible();
+  await requireApprovalMinimization(db);
+  // Reconciliation and retention lock occurrences before attempts. Read their committed result before minimization.
+  await db.query('SELECT id FROM pilot.occurrences WHERE tenant_id=$1 AND draft_id=$2 ORDER BY id FOR UPDATE', scope);
   const binding = [source, sequence, ...scope, event.authorizedAt, digest];
   const permit = await db.query(`SELECT applied_xid IS NOT NULL AS applied FROM pilot.fixture_draft_erasure
     WHERE source_id=$1 AND sequence=$2 AND tenant_id=$3 AND draft_id=$4 AND authorized_at=$5 AND history_digest=$6
@@ -118,6 +126,7 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
 
   if (anchor.restore_history_digest !== null) {
     if (anchor.restore_history_digest !== digest) return incompatible();
+    if (events.some(event => event.kind === 'erase-draft')) await requireApprovalMinimization(db);
     return { applied: 0 };
   }
 
