@@ -10,10 +10,12 @@
 
 ## Current work
 
-The [same-source backup drill for #302](handovers/sessions/2026-11-28-last-copy-expiry.md)
-restored zero deleted A facts and both control facts from the post-purge capture.
-A synthetic A marker remained in its physical AppDB archive at purge + 30 days.
-Physical final-copy retention remains open in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+The [original #302 drill](handovers/sessions/2026-11-28-last-copy-expiry.md) found deleted
+A bytes in a continued physical backup. The [#307 correction and measured cutoff](handovers/sessions/2026-11-28-continued-backup-deadline.md)
+bind new disposable recaptures to the original deadline. Three affected pairs refused restore
+at the cutoff and explicit expiry removed all six archives. A younger independent pair restored
+at the latest possible purge deadline. Protected-copy custody and operational expiry remain in
+[Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
 
 Bounded Task 4 [#286](https://github.com/Maeximilion/MaexSocial/issues/286) adds the
 [isolated stored-occurrence worker wake](../ops/local/README.md#isolated-text-worker-wake-286).
