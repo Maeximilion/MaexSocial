@@ -63,6 +63,11 @@ The [continued-source expiry drill](handovers/sessions/2026-11-28-last-copy-expi
 records the physical final-copy gap in #302 and #166.
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
+[Task 5 component #312](https://github.com/Maeximilion/MaexSocial/issues/312) covers individually authorized
+draft text on a disposable source and offline replay into an encrypted-pair restore. The
+[local evidence](handovers/sessions/2026-11-28-authorized-draft-erasure.md) records the retained approval
+and outcome bindings. Integrated retention and operational acceptance remain under #166.
+
 Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) adds
 [AppDB session revocation to mandatory offline quarantine](../ops/local/README.md#restored-appdb-session-revocation-291)
 for both audiences. [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated
