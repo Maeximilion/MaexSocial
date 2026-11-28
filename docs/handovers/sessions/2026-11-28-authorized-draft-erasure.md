@@ -5,7 +5,7 @@
 [Issue #312](https://github.com/Maeximilion/MaexSocial/issues/312) supplies local draft-payload
 evidence for [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166). The implementation
 and physical drill ran in Maeximilion/MaexSocial on `dev-codex/312-authorized-draft-erasure`.
-At work head `1ebe0dce5ce4086889735aeb0a324305e27a0331`, the PR was pending serial integration.
+At work head `b2157f5c74d0bdf13bc5bcdc35f794caf871c431`, the PR was pending serial integration.
 Codex GPT-6.2 Astra High implemented this slice. The PR records the subsequent actual Claude
 API review, integration base, candidate checks and thread disposition.
 
@@ -13,20 +13,26 @@ API review, integration base, candidate checks and thread disposition.
 
 The [private operator command and physical drill](../../../ops/local/README.md#authorized-draft-text-erasure-312)
 use Node 24.22.2 and npm 11.19.1. Four new synthetic drafts each had two distinct revisions.
-One selected draft had a dispatch-eligible occurrence, a confirmed attempt and an unresolved
-attempt. The other had an already committed private export. Same-tenant and other-tenant controls
+One selected draft had a dispatch-eligible occurrence, a confirmed attempt, an unresolved
+attempt, a management hold and a withdrawn approval. The other had an already committed private export. Same-tenant and other-tenant controls
 each had an authorized repeatable download.
 
 | Observation on the above work head | Result |
 | --- | --- |
-| Source database authorization, UTC | 12:57:59.710 |
-| Committed purge confirmed by the source database, UTC | 12:58:14.110 and 12:58:14.186 |
-| Authorization to confirmed removal | 14,400 ms and 14,476 ms |
+| Source database authorization, UTC | 13:21:20.607 |
+| Committed purge confirmed by the source database, UTC | 13:21:37.766 and 13:21:37.847 |
+| Authorization to confirmed removal | 17,159 ms and 17,240 ms |
 | Scoped revision payloads | 4 present before, 0 present after source purge and target replay |
 | Unaffected payloads | 4 matched their original digests on the source and the restored AppDB |
-| Approved snapshots | 4 selected approvals lost 4 historical proof/grant fields each. Both control approvals retained all four |
+| Approved snapshots | 6 selected approvals lost 4 historical proof/grant fields each. Both control approvals retained all four |
 | Provider outcomes | 2 original fake creates, 0 further creates. The confirmed result survived. The open attempt reached confirmed by readback |
-| Offline recovery | 2 encrypted clusters restored, 11 occurrences quarantined, 2 events applied, 0 on replay after restart |
+| Holds and withdrawals | The held and withdrawn occurrences kept the original decision and zero attempts. Repeating withdrawal added zero decisions |
+| Continued physical backup | The format-4 copy inherited the original deadline of 2026-12-28T13:21:07.698Z |
+| Offline recovery | 2 encrypted clusters restored, 13 occurrences quarantined, 2 events applied, 0 on replay after restart |
+
+On this revision, migration up/down/up, a populated downgrade refusal and historical approval upgrade passed.
+The schema 016/017 compatibility and export suite passed. The Python foundation suite ran 134 tests
+with 32 skips. The preceding implementation on the #307 base passed all 63 pilot tests.
 
 The operator exercised source refusal with missing authority and changed journals. Deferred
 commit failure restored payloads and left zero completion receipts. After a database restart,
@@ -77,6 +83,6 @@ complete Claude API result, candidate CI and review threads before integration.
 ## Lessons
 
 The source serializes erasure with the same draft lock as editing, approval, dispatch and
-download. A transaction receipt alone cannot time commit. An observation after commit on the
+download. The database rejects completion while selected payloads or obsolete approval fields remain. An observation after commit on the
 issuing database clock supplies the measured upper bound. Readback of a prior attempt needs
 its correlation keys and preserves the original effect independently of the revision payload.
