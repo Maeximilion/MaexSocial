@@ -143,9 +143,9 @@ export async function runIsolated(args: string[]): Promise<string> {
 }
 
 export async function requireWorkerFixtureDatabase(db: Client, id: string, purpose: 'ordinary' | 'grant-retirement'): Promise<void> {
-  const ordinary = await db.query("SELECT 1 FROM public.fixture_identity WHERE id=$1 AND NOT restore_target"
+  const marker = await db.query("SELECT 1 FROM public.fixture_identity WHERE id=$1 AND NOT restore_target"
     + " AND purpose=$2 AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE", [id, purpose]);
-  if (ordinary.rowCount !== 1) throw new Error('Worker fixture database required');
+  if (marker.rowCount !== 1) throw new Error('Worker fixture database required');
 }
 
 export function requireOrdinaryFixtureDatabase(db: Client, id: string) {

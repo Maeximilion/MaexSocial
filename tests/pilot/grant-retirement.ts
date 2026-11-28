@@ -161,15 +161,21 @@ async function verify(db: Client, fixture: string, e: Evidence, originMs: number
   assert.equal(wake(e.aId), 'unknown');
   assert.equal(wake(e.bId), 'pending');
   assert.equal(wake(e.newId), 'pending');
-  assert.equal(creates(e.old.tenant, e.aId), 1);
-  assert.equal(creates(e.old.tenant, e.invalid), 0);
-  assert.equal(creates(e.live.tenant, e.bId), 1);
-  assert.equal(creates(e.reissued.tenant, e.newId), 1);
-  assert.equal((await db.query('SELECT 1 FROM pilot.attempts WHERE occurrence_id IN ($1,$2)', [e.aId, e.invalid])).rowCount, 2);
-  assert.equal((await db.query('SELECT readbacks FROM public.disposable_grants WHERE tenant=$1 AND location=$2 AND version=$3',
-    grantArgs(e.old))).rows[0].readbacks, 2);
-  console.log(JSON.stringify({ oldCreates: 1, oldReadbacks: 2, invalidCreates: 0, independentCreates: 1, reissuedCreates: 1,
-    staleAttempts: 0, deadlineObservationMs: day, remainingFiles: (await readdir(grantDirectory(fixture, true))).filter(name => name !== 'fixture-id').length }));
+  const counts = {
+    oldCreates: creates(e.old.tenant, e.aId),
+    oldReadbacks: (await db.query('SELECT readbacks FROM public.disposable_grants WHERE tenant=$1 AND location=$2 AND version=$3',
+      grantArgs(e.old))).rows[0].readbacks,
+    invalidCreates: creates(e.old.tenant, e.invalid),
+    independentCreates: creates(e.live.tenant, e.bId),
+    reissuedCreates: creates(e.reissued.tenant, e.newId),
+    staleAttempts: (await db.query('SELECT id FROM pilot.attempts WHERE occurrence_id=$1', [e.stale])).rowCount,
+    oldAttempts: (await db.query('SELECT id FROM pilot.attempts WHERE occurrence_id=$1', [e.aId])).rowCount,
+    invalidAttempts: (await db.query('SELECT id FROM pilot.attempts WHERE occurrence_id=$1', [e.invalid])).rowCount,
+  };
+  assert.deepEqual(counts, { oldCreates: 1, oldReadbacks: 2, invalidCreates: 0, independentCreates: 1,
+    reissuedCreates: 1, staleAttempts: 0, oldAttempts: 1, invalidAttempts: 1 });
+  const files = (await readdir(grantDirectory(fixture, true))).filter(name => name !== 'fixture-id');
+  console.log(JSON.stringify({ ...counts, deadlineObservationMs: day, remainingFiles: files.length }));
 }
 
 async function main() {
@@ -217,6 +223,7 @@ async function main() {
       await unlink(file);
     }
     await rmdir(directory);
+    await assert.rejects(lstat(directory), { code: 'ENOENT' });
   }
 }
 
