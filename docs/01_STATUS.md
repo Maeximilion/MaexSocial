@@ -10,6 +10,11 @@
 
 ## Current work
 
+The [#310 grant drill](handovers/sessions/2026-11-28-disposable-grant-retirement.md)
+observes a revoked grant denied while its file still exists, then removes that version on
+demand. Independent and reissued grants remain usable. Operational custody and scheduling
+remain in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
 The [original #302 drill](handovers/sessions/2026-11-28-last-copy-expiry.md) found deleted
 A bytes in a continued physical backup. The [#307 correction and measured cutoff](handovers/sessions/2026-11-28-continued-backup-deadline.md)
 bind new disposable recaptures to the original deadline. Three affected pairs refused restore
@@ -48,6 +53,11 @@ claim after checked reopen. Broader Task 5 acceptance remains under #166.
 Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) protects new
 synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
 Named operator custody and operating recovery evidence remain in #82 and #10.
+
+[Task 5 component #312](https://github.com/Maeximilion/MaexSocial/issues/312) covers individually authorized
+draft text on a disposable source and offline replay into an encrypted-pair restore. The
+[local evidence](handovers/sessions/2026-11-28-authorized-draft-erasure.md) records the retained approval
+and outcome bindings. Integrated retention and operational acceptance remain under #166.
 
 Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) revokes customer
 and management [AppDB sessions during offline quarantine](../ops/local/README.md#restored-appdb-session-revocation-291).

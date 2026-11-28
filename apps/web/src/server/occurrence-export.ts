@@ -47,14 +47,14 @@ export async function claimExport(connect: () => Promise<Client>, binding: Custo
       JOIN pilot.memberships m ON m.tenant_id=a.tenant_id AND m.id=a.membership_id
         AND m.version=a.membership_version AND m.active AND m.role='Manager'
       JOIN pilot.identities i ON i.id=m.identity_id AND i.verified
-      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
+      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id AND r.text IS NOT NULL
       WHERE o.tenant_id=$1 AND o.id=$2 AND i.id=$3 AND NOT l.grant_active AND a.tenant_version=$4 AND a.id=$5
         AND (a.grant_version=l.version OR (a.grant_active_at_approval AND a.grant_version=l.version-1))
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
-        AND NOT EXISTS (SELECT 1 FROM pilot.audit h
-          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
+        AND NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.approval_id IS NULL)
       FOR SHARE OF m`, [tenantId, occurrenceId, candidate.approver_id, caller.tenantVersion, candidate.approval_id])).rows[0] ?? deny();
 
     const current = await requireCustomerRequest(db, binding, clock, inspect, 'read-only');

@@ -53,15 +53,15 @@ async function persistClaim(db: Client, occurrenceId: string): Promise<GbpCreate
         AND l.provider_location=a.provider_location AND l.grant_active AND l.version=a.grant_version
       JOIN pilot.memberships m ON m.tenant_id=a.tenant_id AND m.id=a.membership_id
         AND m.active AND m.role='Manager' AND m.version=a.membership_version
-      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id
+      JOIN pilot.draft_revisions r ON r.tenant_id=a.tenant_id AND r.draft_id=a.draft_id AND r.id=a.revision_id AND r.text IS NOT NULL
       WHERE o.tenant_id=$1 AND o.id=$2 AND m.identity_id=$3 AND a.grant_active_at_approval
         AND a.tenant_version=$4 AND a.id=$5
         AND btrim(l.provider_location)<>''
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
-        AND NOT EXISTS (SELECT 1 FROM pilot.audit h
-          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
+        AND NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.approval_id IS NULL)
       FOR SHARE OF l,m`, [tenantId, occurrenceId, approverId, tenant.version, candidate.approval_id])).rows[0] ?? deny();
 
     // The stop writer can proceed only before the claim or after its attempt is durable.

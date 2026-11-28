@@ -61,6 +61,11 @@ test('the restore quarantine command requires an offline restore target', async 
     historical.set(id, previous);
     if (previous === 'draft' || previous === 'held') {
       await owner.query('UPDATE pilot.occurrences SET state=$2 WHERE id=$1', [id, previous]);
+      if (previous === 'held') {
+        // Model the imported compact decision after its source audit detail expired.
+        await owner.query('INSERT INTO pilot.expired_occurrence_decisions(tenant_id,occurrence_id) VALUES($1,$2)',
+          [tenant.tenant, id]);
+      }
       continue;
     }
     const { rows: [approval] } = await owner.query<{ id: string }>(`INSERT INTO pilot.approvals
@@ -100,6 +105,9 @@ test('the restore quarantine command requires an offline restore target', async 
     (SELECT jsonb_agg(a ORDER BY id) FROM pilot.audit a) AS audit,
     (SELECT jsonb_agg(to_jsonb(o) - ARRAY['state','restore_previous_state'] ORDER BY id) FROM pilot.occurrences o)
       AS occurrence_bindings`)).rows[0];
+  const decisions = async () => (await owner.query('SELECT tenant_id,occurrence_id,approval_id FROM pilot.occurrence_decisions')).rows;
+  const compactHold = [{ tenant_id: a.tenant, occurrence_id: [...historical].find(([, state]) => state === 'held')![0], approval_id: null }];
+  assert.deepEqual(await decisions(), compactHold);
   const originalHistory = await history();
 
   // A pre-stop snapshot may carry an enabled flag. The database still has no app login.
@@ -131,6 +139,7 @@ test('the restore quarantine command requires an offline restore target', async 
   assert.deepEqual(await readRestoreSessions(owner), revokedSessions);
   assert.equal(await state(), true);
   assert.deepEqual(await history(), originalHistory);
+  assert.deepEqual(await decisions(), compactHold);
 
   const missing = intents.get('unknown')!;
   assert.equal(await reconcileOccurrence(() => connectFixture(true), apparentlyUnsent.occurrenceId, provider), null);

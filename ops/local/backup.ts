@@ -18,7 +18,7 @@ export type Database = typeof databases[number];
 const digest = /^[a-f0-9]{64}$/;
 const retentionMs = 30 * 24 * 60 * 60 * 1000;
 
-async function hashFile(path: string): Promise<string> {
+export async function hashFile(path: string): Promise<string> {
   const hash = createHash('sha256');
   for await (const bytes of createReadStream(path)) hash.update(bytes);
   return hash.digest('hex');
@@ -112,6 +112,7 @@ const compatibleIdpConfigs = new Set([
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
   '072a8dbf6bc2883f3ec9451637105adbaefd47fb4163a7898e96339f59fe9e10', // dispatch retention
   'b1271154041a1354e66f287a8f0c5b2e716c436bce702b2babe91033ad8e10b8', // audit retention
+  'afa8dd9ee07fd1685c55fb836ab9b778444d8eb6e279347803bd9be6f0bf5cb2', // disposable grant retirement
 ]);
 
 // Exact schema revisions eligible for forward offline import, oldest first.
@@ -122,7 +123,9 @@ const forwardAppSchemas = [
   '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
   '459bf0884e01499bfc2568026aa24b728776efae865932aa9766bb4cdc7cf341', // 014
   '9266f480fe7c90e8d6ac8b9edaab2b68c86b4e27f9b963ba93946c52786c5494', // 015
-  '5c1c1ddf8dc6ea7c29cc4aae07f696a507df4db4e907ea6e97cf2d402010e1ff', // 018
+  '818970ac5486b1690d74df19d2a03a9b90aac4a9f42cc297012584efb7105db0', // 016
+  '11bee5ca067bfeb3322f6fe87ab578559b28c9e3ce2025f850a88c14ba84c7c8', // 017
+  '53cebe8d77eb96949e8ba9664bcae9dd6da3879198535b474646ccdbbeb79150', // 018
 ];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,

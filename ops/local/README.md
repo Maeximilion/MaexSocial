@@ -65,6 +65,20 @@ and checks the provider-state directory across rejected structured and media wak
 The [handover](../../docs/handovers/sessions/2026-11-23-isolated-worker-wake.md) records the
 measured scope and the open integrated acceptance work.
 
+## Disposable grant retirement (#310)
+
+Use a fresh worktree with no active fixture and the pinned, cached pilot images. Build, run
+`npm run pilot:up -- grant-retirement`, `npm run pilot:migrate -- up`, then
+`node dist/pilot/tests/pilot/grant-retirement.js` and `npm run pilot:down`.
+The drill requires a new database and creates its own external temporary directory. Only the
+drill and its worker runners mount that directory. The database holds fixture-only digests
+and version-bound revocation records. A location lock covers verification and the fake call.
+The drill brackets the revocation commit on the database clock, exercises denial and restart,
+then measures on-demand removal. A controlled as-of check uses the committed revocation time:
+it changes from not due to overdue at the 24-hour boundary while the file exists, then confirms
+absence for the same deadline after removal and restart. The drill removes the temporary store on exit. Scheduling, physical
+media sanitization and deployed credential custody remain open.
+
 ## Private terminal text export (#252)
 
 The private `claimExport` entry point reuses a bound customer session and the occurrence's immutable approval.
@@ -375,6 +389,24 @@ publishing readiness. The two sources stay stopped during restore and are read i
 before and after. This also limits Docker network allocation to one fixture at a time.
 Real identity, device revocation and operating recovery remain in #131 and #82.
 
+## Authorized draft text erasure (#312)
+
+From a clean, built task checkout with fresh fixture paths, set the separate private
+`MAEX_COLD_BACKUP_KEY_FILE` as for the encrypted backup drill and run
+`node dist/pilot/tests/pilot/draft-erasure.js`. The drill creates two new local databases
+and restores the captured pair into a separate, offline Docker project in the same checkout.
+Its fixture owner issues three exact draft instructions, including one for a draft created after capture. Each binds the source, tenant,
+draft, sequence, journal digest and millisecond timestamp on the source database clock.
+The owner appends records to the same compact JSON interval. Earlier permits pin the complete interval as originally issued. Both source erasure and restore verify that prefix, including every earlier record. Restore also verifies the independently supplied SHA-256 of the complete current file. A location fact deletion has its own event type.
+
+The private operator command is `node dist/pilot/ops/local/source-draft-erasure.js SEQUENCE`.
+It accepts an existing instruction on a disposable backup source. It locks the draft,
+erases every revision payload and clears four historical approval fields in one transaction.
+The receipt commits with the updates. A post-commit observation bounds the elapsed time from
+authorization on the same database clock. A repeated command reports the existing application.
+The operator invokes the command manually. See the [Task 5 evidence](../../docs/handovers/sessions/2026-11-28-authorized-draft-erasure.md)
+for concurrency, retained fields, provider boundaries and restoration.
+
 ### Bound customer access erasure (#314)
 
 In one clean, built task checkout, use the pinned local images and the external disposable backup key described above. The drill requires fresh `work/pilot`, `work/customer-erasure-source` and `work/customer-erasure-case.json` paths.
@@ -598,7 +630,7 @@ node dist/pilot/tests/pilot/audit-retention.js
 npm run pilot:down
 ```
 
-The drill generates five security event classes through their private writers. The restricted fixture
+The drill generates seven security event classes through their private writers. The restricted fixture
 owner supplies an exact incident disposition and the clock instant used by the writer. For a prepared
 record, `npm run pilot:expire-audit-event -- <tenant-uuid> <audit-uuid>` uses PostgreSQL time.
 A successful transaction deletes one online audit event and its disposition. A missing event or
@@ -607,9 +639,11 @@ Unavailable disposition storage or mismatched fixture markers refuse the operati
 serializes an incident decision and expiry on the same disposition row. Incident setup must confirm
 that its write affected the exact live row. The maintenance CLI supplies no hold or release decision.
 
-The elapsed interval is 2,160 hours from the recorded event. Occurrence holds, approval withdrawals,
-dispatch claims and exports retain their full audit rows. The drill covers logical online expiry.
-Physical remnants, archives, external sinks and operating decisions are tracked in #166 and #82.
+The elapsed interval is 2,160 hours from the recorded event. An eligible occurrence hold or approval
+withdrawal leaves its tenant and occurrence keys and, for withdrawals, the exact approval key. The
+application reads these decisions alongside live evidence and has no write grant on compact decisions.
+An incident hold retains full detail. Dispatch claims and exports remain separate publication records.
+Physical remnants, encrypted archives, external sinks and operating decisions are tracked in #166 and #82.
 
 ## Resolved dispatch detail retention (#282)
 

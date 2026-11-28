@@ -30,8 +30,8 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
       const key = [target.tenant_id, occurrenceId, target.state];
       const attempt = await db.query<{ details_retired: boolean }>(`SELECT a.details_retired
         FROM pilot.attempts a WHERE a.tenant_id=$1 AND a.occurrence_id=$2 AND a.outcome=$3
-          AND NOT EXISTS (SELECT 1 FROM pilot.audit h
-            WHERE h.tenant_id=a.tenant_id AND h.occurrence_id=a.occurrence_id AND h.action='occurrence_hold')
+          AND NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+            WHERE h.tenant_id=a.tenant_id AND h.occurrence_id=a.occurrence_id AND h.approval_id IS NULL)
         FOR UPDATE OF a`, key);
       if (!attempt.rows[0]) return 'ineligible';
       if (attempt.rows[0].details_retired) return 'already-retired';

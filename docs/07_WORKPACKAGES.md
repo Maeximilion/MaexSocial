@@ -15,6 +15,10 @@ authenticated integration and acceptance evidence for [#123](https://github.com/
 
 [P1 tracker #162](https://github.com/Maeximilion/MaexSocial/issues/162) records the audit, owners, native dependencies and closure evidence. The accepted local sequence is storage [Task 1 / #114](https://github.com/Maeximilion/MaexSocial/issues/114), portal and approval Task 2 (#117/#131/#123/#124), signed Windows DEV/Admin [Task 3 / #164](https://github.com/Maeximilion/MaexSocial/issues/164), fake dispatch and terminal export [Task 4 / #165](https://github.com/Maeximilion/MaexSocial/issues/165), stop, rollback and isolated restore [Task 5 / #166](https://github.com/Maeximilion/MaexSocial/issues/166), and whole-slice evidence Task 6 under [#10](https://github.com/Maeximilion/MaexSocial/issues/10). Tasks 3–6 consume the preceding integrated evidence in that order.
 
+[Task 5 component #310](https://github.com/Maeximilion/MaexSocial/issues/310) measures
+immediate loss of local grant use and bounded on-demand file removal in the
+[dedicated synthetic fixture](../ops/local/README.md#disposable-grant-retirement-310).
+
 [Task 5 component #266](https://github.com/Maeximilion/MaexSocial/issues/266) covers the
 [ordinary local stop, reconciliation, retained restart and explicit reopen](../ops/local/README.md#explicit-reopen-266).
 Integrated recovery evidence remains under [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
@@ -64,6 +68,11 @@ records the original physical-copy gap. [#307](handovers/sessions/2026-11-28-con
 verifies one non-renewable deadline for new same-source disposable captures and explicit file expiry.
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
+[Task 5 component #312](https://github.com/Maeximilion/MaexSocial/issues/312) covers individually authorized
+draft text on a disposable source and offline replay into an encrypted-pair restore. The
+[local evidence](handovers/sessions/2026-11-28-authorized-draft-erasure.md) records the retained approval
+and outcome bindings. Integrated retention and operational acceptance remain under #166.
+
 Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) adds
 [AppDB session revocation to mandatory offline quarantine](../ops/local/README.md#restored-appdb-session-revocation-291)
 for both audiences. [#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated
@@ -89,7 +98,9 @@ with subsequently committed source outcomes and an independent fake.
 
 Bounded Task 5 [#305](https://github.com/Maeximilion/MaexSocial/issues/305) covers
 [five synthetic management/security audit classes](../ops/local/README.md#management-audit-retention-305)
-at the 90-day boundary. Incident-held evidence and occurrence authorization survive retained restart.
+at the 90-day boundary. [#309](https://github.com/Maeximilion/MaexSocial/issues/309) extends the same
+operation to operator holds and exact-approval withdrawals. Incident-held evidence and occurrence
+authorization survive retained restart.
 
 Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) exercises
 [90-day dispatch detail minimization](../ops/local/README.md#resolved-dispatch-detail-retention-282)
