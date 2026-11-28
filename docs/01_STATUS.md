@@ -10,6 +10,11 @@
 
 ## Current work
 
+The [same-source backup drill for #302](handovers/sessions/2026-11-28-last-copy-expiry.md)
+restored zero deleted A facts and both control facts from the post-purge capture.
+A synthetic A marker remained in its physical AppDB archive at purge + 30 days.
+Physical final-copy retention remains open in [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166).
+
 Bounded Task 4 [#286](https://github.com/Maeximilion/MaexSocial/issues/286) adds the
 [isolated stored-occurrence worker wake](../ops/local/README.md#isolated-text-worker-wake-286).
 The local process test records one claim and fake create for the approved revision, plus
