@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import { test } from 'node:test';
 import { decryptArchive, encryptArchive, sealManifest } from '../../ops/local/backup-crypto.js';
-import { archiveFile, databases, hashSources, verifyPair, type Pair } from '../../ops/local/backup.js';
+import { archiveFile, continuedRetention, databases, hashSources, verifyPair, type Pair } from '../../ops/local/backup.js';
 import { postgresImage } from '../../ops/local/stack.js';
 
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
@@ -96,7 +96,7 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
     await assert.rejects(verifyPair(path, fixtureId, compatibility, { ...dated, capturedAt: invalid }), /invalid capture time/);
   }
 
-  const unsupported = { ...pair, format: 4 } as unknown as typeof pair;
+  const unsupported = { ...pair, format: 5 } as unknown as typeof pair;
   await assert.rejects(verifyPair(path, fixtureId, compatibility, unsupported), /unknown identity/);
   await assert.rejects(verifyPair(path, 'c'.repeat(32), compatibility, pair), /unknown identity/);
   await assert.rejects(verifyPair(path, fixtureId, { ...compatibility, appSchema: sha256('other schema') }, pair), /incompatible/);
@@ -150,6 +150,26 @@ test('encrypted pairs bind metadata, ciphertext, source and role before import c
     { ...pair, capturedAt: '2025-01-01T00:00:00.000Z' },
     { ...pair, historyAnchor: { ...pair.historyAnchor!, after: 2 } },
   ]) await assert.rejects(verify(modified), /manifest authentication/);
+  const continued = { ...pair, format: 4 as const, disposable: true as const,
+    lineageCapturedAt: new Date(Date.parse(pair.capturedAt) - 1000).toISOString() };
+  await rm(join(path, 'pair.auth'));
+  await sealManifest(path, continued, key);
+  await verify(continued);
+  assert.deepEqual(continuedRetention(continued, continued.archives), {
+    format: 4, disposable: true, lineageCapturedAt: continued.lineageCapturedAt,
+  });
+  assert.throws(() => continuedRetention(pair, pair.archives), /capture lineage/);
+  assert.throws(() => continuedRetention(continued,
+    { ...continued.archives, [app.archive]: continued.archives[idp.archive]! }), /original PostgreSQL clusters/);
+  await assert.rejects(verify({ ...continued, lineageCapturedAt: continued.capturedAt }), /manifest authentication/);
+  for (const lineageCapturedAt of [undefined, 'unknown', new Date(Date.parse(pair.capturedAt) + 1).toISOString()]) {
+    const invalid = { ...continued, lineageCapturedAt };
+    await rm(join(path, 'pair.auth'));
+    await sealManifest(path, invalid, key);
+    await assert.rejects(verify(invalid as Pair), /invalid capture lineage/);
+  }
+  await rm(join(path, 'pair.auth'));
+  await sealManifest(path, pair, key);
   const downgraded = { ...pair, format: 2 as const };
   await assert.rejects(verify(downgraded), /format mismatch/);
   assert.deepEqual((await readdir(path)).sort(), ['app-db.tar.enc', 'identity-db.tar.enc', 'pair.auth']);
@@ -255,7 +275,7 @@ test('backup expiry CLI removes only the opted-in pair archives at the UTC deadl
   }
 });
 
-test('encrypted expiry authenticates the disposable deadline and permits a partial retry', async t => {
+for (const format of [3, 4]) test('format ' + format + ' authenticates expiry and permits a partial retry', async t => {
   const root = await mkdtemp(join(tmpdir(), 'maex-encrypted-expiry-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const cwd = join(root, 'source');
@@ -285,7 +305,9 @@ test('encrypted expiry authenticates the disposable deadline and permits a parti
     await encryptArchive(Readable.from([Buffer.from('synthetic test contents')]), file, key, fixtureId, db.archive);
     archives[db.archive] = { sha256: sha256(await readFile(file)) };
   }
-  const pair = { format: 3, fixtureId, capturedAt, disposable: true, archives };
+  const pair = { format, fixtureId, capturedAt, disposable: true, archives,
+    ...(format === 4 ? { capturedAt: '2026-10-21T12:30:00.000Z', lineageCapturedAt: capturedAt,
+      historyAnchor: { after: 1, evidenceSha256: sha256('source history') } } : {}) };
   const manifest = join(backup, 'pair.json');
   const clock = join(root, 'clock.cjs');
   const cli = resolve('dist/pilot/ops/local/backup.js');
