@@ -37,7 +37,7 @@ function parseEvent(value: unknown, seq: number): Event {
   return incompatible();
 }
 
-export async function readBoundHistory(source: string, after: number, digest: string): Promise<Event[]> {
+async function readJournal(source: string, after: number) {
   const file = await open(historyPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let bytes: Buffer;
   try {
@@ -45,9 +45,7 @@ export async function readBoundHistory(source: string, after: number, digest: st
     const buffer = Buffer.alloc(65_537);
     if (!stat.isFile() || stat.size >= buffer.length) return incompatible();
     const { bytesRead } = await file.read(buffer);
-    if (bytesRead !== stat.size || createHash('sha256').update(buffer.subarray(0, bytesRead)).digest('hex') !== digest) {
-      return incompatible();
-    }
+    if (bytesRead !== stat.size) return incompatible();
     bytes = buffer.subarray(0, bytesRead);
   } finally { await file.close(); }
   const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
@@ -55,7 +53,30 @@ export async function readBoundHistory(source: string, after: number, digest: st
   const history = value as Record<string, unknown>;
   if (history.schema !== 1 || history.fixtureId !== source || history.after !== after || !Number.isSafeInteger(history.through) || Number(history.through) < after
       || !Array.isArray(history.records) || history.records.length !== Number(history.through) - after) return incompatible();
-  return history.records.map((row, i) => parseEvent(row, after + i + 1));
+  const records = history.records;
+  const events = records.map((row, i) => parseEvent(row, after + i + 1));
+  const digest = createHash('sha256').update(bytes).digest('hex');
+  const through = after + events.length;
+  const ends = new Map<string, number>();
+  function covers(issuedDigest: string, sequence: number) {
+    if (sequence <= after || sequence > through) return false;
+    if (issuedDigest === digest) return true;
+    // The owner serializes each interval this way. Only append-only growth preserves its issued digest.
+    if (!ends.size) {
+      for (let n = 1; n < records.length; n++) {
+        const prefix = JSON.stringify({ schema: 1, fixtureId: source, after, through: after + n, records: records.slice(0, n) });
+        ends.set(createHash('sha256').update(prefix).digest('hex'), after + n);
+      }
+    }
+    return (ends.get(issuedDigest) ?? after) >= sequence;
+  }
+  return { events, digest, covers };
+}
+
+export async function readBoundHistory(source: string, after: number, digest: string, issuedSequence?: number): Promise<Event[]> {
+  const journal = await readJournal(source, after);
+  if (issuedSequence === undefined ? journal.digest !== digest : !journal.covers(digest, issuedSequence)) return incompatible();
+  return journal.events;
 }
 
 export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[]) {
@@ -74,8 +95,25 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     FROM public.fixture_identity AS marker WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
   if (!anchor?.source) return incompatible();
 
-  const events = await readBoundHistory(anchor.source, after, digest);
+  const journal = await readJournal(anchor.source, after);
+  const { events } = journal;
+  if (journal.digest !== digest) return incompatible();
   if (events.length !== through - after || (events.some(event => event.kind === 'delete-customer') && !anchor.disposable)) return incompatible();
+
+  // A continued pair carries the original owner instruction, even before the source has applied it.
+  let appliedCustomerSequence: number | undefined;
+  if ((await db.query("SELECT to_regclass('pilot.fixture_customer_erasure') IS NOT NULL AS present")).rows[0].present) {
+    const permits = await db.query(`SELECT fixture_id, sequence, identity_id, identity_version, subject_binding,
+      history_digest, applied_xid IS NOT NULL AS applied FROM pilot.fixture_customer_erasure`);
+    for (const permit of permits.rows) {
+      const sequence = Number(permit.sequence);
+      const event = events[sequence - after - 1];
+      if (!anchor.disposable || permit.fixture_id !== anchor.source || event?.kind !== 'delete-customer'
+          || event.id !== permit.identity_id || event.version !== permit.identity_version
+          || event.binding !== permit.subject_binding || !journal.covers(permit.history_digest, sequence)) return incompatible();
+      if (permit.applied) appliedCustomerSequence = sequence;
+    }
+  }
 
   if (anchor.restore_history_digest !== null) {
     if (anchor.restore_history_digest !== digest) return incompatible();
@@ -85,14 +123,9 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     return { applied: 0 };
   }
 
-  for (const event of events) {
+  for (const [index, event] of events.entries()) {
     if (event.kind === 'delete-customer') {
-      // A later same-source copy may already contain the committed source receipt.
-      const installed = (await db.query("SELECT to_regclass('pilot.fixture_customer_erasure') AS receipt")).rows[0].receipt;
-      const applied = installed && (await db.query(`SELECT 1 FROM pilot.fixture_customer_erasure
-        WHERE fixture_id=$1 AND identity_id=$2 AND subject_binding=$3 AND identity_version=$4
-          AND history_digest=$5 AND applied_xid IS NOT NULL`, [anchor.source,event.id,event.binding,event.version,digest])).rowCount;
-      if (applied) await verifyErasedCustomer(db, event.id);
+      if (appliedCustomerSequence === after + index + 1) await verifyErasedCustomer(db, event.id);
       else await eraseCustomer(db, anchor.source, event, true);
     } else if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.

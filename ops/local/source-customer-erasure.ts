@@ -23,7 +23,7 @@ export async function applySourceCustomerErasure() {
       [fixture.id]
     );
     if (!permit) throw new Error('Customer erasure instruction required');
-    const events = await readBoundHistory(fixture.id, permit.after, permit.history_digest);
+    const events = await readBoundHistory(fixture.id, permit.after, permit.history_digest, permit.sequence);
     const event = events[permit.sequence - permit.after - 1];
     if (
       event?.kind !== 'delete-customer' ||
