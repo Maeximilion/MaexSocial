@@ -40,7 +40,8 @@ async function materialDigest(fixtureId: string, path: string) {
   }
 }
 
-// Keep the grant row locked through the actual fake operation. A committed revocation wins
+// Lock the location and verifier through use. Take the verifier write lock up front for the readback counter.
+// A committed revocation wins
 // even if the dispatch claim committed earlier and has not yet reached create.
 export async function withDisposableGrant<T>(fixtureId: string, attempt: GbpAttempt, operation: 'create' | 'readback',
   use: () => Promise<T>): Promise<T | null> {
@@ -55,7 +56,7 @@ export async function withDisposableGrant<T>(fixtureId: string, attempt: GbpAtte
         (a.tenant_id,a.location_id,a.grant_version,a.provider_location)
       JOIN public.disposable_grants g ON (g.tenant,g.location,g.version)=(l.tenant_id,l.id,l.version)
       WHERE t.tenant_id=$1 AND t.occurrence_id=$2 AND t.id=$3 AND l.provider_location=$4
-        AND l.grant_active AND g.revoked_at IS NULL FOR SHARE OF l`,
+        AND l.grant_active AND g.revoked_at IS NULL FOR SHARE OF l FOR UPDATE OF g`,
     [attempt.tenantId, attempt.occurrenceId, attempt.attemptId, attempt.location]);
     if (!grant || await materialDigest(fixtureId, materialPath(fixtureId, grant)) !== grant.digest) return null;
     const result = await use();

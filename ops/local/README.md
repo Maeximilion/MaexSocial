@@ -74,8 +74,9 @@ The drill requires a new database and creates its own external temporary directo
 drill and its worker runners mount that directory. The database holds fixture-only digests
 and version-bound revocation records. A location lock covers verification and the fake call.
 The drill brackets the revocation commit on the database clock, exercises denial and restart,
-then runs on-demand removal and observes file absence again with its private clock advanced
-to the 24-hour boundary. The drill removes the temporary store on exit. Scheduling, physical
+then measures on-demand removal. A controlled as-of check uses the committed revocation time:
+it changes from not due to overdue at the 24-hour boundary while the file exists, then confirms
+absence for the same deadline after removal and restart. The drill removes the temporary store on exit. Scheduling, physical
 media sanitization and deployed credential custody remain open.
 
 ## Private terminal text export (#252)

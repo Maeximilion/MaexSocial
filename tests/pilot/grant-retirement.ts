@@ -5,7 +5,7 @@ import { lstat, mkdir, readFile, readdir, rename, rmdir, unlink, writeFile } fro
 import { basename, join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { Client } from 'pg';
-import { grantDirectory, materialPath, purgeDisposableGrant, type GrantBinding } from '../../apps/worker/src/disposable-grant.js';
+import { grantDirectory, materialPath, purgeDisposableGrant, withDisposableGrant, type GrantBinding } from '../../apps/worker/src/disposable-grant.js';
 import { providerStateDirectory } from '../../apps/worker/src/fake-gbp.js';
 import { compose, connectFixture, loadFixture, requireWorkerFixtureDatabase, usesLocalDocker, verifyContainers } from '../../ops/local/fixture.js';
 import { approveDispatchOccurrence, binding, seedDispatchApproval, type Case } from './dispatch-fixture.js';
@@ -67,6 +67,18 @@ async function begin(db: Client, fixture: string) {
   assert.equal(wake(a.id), 'in_flight');
   assert.equal(wake(a.id), 'pending');
   assert.equal(creates(a.tenant, a.id), 1);
+  const { rows: [claimed] } = await db.query('SELECT id FROM pilot.attempts WHERE occurrence_id=$1', [a.id]);
+  const { rows: [destination] } = await db.query('SELECT provider_location FROM pilot.locations WHERE id=$1', [old.location]);
+  assert.equal(await withDisposableGrant(fixture, { tenantId: a.tenant, occurrenceId: a.id, attemptId: claimed.id,
+    location: destination.provider_location }, 'create', async () => {
+    await db.query('BEGIN');
+    try {
+      // A verifier-only revoker cannot acquire its update lock while the authorized call is running.
+      await assert.rejects(db.query('SELECT 1 FROM public.disposable_grants WHERE tenant=$1 AND location=$2 AND version=$3 FOR UPDATE NOWAIT',
+        grantArgs(old)), { code: '55P03' });
+    } finally { await db.query('ROLLBACK'); }
+    return true;
+  }), true);
   assert.equal(wake(bId), 'in_flight');
 
   // A different live capability cannot authorize even an otherwise eligible committed create.
@@ -118,6 +130,22 @@ async function begin(db: Client, fixture: string) {
 
 type Evidence = Awaited<ReturnType<typeof begin>>;
 
+async function assessDeadline(db: Client, fixture: string, g: GrantBinding, asOf: string) {
+  const { rows: [row] } = await db.query(`SELECT $4::timestamptz >= revoked_at + interval '24 hours' AS due
+    FROM public.disposable_grants WHERE tenant=$1 AND location=$2 AND version=$3 AND revoked_at IS NOT NULL`,
+  [...grantArgs(g), asOf]);
+  assert.ok(row, 'A committed retirement is required for the deadline assessment');
+  if (!row.due) return 'not-due';
+  assert.equal(await readFile(join(grantDirectory(fixture, true), 'fixture-id'), 'utf8'), fixture);
+  try {
+    assert.ok(await present(materialPath(fixture, g)));
+    return 'overdue';
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'absent';
+    throw error;
+  }
+}
+
 async function retire(db: Client, fixture: string, e: Evidence) {
   const { old, live, reissued } = e;
   const path = materialPath(fixture, old);
@@ -137,6 +165,11 @@ async function retire(db: Client, fixture: string, e: Evidence) {
     await assert.rejects(purgeDisposableGrant(fixture, old), { message: 'Disposable material mismatch' });
     assert.equal(await present(path), true);
   } finally { await rename(path + '.held', path); }
+  const { rows: [times] } = await db.query(`SELECT (revoked_at + interval '24 hours')::text AS deadline,
+    (revoked_at + interval '24 hours' - interval '1 microsecond')::text AS before
+    FROM public.disposable_grants WHERE tenant=$1 AND location=$2 AND version=$3`, grantArgs(old));
+  assert.equal(await assessDeadline(db, fixture, old, times.before), 'not-due');
+  assert.equal(await assessDeadline(db, fixture, old, times.deadline), 'overdue');
   assert.equal(await purgeDisposableGrant(fixture, old), 'removed');
   assert.equal(await purgeDisposableGrant(fixture, old), 'absent');
   await assert.rejects(lstat(path), { code: 'ENOENT' });
@@ -145,18 +178,12 @@ async function retire(db: Client, fixture: string, e: Evidence) {
     WHERE tenant=$1 AND location=$2 AND version=$3`, grantArgs(old));
   const removalUpperMs = Number(timing.observed) - Number(timing.origin);
   assert.ok(removalUpperMs >= e.deniedUpperMs && removalUpperMs < day);
-  return { removalUpperMs, originMs: Number(timing.origin) };
+  return { removalUpperMs, deadline: times.deadline as string };
 }
 
-async function verify(db: Client, fixture: string, e: Evidence, originMs: number) {
-  const { mock } = await import('node:test');
-  mock.timers.enable({ apis: ['Date'], now: Math.floor(originMs) });
-  try {
-    mock.timers.tick(day);
-    assert.equal(Date.now() - Math.floor(originMs), day);
-    await assert.rejects(lstat(materialPath(fixture, e.old)), { code: 'ENOENT' });
-    for (const g of [e.live, e.reissued]) assert.equal(await present(materialPath(fixture, g)), true);
-  } finally { mock.timers.reset(); }
+async function verify(db: Client, fixture: string, e: Evidence, deadline: string) {
+  assert.equal(await assessDeadline(db, fixture, e.old, deadline), 'absent');
+  for (const g of [e.live, e.reissued]) assert.ok(await present(materialPath(fixture, g)));
   assert.equal(wake(e.stale), 'denied');
   assert.equal(wake(e.aId), 'unknown');
   assert.equal(wake(e.bId), 'pending');
@@ -175,7 +202,7 @@ async function verify(db: Client, fixture: string, e: Evidence, originMs: number
   assert.deepEqual(counts, { oldCreates: 1, oldReadbacks: 2, invalidCreates: 0, independentCreates: 1,
     reissuedCreates: 1, staleAttempts: 0, oldAttempts: 1, invalidAttempts: 1 });
   const files = (await readdir(grantDirectory(fixture, true))).filter(name => name !== 'fixture-id');
-  console.log(JSON.stringify({ ...counts, deadlineObservationMs: day, remainingFiles: files.length }));
+  console.log(JSON.stringify({ ...counts, deadlineAssessment: 'overdue before purge, absent after purge', remainingFiles: files.length }));
 }
 
 async function main() {
@@ -189,7 +216,7 @@ async function main() {
       switch (process.argv[2]) {
         case 'begin': console.log(JSON.stringify(await begin(db, f.id))); return;
         case 'retire': console.log(JSON.stringify(await retire(db, f.id, JSON.parse(process.argv[3]!)))); return;
-        case 'verify': await verify(db, f.id, JSON.parse(process.argv[3]!), Number(process.argv[4])); return;
+        case 'verify': await verify(db, f.id, JSON.parse(process.argv[3]!), process.argv[4]!); return;
         default: throw new Error('Unknown drill stage');
       }
     } finally { await db.end(); }
@@ -210,8 +237,8 @@ async function main() {
     const neverMounted = compose(f, ['run', '--rm', '-T', '--no-deps', '--pull', 'never', 'runner', 'node', '-e',
       'if(require("node:fs").existsSync(process.argv[1]))process.exit(1)', target]);
     assert.equal(neverMounted, '');
-    const { removalUpperMs, originMs } = run('retire', JSON.stringify(e));
-    const verified = run('verify', JSON.stringify(e), String(originMs));
+    const { removalUpperMs, deadline } = run('retire', JSON.stringify(e));
+    const verified = run('verify', JSON.stringify(e), deadline);
     assert.equal(verified.remainingFiles, 2);
     console.log(JSON.stringify({ ...verified, commitUpperMs: e.commitUpperMs, immediateDenialUpperMs: e.deniedUpperMs, removalUpperMs }));
   } finally {
