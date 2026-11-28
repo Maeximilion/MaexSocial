@@ -86,6 +86,10 @@ and applies the existing quarantine before offline inspection.
 with subsequently committed source outcomes and an independent fake.
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill and release acceptance.
 
+Bounded Task 5 [#305](https://github.com/Maeximilion/MaexSocial/issues/305) covers
+[five synthetic management/security audit classes](../ops/local/README.md#management-audit-retention-305)
+at the 90-day boundary. Incident-held evidence and occurrence authorization survive retained restart.
+
 Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) exercises
 [90-day dispatch detail minimization](../ops/local/README.md#resolved-dispatch-detail-retention-282)
 on a dedicated disposable fixture. It preserves the one-claim invariant, terminal result and

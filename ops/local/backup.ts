@@ -92,6 +92,7 @@ const compatibleIdpConfigs = new Set([
   '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5', // before dispatch reopen
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
   '072a8dbf6bc2883f3ec9451637105adbaefd47fb4163a7898e96339f59fe9e10', // dispatch retention
+  'b1271154041a1354e66f287a8f0c5b2e716c436bce702b2babe91033ad8e10b8', // audit retention
 ]);
 
 // Exact schema revisions eligible for forward offline import, oldest first.
@@ -101,6 +102,7 @@ const forwardAppSchemas = [
   '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13', // 012
   '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
   '459bf0884e01499bfc2568026aa24b728776efae865932aa9766bb4cdc7cf341', // 014
+  '9266f480fe7c90e8d6ac8b9edaab2b68c86b4e27f9b963ba93946c52786c5494', // 015
 ];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,

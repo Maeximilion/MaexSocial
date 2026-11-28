@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { Client, type ClientConfig } from 'pg';
 
-const purposes = ['ordinary', 'backup', 'restore-target', 'readiness', 'paired-restore', 'dispatch-retention'] as const;
+const purposes = ['ordinary', 'backup', 'restore-target', 'readiness', 'paired-restore', 'dispatch-retention', 'audit-retention'] as const;
 export type FixturePurpose = typeof purposes[number];
 
 export interface Fixture {
@@ -134,7 +134,7 @@ export function verifyContainers(f: Fixture, requireHealthyDatabases = false) {
 
 export function runIsolatedFixture(f: Fixture, args: string[], requireHealthyDatabases = false) {
   const topology = verifyContainers(f, requireHealthyDatabases);
-  const output = compose(f, ['run', '--rm', '--no-deps', ...(f.pairedRestore ? ['--pull', 'never'] : []), 'runner', 'node', ...args]);
+  const output = compose(f, ['run', '--rm', '--no-deps', ...(f.pairedRestore || f.purpose === 'audit-retention' ? ['--pull', 'never'] : []), 'runner', 'node', ...args]);
   return { topology, output };
 }
 

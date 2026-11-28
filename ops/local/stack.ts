@@ -19,7 +19,7 @@ export async function initialize(
   const forBackup = purpose === 'backup';
   const pairedRestore = purpose === 'paired-restore';
   const restoreTarget = purpose === 'restore-target' || pairedRestore;
-  const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness' || purpose === 'dispatch-retention';
+  const cachedImagesOnly = forBackup || restoreTarget || purpose === 'readiness' || purpose === 'dispatch-retention' || purpose === 'audit-retention';
   const f: Fixture = { schema: 1, id: randomBytes(16).toString('hex'), project: '', purpose, expiresAt: Date.now() + 86_400_000,
     ownerPassword: secret(), appPassword: secret(), identityPassword: secret(), keycloakPassword: secret() };
   if (restoreTarget) f.restoreTarget = true;
@@ -166,11 +166,13 @@ async function main(): Promise<void> {
     return;
   }
   const restoreTarget = action === 'up' && process.argv.length <= 5 && process.argv[3] === 'restore-target';
-  const retention = action === 'up' && process.argv.length === 4 && process.argv[3] === 'dispatch-retention';
+  const requested = process.argv[3];
+  const retention = action === 'up' && process.argv.length === 4
+    && (requested === 'dispatch-retention' || requested === 'audit-retention') ? requested : undefined;
   if (!restoreTarget && !retention && (process.argv.length !== 3 || (action !== 'up' && action !== 'down'))) {
-    throw new Error('Usage: pilot:up [-- restore-target [snapshot-sequence] | dispatch-retention] or pilot:down');
+    throw new Error('Usage: pilot:up [-- restore-target [snapshot-sequence] | dispatch-retention | audit-retention] or pilot:down');
   }
-  if (retention && !usesLocalDocker()) throw new Error('Dispatch retention requires a local Docker socket');
+  if (retention && !usesLocalDocker()) throw new Error('Retention requires a local Docker socket');
   const snapshotArg = restoreTarget ? process.argv[4] : undefined;
   const snapshotSequence = snapshotArg === undefined ? undefined : Number(snapshotArg);
   if (snapshotArg !== undefined && snapshotArg !== String(snapshotSequence)) {
@@ -183,7 +185,7 @@ async function main(): Promise<void> {
   }
   catch (error) {
     if (action !== 'up' || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    f = await initialize(restoreTarget ? 'restore-target' : retention ? 'dispatch-retention' : 'ordinary', snapshotSequence);
+    f = await initialize(restoreTarget ? 'restore-target' : retention ?? 'ordinary', snapshotSequence);
   }
   if (action === 'down') {
     compose(f, ['down']);
@@ -191,7 +193,7 @@ async function main(): Promise<void> {
     return;
   }
   if (f.pairedRestore) throw new Error('Paired restore targets cannot be started with pilot:up.');
-  if ((f.restoreTarget === true) !== restoreTarget || (f.purpose === 'dispatch-retention') !== retention) {
+  if ((f.restoreTarget === true) !== restoreTarget || ((retention || f.purpose === 'dispatch-retention' || f.purpose === 'audit-retention') && f.purpose !== retention)) {
     throw new Error('Existing fixture has a different purpose.');
   }
   try {

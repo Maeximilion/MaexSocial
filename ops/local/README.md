@@ -566,6 +566,31 @@ The [worker entry](../../apps/worker/src/reconcile.ts) accepts a stored occurren
 
 With a fresh isolated fixture, run `npm run pilot:build`, `npm run pilot:migrate -- up` and `node --test dist/pilot/tests/pilot/reconcile.test.js`. The test seeds attempts, reconnects to the same SQLite fake in a second Node process, checks the stored states and verifies the create counts. Complete the empty migration drill before seeding. Sender, terminal export and integrated evidence remain in [Task 4](https://github.com/Maeximilion/MaexSocial/issues/165).
 
+## Management audit retention (#305)
+
+Use a new worktree fixture with cached images, the pinned runtime and only synthetic data.
+
+```sh
+npm run pilot:build
+npm run pilot:up -- audit-retention
+npm run pilot:migrate -- up
+node dist/pilot/tests/pilot/audit-retention.js
+npm run pilot:down
+```
+
+The drill generates five security event classes through their private writers. The restricted fixture
+owner supplies an exact incident disposition and the clock instant used by the writer. For a prepared
+record, `npm run pilot:expire-audit-event -- <tenant-uuid> <audit-uuid>` uses PostgreSQL time.
+A successful transaction deletes one online audit event and its disposition. A missing event or
+disposition, held evidence, mismatched event instant or premature retry returns `ineligible`.
+Unavailable disposition storage or mismatched fixture markers refuse the operation. PostgreSQL
+serializes an incident decision and expiry on the same disposition row. Incident setup must confirm
+that its write affected the exact live row. The maintenance CLI supplies no hold or release decision.
+
+The elapsed interval is 2,160 hours from the recorded event. Occurrence holds, approval withdrawals,
+dispatch claims and exports retain their full audit rows. The drill covers logical online expiry.
+Physical remnants, archives, external sinks and operating decisions are tracked in #166 and #82.
+
 ## Resolved dispatch detail retention (#282)
 
 Create a dedicated fixture from a worktree without `work/pilot` using the installed locked dependencies
