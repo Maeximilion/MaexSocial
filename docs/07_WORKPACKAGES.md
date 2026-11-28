@@ -59,6 +59,9 @@ Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues
 loss and recovery measurements for Task 5, including refusal of the unmodified 010 pair by build 009.
 Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) protects new
 synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
+The [continued-source expiry drill](handovers/sessions/2026-11-28-last-copy-expiry.md)
+records the original physical-copy gap. [#307](handovers/sessions/2026-11-28-continued-backup-deadline.md)
+verifies one non-renewable deadline for new same-source disposable captures and explicit file expiry.
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
 Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) adds
@@ -83,6 +86,12 @@ and applies the existing quarantine before offline inspection.
 [cold snapshot before dispatch and export](handovers/sessions/2026-11-22-restore-before-effects.md)
 with subsequently committed source outcomes and an independent fake.
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) retains the integrated drill and release acceptance.
+
+Bounded Task 5 [#305](https://github.com/Maeximilion/MaexSocial/issues/305) covers
+[five synthetic management/security audit classes](../ops/local/README.md#management-audit-retention-305)
+at the 90-day boundary. [#309](https://github.com/Maeximilion/MaexSocial/issues/309) extends the same
+operation to operator holds and exact-approval withdrawals. Incident-held evidence and occurrence
+authorization survive retained restart.
 
 Bounded Task 5 [#282](https://github.com/Maeximilion/MaexSocial/issues/282) exercises
 [90-day dispatch detail minimization](../ops/local/README.md#resolved-dispatch-detail-retention-282)

@@ -80,9 +80,16 @@ jobs:
           npm run pilot:migrate -- down
           npm run pilot:migrate -- up
           node dist/pilot/tests/pilot/dispatch-retention.js
-      - name: Disposable grant revocation and removal
+      - name: Dedicated management audit retention fixture
         run: |
           mv work/pilot work/pilot-from-dispatch-retention
+          trap 'npm run pilot:down' EXIT
+          npm run pilot:up -- audit-retention
+          npm run pilot:migrate -- up
+          node dist/pilot/tests/pilot/audit-retention.js
+      - name: Disposable grant revocation and removal
+        run: |
+          mv work/pilot work/pilot-from-audit-retention
           trap 'npm run pilot:down' EXIT
           npm run pilot:up -- grant-retirement
           npm run pilot:migrate -- up

@@ -3,7 +3,7 @@ import type { KeyObject } from 'node:crypto';
 import { lstat, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { decryptArchive, loadBackupKey, maxArchiveBytes, validEncryption } from './backup-crypto.js';
-import { archiveFile, compatibility, databases, hashSources, verifyPair, volumeName,
+import { archiveFile, compatibility, databases, encryptedFormat, hashSources, requireUnexpired, verifyPair, volumeName,
   type Database, type Pair } from './backup.js';
 import { compose, docker, runIsolatedFixture, usesLocalDocker, validateFixture, type Fixture } from './fixture.js';
 import { initialize, postgresImage } from './stack.js';
@@ -15,7 +15,7 @@ async function verifySource(sourceDir: string) {
   if (source.restoreTarget) throw new Error('Backup source must be an ordinary synthetic fixture.');
   const pair: Pair = JSON.parse(await readFile(join(backupPath, 'pair.json'), 'utf8'));
   const expected = await compatibility(source, join(sourceDir, 'compose.env'));
-  const key = pair?.format === 3 ? await loadBackupKey(sourceDir) : undefined;
+  const key = encryptedFormat(pair?.format) ? await loadBackupKey(sourceDir) : undefined;
   await verifyPair(backupPath, source.id, expected, pair, key);
   if (pair.effectiveIdentityConfig !== undefined && pair.effectiveIdentityConfig !== await hashSources(
     ['work/pilot/keycloak.conf', 'work/pilot/keycloak-realm.json'], path => join(sourceDir, basename(path)))) {
@@ -51,7 +51,7 @@ async function restoreCluster(f: Fixture, source: Fixture, pair: Pair, backupPat
     archive.catalogVersion, source.id, f.id, schema, new Date(f.expiresAt).toISOString(),
     pair.historyAnchor ? String(pair.historyAnchor.after) : '', pair.historyAnchor?.evidenceSha256 ?? '',
     key && encryption ? String(encryption.bytes) : ''];
-  if (pair.format !== 3) {
+  if (!encryptedFormat(pair.format)) {
     docker(args);
     return;
   }
@@ -78,6 +78,7 @@ export async function restore(sourceDir: string, ownTarget?: (fixture: Fixture) 
   })) throw new Error('Paired restore requires a fresh worktree without work/pilot.');
   if (!usesLocalDocker()) throw new Error('Paired restore requires a local Docker socket.');
   const { source, pair, backupPath, key } = await verifySource(resolve(sourceDir));
+  requireUnexpired(pair);
   const f = await initialize('paired-restore');
   const services = databases.map(db => db.service);
   const volumes = docker(['volume', 'ls', '--format', '{{.Name}}']).split(/\s+/);

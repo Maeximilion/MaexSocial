@@ -56,7 +56,9 @@ export async function compatibility(f: Fixture, envFile?: string) {
 export type Pair = (
   | { format: 1; capturedAt?: never; disposable?: never }
   | { format: 2 | 3; capturedAt: string; disposable?: true }
+  | { format: 4; capturedAt: string; disposable: true; lineageCapturedAt: string }
 ) & {
+  lineageCapturedAt?: string;
   fixtureId: string;
   revision: string;
   compatibility: Awaited<ReturnType<typeof compatibility>>;
@@ -68,19 +70,36 @@ export type Pair = (
   archives: Record<string, { sha256: string; systemId: string; catalogVersion: string; encryption?: ArchiveEncryption }>;
 };
 
+export function encryptedFormat(format: Pair['format']): boolean {
+  return format === 3 || format === 4;
+}
+
 export function archiveFile(db: Database, format: Pair['format']): string {
-  return format === 3 ? db.archive + '.enc' : db.archive;
+  return encryptedFormat(format) ? db.archive + '.enc' : db.archive;
 }
 
 function pairExpired(pair: Pair): boolean {
-  if (pair.format === 1 && pair.capturedAt === undefined && pair.disposable === undefined) return false;
+  if (pair.format === 1 && pair.capturedAt === undefined && pair.disposable === undefined && pair.lineageCapturedAt === undefined) return false;
   const now = Date.now();
   const captureTime = typeof pair.capturedAt === 'string' ? Date.parse(pair.capturedAt) : NaN;
-  if ((pair.format !== 2 && pair.format !== 3) || !Number.isFinite(captureTime) || new Date(captureTime).toISOString() !== pair.capturedAt
+  if ((pair.format !== 2 && !encryptedFormat(pair.format)) || !Number.isFinite(captureTime) || new Date(captureTime).toISOString() !== pair.capturedAt
       || captureTime > now || (pair.disposable !== undefined && pair.disposable !== true)) {
     throw new Error('Backup pair has an invalid capture time or retention metadata.');
   }
-  return now >= captureTime + retentionMs;
+  let retentionStart = captureTime;
+  if (pair.format === 4 || pair.lineageCapturedAt !== undefined) {
+    retentionStart = typeof pair.lineageCapturedAt === 'string' ? Date.parse(pair.lineageCapturedAt) : NaN;
+    if (!encryptedFormat(pair.format) || pair.disposable !== true || !pair.historyAnchor
+        || !Number.isFinite(retentionStart) || new Date(retentionStart).toISOString() !== pair.lineageCapturedAt
+        || retentionStart > captureTime || (pair.format === 3 && retentionStart !== captureTime)) {
+      throw new Error('Backup pair has invalid capture lineage.');
+    }
+  }
+  return now >= retentionStart + retentionMs;
+}
+
+export function requireUnexpired(pair: Pair): void {
+  if (pairExpired(pair)) throw new Error('Backup pair has expired.');
 }
 
 // These fixture revisions change bootstrap/restore controls but produce the same synthetic IdP configuration.
@@ -92,6 +111,7 @@ const compatibleIdpConfigs = new Set([
   '47420f024562f01694126e4edfa0a9903b89df43476d3eb3ac161db61a361fb5', // before dispatch reopen
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
   '072a8dbf6bc2883f3ec9451637105adbaefd47fb4163a7898e96339f59fe9e10', // dispatch retention
+  'b1271154041a1354e66f287a8f0c5b2e716c436bce702b2babe91033ad8e10b8', // audit retention
 ]);
 
 // Exact schema revisions eligible for forward offline import, oldest first.
@@ -101,6 +121,8 @@ const forwardAppSchemas = [
   '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13', // 012
   '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
   '459bf0884e01499bfc2568026aa24b728776efae865932aa9766bb4cdc7cf341', // 014
+  '9266f480fe7c90e8d6ac8b9edaab2b68c86b4e27f9b963ba93946c52786c5494', // 015
+  '818970ac5486b1690d74df19d2a03a9b90aac4a9f42cc297012584efb7105db0', // 016
 ];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,
@@ -114,7 +136,7 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
   if (sourceSchemaIndex >= 0 && sourceSchemaIndex < forwardAppSchemas.indexOf(expected.appSchema)) {
     compatible.appSchema = pair.compatibility.appSchema;
   }
-  if ((pair?.format !== 1 && pair?.format !== 2 && pair?.format !== 3) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
+  if ((pair?.format !== 1 && pair?.format !== 2 && !encryptedFormat(pair?.format)) || !/^[a-f0-9]{32}$/.test(fixtureId) || pair.fixtureId !== fixtureId
       || !/^[a-f0-9]{40}$/.test(pair.revision) || !digest.test(pair.appliedAppSchema) || !digest.test(pair.identitySchema)
       || pair.postgresImage !== postgresImage
       || !isDeepStrictEqual(pair.compatibility, compatible)) {
@@ -125,10 +147,10 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
       || typeof pair.historyAnchor.evidenceSha256 !== 'string' || !digest.test(pair.historyAnchor.evidenceSha256))) {
     throw new Error('Backup history anchor is invalid.');
   }
-  const key = pair.format === 3 ? suppliedKey ?? await loadBackupKey(dirname(path)) : undefined;
+  const key = encryptedFormat(pair.format) ? suppliedKey ?? await loadBackupKey(dirname(path)) : undefined;
   if (key) await authenticateManifest(path, pair, key);
   else if ((await readdir(path)).includes(manifestAuthentication)) throw new Error('Backup manifest format mismatch.');
-  if (pairExpired(pair)) throw new Error('Backup pair has expired.');
+  requireUnexpired(pair);
   if (Object.keys(pair.archives ?? {}).length !== databases.length) throw new Error('Backup pair is incomplete.');
   const systemIds = new Set<string>();
   for (const db of databases) {
@@ -154,7 +176,7 @@ export async function verifyPair(path: string, fixtureId: string, expected: Pair
   if (systemIds.size !== databases.length || pair.archives['app-db.tar']?.catalogVersion !== pair.archives['identity-db.tar']?.catalogVersion) {
     throw new Error('The pair must contain two distinct compatible PostgreSQL clusters.');
   }
-  if (pairExpired(pair)) throw new Error('Backup pair has expired.');
+  requireUnexpired(pair);
 }
 
 async function expire(): Promise<void> {
@@ -167,11 +189,11 @@ async function expire(): Promise<void> {
   }
   const fixture = await loadFixture(true);
   const pair: Pair = JSON.parse(await readFile(manifest, 'utf8'));
-  if (fixture.restoreTarget || (pair?.format !== 2 && pair?.format !== 3)
+  if (fixture.restoreTarget || (pair?.format !== 2 && !encryptedFormat(pair?.format))
       || pair.disposable !== true || pair.fixtureId !== fixture.id) {
     throw new Error('Expiry requires a disposable pair captured for this fixture.');
   }
-  if (pair.format === 3) await authenticateManifest(directory, pair, await loadBackupKey());
+  if (encryptedFormat(pair.format)) await authenticateManifest(directory, pair, await loadBackupKey());
   else if ((await readdir(directory)).includes(manifestAuthentication)) throw new Error('Backup manifest format mismatch.');
   if (!pairExpired(pair)) throw new Error('Backup pair has not expired.');
 
@@ -330,6 +352,63 @@ function cleanRevision(): string {
   return git('rev-parse', 'HEAD');
 }
 
+type CaptureMetadata = Pick<Pair, 'fixtureId' | 'revision' | 'compatibility' | 'appliedAppSchema'
+  | 'identitySchema' | 'postgresImage' | 'historyAnchor' | 'disposable'>;
+
+export function continuedRetention(parent: Pair, archives: Pair['archives']) {
+  if (!parent.lineageCapturedAt || !databases.every(db => {
+    const prior = parent.archives[db.archive], next = archives[db.archive];
+    return prior && next && prior.systemId === next.systemId && prior.catalogVersion === next.catalogVersion;
+  })) throw new Error('Continued capture requires the original PostgreSQL clusters and capture lineage.');
+  return { format: 4 as const, disposable: true as const, lineageCapturedAt: parent.lineageCapturedAt };
+}
+
+async function writeStoppedPair(f: Fixture, sources: Map<string, Container>, pending: string, destination: string,
+  key: KeyObject, metadata: CaptureMetadata | Pair): Promise<void> {
+  const before = stoppedState(f, sources);
+  const capturedAt = new Date().toISOString();
+  const archives: Pair['archives'] = {};
+  for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
+  if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
+  const retention = 'archives' in metadata ? continuedRetention(metadata, archives)
+    : { format: 3 as const, ...(metadata.disposable ? { lineageCapturedAt: capturedAt } : {}) };
+  const pair: Pair = { ...metadata, ...retention, capturedAt, archives };
+  await sealManifest(pending, pair, key);
+  await verifyPair(pending, f.id, await compatibility(f), pair, key);
+  if (cleanRevision() !== metadata.revision) throw new Error('The source revision changed during capture.');
+  await writeFile(join(pending, 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
+  requireUnexpired(pair);
+  await rename(pending, destination);
+}
+
+// The physical drill continues its own disposable source without reinitializing or reseeding either database.
+export async function captureContinuedFixture(expectedId: string, destination: string): Promise<void> {
+  const f = await loadFixture();
+  if (f.id !== expectedId || f.purpose !== 'backup' || f.restoreTarget || !usesLocalDocker()) {
+    throw new Error('Continued capture requires the original local backup fixture.');
+  }
+  const original: Pair = JSON.parse(await readFile(join(directory, 'pair.json'), 'utf8'));
+  const key = await loadBackupKey();
+  if (!encryptedFormat(original.format) || !original.disposable || !original.lineageCapturedAt
+      || !original.historyAnchor || original.revision !== cleanRevision()) {
+    throw new Error('Continued capture requires a disposable encrypted pair at the same revision.');
+  }
+  await verifyPair(directory, f.id, await compatibility(f), original, key);
+  if (await hashFile('work/pilot/capture-history.json') !== original.historyAnchor.evidenceSha256) {
+    throw new Error('Continued capture requires the original capture history.');
+  }
+  const sources = containers(f);
+  validateDatabases(f, sources, docker(['image', 'inspect', '--format', '{{.Id}}', postgresImage]));
+  const pending = destination + '.pending';
+  await mkdir(pending, { mode: 0o700 });
+  try {
+    await writeStoppedPair(f, sources, pending, destination, key, original);
+  } catch (error) {
+    await rm(pending, { recursive: true, force: true });
+    throw error;
+  }
+}
+
 export async function capture(disposable: boolean, seed?: (fixture: Fixture) => void): Promise<void> {
   const revision = cleanRevision();
   const key = await loadBackupKey();
@@ -370,20 +449,11 @@ export async function capture(disposable: boolean, seed?: (fixture: Fixture) => 
       + "E'\\n' ORDER BY orderexecuted), 'UTF8')), 'hex') FROM databasechangelog");
 
     compose(f, ['stop']);
-    const before = stoppedState(f, sources);
-    stopped = true;
-    const capturedAt = new Date().toISOString();
-    const archives: Pair['archives'] = {};
-    for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
-    if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
-    const pair: Pair = { format: 3, capturedAt, ...(disposable ? { disposable: true } : {}),
+    await writeStoppedPair(f, sources, pending, directory, key, {
       fixtureId: f.id, revision, compatibility: expected, appliedAppSchema, identitySchema,
-      postgresImage, historyAnchor, archives };
-    await sealManifest(pending, pair, key);
-    await verifyPair(pending, f.id, await compatibility(f), pair, key);
-    if (cleanRevision() !== revision) throw new Error('The source revision changed during capture.');
-    await writeFile(join(pending, 'pair.json'), JSON.stringify(pair, null, 2), { mode: 0o600, flag: 'wx' });
-    await rename(pending, directory);
+      postgresImage, historyAnchor, ...(disposable ? { disposable: true } : {}),
+    });
+    stopped = true;
     published = true;
   } finally {
     try { if (!stopped) compose(f, ['stop']); }

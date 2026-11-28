@@ -145,8 +145,8 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
   // Keep displayed details and the private approval proposal in the same statement snapshot.
   const occurrence = (await db.query<OccurrenceView>(`SELECT o.draft_id,o.state,o.approval_id,o.due_at,
     approved.tenant_version AS approval_tenant_version,
-    CASE WHEN $4::boolean THEN (SELECT count(*)::text FROM pilot.audit w
-      WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.action='approval_withdrawal') END AS withdrawal_count,
+    CASE WHEN $4::boolean THEN (SELECT count(*)::text FROM pilot.occurrence_decisions w
+      WHERE w.tenant_id=o.tenant_id AND w.occurrence_id=o.id AND w.approval_id IS NOT NULL) END AS withdrawal_count,
     extract(epoch FROM o.due_at)::text AS due_instant,o.timezone,o.location_id,l.provider_location,l.grant_active,l.version AS grant_version,
     p.id AS revision_id,p.revision,p.text,a.claimed_at,a.observed_at,a.outcome AS attempt_outcome,
     a.details_retired AS attempt_details_retired,
@@ -160,8 +160,8 @@ async function readOccurrence(db: Client, context: CustomerContext, occurrenceId
       WHERE tenant_id=o.tenant_id AND draft_id=o.draft_id AND $3::boolean
         AND ((o.state='draft' AND o.approval_id IS NULL) OR ($4::boolean AND o.state='approved' AND o.approval_id IS NOT NULL))
         AND a.occurrence_id IS NULL
-        AND (NOT $4::boolean OR NOT EXISTS (SELECT 1 FROM pilot.audit h
-          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold'))
+        AND (NOT $4::boolean OR NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.approval_id IS NULL))
       ORDER BY revision DESC LIMIT 1
     ) p ON true
     WHERE o.tenant_id=$1 AND o.id=$2`,
@@ -353,8 +353,8 @@ export async function withdrawApproval(connect: () => Promise<Client>, binding: 
       [tenantId, occurrenceId])).rows[0] ?? deny();
 
     const approval = (await db.query<{ withdrawn: boolean }>(`SELECT EXISTS (
-        SELECT 1 FROM pilot.audit w WHERE w.tenant_id=a.tenant_id AND w.occurrence_id=a.occurrence_id
-          AND w.action='approval_withdrawal' AND w.approval_id=a.id) AS withdrawn
+        SELECT 1 FROM pilot.occurrence_decisions w WHERE w.tenant_id=a.tenant_id AND w.occurrence_id=a.occurrence_id
+          AND w.approval_id=a.id) AS withdrawn
       FROM pilot.approvals a WHERE a.tenant_id=$1 AND a.occurrence_id=$2 AND a.id=$3
         AND a.tenant_version=$4 AND a.membership_id=$5 AND a.membership_version=$6`,
     [tenantId, occurrenceId, approvalId, tenantVersion, membershipId, membershipVersion])).rows[0] ?? deny();
@@ -366,8 +366,8 @@ export async function withdrawApproval(connect: () => Promise<Client>, binding: 
       const updated = await db.query(`UPDATE pilot.occurrences o SET approval_id=NULL,state='draft'
         WHERE o.tenant_id=$1 AND o.id=$2
           AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
-          AND NOT EXISTS (SELECT 1 FROM pilot.audit h
-            WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')`,
+          AND NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+            WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.approval_id IS NULL)`,
       [tenantId, occurrenceId]);
       if (updated.rowCount !== 1) return deny();
       const audit = await db.query(`INSERT INTO pilot.audit(tenant_id,actor_id,occurrence_id,approval_id,action,reason,outcome)
