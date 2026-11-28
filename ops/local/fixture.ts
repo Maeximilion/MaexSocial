@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { Client, type ClientConfig } from 'pg';
 
-const purposes = ['ordinary', 'backup', 'restore-target', 'readiness', 'paired-restore', 'dispatch-retention'] as const;
+const purposes = ['ordinary', 'backup', 'restore-target', 'readiness', 'paired-restore', 'dispatch-retention', 'audit-retention'] as const;
 export type FixturePurpose = typeof purposes[number];
 
 export interface Fixture {
