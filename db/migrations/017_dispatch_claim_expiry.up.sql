@@ -20,7 +20,8 @@ BEGIN
         AND p.id=OLD.approval_id AND e.outcome='in_flight' AND e.reason='Synthetic organic text'
         AND e.device_id IS NULL AND e.membership_id IS NULL AND e.approval_id IS NULL
         AND e.created_at<=OLD.claimed_at AND (d.tenant_id,d.audit_id,d.event_at)=(e.tenant_id,e.id,e.created_at)
-        AND d.incident_state='clear' AND d.fixture_id=f.id AND f.purpose='dispatch-retention' AND NOT f.restore_target
+        AND d.incident_state='clear' AND d.fixture_id=current_setting('pilot.retention_fixture',true)
+        AND d.fixture_id=f.id AND f.purpose='dispatch-retention' AND NOT f.restore_target
         AND NOT EXISTS (SELECT 1 FROM pilot.audit other
             WHERE (other.tenant_id,other.occurrence_id,other.action)=(e.tenant_id,e.occurrence_id,e.action)
                 AND other.id<>e.id)

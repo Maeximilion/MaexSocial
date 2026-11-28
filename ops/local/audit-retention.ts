@@ -30,6 +30,7 @@ export async function expireAuditEvent(tenant: string, event: string, clock?: ()
       FROM pilot.audit a, (SELECT COALESCE($4::timestamptz,statement_timestamp()) AS instant) t
       WHERE d.fixture_id=$1 AND d.tenant_id=$2 AND d.audit_id=$3 AND d.incident_state='clear'
         AND (a.tenant_id,a.id)=(d.tenant_id,d.audit_id)
+        AND a.action NOT IN ('dispatch_claim','occurrence_export')
         AND a.created_at=d.event_at AND isfinite(t.instant) AND t.instant-d.event_at >= interval '2160 hours'`,
     [fixture.id, tenant, event, clock?.() ?? null]);
     if (permit.rowCount === 1) {

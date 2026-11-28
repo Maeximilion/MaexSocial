@@ -598,7 +598,8 @@ that its write affected the exact live row. The maintenance CLI supplies no hold
 The elapsed interval is 2,160 hours from the recorded event. An eligible occurrence hold or approval
 withdrawal leaves its tenant and occurrence keys and, for withdrawals, the exact approval key. The
 application reads these decisions alongside live evidence and has no write grant on compact decisions.
-An incident hold retains full detail. Dispatch claims and exports remain separate publication records.
+An incident hold retains full detail. This event-clock operation leaves dispatch claims and manual exports
+intact even with a clear disposition. Dispatch uses the resolution-clock operation below.
 Physical remnants, encrypted archives, external sinks and operating decisions are tracked in #166 and #82.
 
 ## Resolved dispatch detail retention (#282)
@@ -621,7 +622,10 @@ explicit fixture purpose and matching database identity. Use `pilot:up -- dispat
 retained restart. The command checks one exact occurrence and uses the AppDB clock. It reports
 `retired`, `already-retired` or `ineligible`. The test alone supplies an exact synthetic expiry clock.
 No ordinary or restored fixture is eligible. Pending, unknown, held, historically held, quarantined,
-inconsistent and unrelated occurrences are excluded.
+inconsistent and unrelated occurrences are excluded. The fixture owner must bind one clear incident
+disposition to the exact claim event, tenant, fixture and witnessed transaction time. Missing,
+held, mismatched or duplicate claim evidence preserves both records. An unavailable disposition
+store aborts the transaction. The command never creates or releases an incident decision.
 
 The first terminal reconciliation writes `resolved_at` from PostgreSQL time in the transaction
 that commits the attempt and occurrence together. The claim and provider observation times
@@ -633,16 +637,25 @@ After expiry the row keeps `tenant_id`, `occurrence_id`, terminal `outcome` and
 `details_retired=true`. The attempt `id`, `approval_id`, `claimed_at`, `observed_at`,
 `resolved_at` and synthetic `resource_name` become SQL NULL. The original composite primary key
 and occurrence foreign key keep the claim attached to the stored occurrence. The marker is immutable.
-The occurrence, original approval record and independent audit are preserved. The customer sees the
+The same transaction deletes the single matched `dispatch_claim` audit and its disposition before
+clearing the attempt fields. Its actor, occurrence link, writer time, reason, initial outcome and
+audit ID leave the online audit sink. The occurrence and original approval survive. The customer sees the
 matching terminal result and that its dispatch details expired. A retired slot cannot authorize
 reconciliation readback, a new claim or approval, or a manual text export. Its result is also separate
-from the counting fake's deliberately independent state.
+from the counting fake's deliberately independent state. A claim already retired under an older schema
+with its audit still present returns `ineligible`. Its missing terminal clock cannot be reconstructed.
+
+An incident hold retains the full audit row, its disposition and the full attempt, including its
+approval and attempt IDs, claim/observation/resolution times, outcome and available resource name.
+A manual `occurrence_export` remains a separate full disclosure receipt. Its durable exported state
+and current access to the approved text govern repeat downloads. The local handoff supplies no
+confirmed provider result. The accepted send-retention clock does not specify expiry for this receipt.
 
 Migration down refuses populated fixtures, and the migration itself refuses to discard a retired
 claim. Existing supported cold pairs can still be imported offline in the forward direction.
 The current schema cannot be imported by earlier builds. Cold capture still uses its own new
 backup fixture and excludes the fake. This drill covers the logical data in the dedicated fixture.
-Physical erasure, restored-copy minimization, provider data rules, management audit expiry and
+Physical erasure, restored-copy minimization, provider data rules and
 operating retention remain outside it. See [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166)
 and the [access and recovery contract](../../docs/17_ACCESS_SECURITY.md#data-recovery-and-rollback-proposals).
 

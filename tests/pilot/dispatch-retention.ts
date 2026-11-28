@@ -96,6 +96,10 @@ async function proveExpiry(db: Client, target: TerminalCase) {
   assert.equal(prior.approval_id, target.approvalId);
   assert.ok(prior.claimed_at < prior.observed_at && prior.observed_at < prior.resolved_at);
   assert.equal(Boolean(prior.resource_name), target.outcome === 'confirmed');
+  assert.equal(await reconcileOccurrence(connectFixture, target.id, {
+    readback: () => assert.fail('Terminal retry read the provider'),
+  }), target.outcome);
+  assert.deepEqual(await attempt(db, target.id), prior);
   const { rows: [times] } = await db.query(`SELECT start.instant::text AS boundary,
     (start.instant - interval '1 microsecond')::text AS previous
     FROM pilot.attempts CROSS JOIN LATERAL (
@@ -115,6 +119,9 @@ async function proveExpiry(db: Client, target: TerminalCase) {
       WHERE audit_id=$1 AND incident_state='clear' AND expiry_xid IS NULL AND checked_at IS NULL`,
     [preserved.audit[0].id])).rowCount, 1);
   }
+  const auditId = preserved.audit[0].id;
+  await assert.rejects(db.query('DELETE FROM pilot.audit WHERE tenant_id=$1 AND id=$2', [target.tenant, auditId]),
+    { code: '23514' });
   const competing = await Promise.all([
     retireDispatchDetails(target.id, () => times.boundary),
     retireDispatchDetails(target.id, () => times.boundary),
@@ -313,10 +320,26 @@ async function seedAndRetire(db: Client) {
   const snapshots = await Promise.all(controls.map(target => preservedEvidence(db, target.id)));
   for (const control of controls) assert.equal(await retireDispatchDetails(control.id, farFuture), 'ineligible');
   await db.query('DROP TRIGGER witness_claim_clock ON pilot.attempts; DROP FUNCTION public.witness_claim_clock()');
-  const unrelated = await attempt(db, confirmed.id);
+  await db.query('ALTER TABLE pilot.fixture_audit_disposition RENAME TO unavailable_test');
+  try { await assert.rejects(retireDispatchDetails(confirmed.id, farFuture), { code: '42P01' }); }
+  finally { await db.query('ALTER TABLE pilot.unavailable_test RENAME TO fixture_audit_disposition'); }
+  await db.query(`UPDATE pilot.fixture_audit_disposition SET event_at=event_at+interval '1 microsecond' WHERE audit_id=$1`,
+    [confirmed.event]);
+  assert.equal(await retireDispatchDetails(confirmed.id, farFuture), 'ineligible');
+  await db.query(`UPDATE pilot.fixture_audit_disposition SET event_at=event_at-interval '1 microsecond' WHERE audit_id=$1`,
+    [confirmed.event]);
+  const fixture = await loadFixture();
+  await db.query(`INSERT INTO public.fixture_identity(id,purpose,restore_target)
+    VALUES('other-dispatch-fixture','dispatch-retention',false)`);
+  await db.query("UPDATE pilot.fixture_audit_disposition SET fixture_id='other-dispatch-fixture' WHERE audit_id=$1",
+    [confirmed.event]);
+  assert.equal(await retireDispatchDetails(confirmed.id, farFuture), 'ineligible');
+  await db.query('UPDATE pilot.fixture_audit_disposition SET fixture_id=$1 WHERE audit_id=$2', [fixture.id, confirmed.event]);
+  await db.query("DELETE FROM public.fixture_identity WHERE id='other-dispatch-fixture'");
+  const unrelated = await preservedEvidence(db, confirmed.id);
   for (const target of targets) {
     await proveExpiry(db, target);
-    if (target.id === rejected.id) assert.deepEqual(await attempt(db, confirmed.id), unrelated);
+    if (target.id === rejected.id) assert.equal(await preservedEvidence(db, confirmed.id), unrelated);
     await db.query('UPDATE pilot.locations SET grant_active=false,version=version+1 WHERE tenant_id=$1', [target.tenant]);
     await assert.rejects(db.query('DELETE FROM pilot.attempts WHERE occurrence_id=$1', [target.id]), { code: '23514' });
     await assert.rejects(db.query(`INSERT INTO pilot.attempts (tenant_id,occurrence_id,approval_id)
@@ -327,7 +350,7 @@ async function seedAndRetire(db: Client) {
     /Retired dispatch claims prevent this downgrade/);
   await assert.rejects(db.query(await readFile('db/migrations/017_dispatch_claim_expiry.down.sql', 'utf8')),
     /Expired dispatch audit detail prevents this downgrade/);
-  return { targets, controls: controls.map(t => t.id), snapshots, exportTarget };
+  return { targets, controls: controls.map(t => t.id), snapshots, exportTarget, pendingId: pending.id };
 }
 
 async function isolated(stage: string, saved: string | undefined) {
@@ -345,6 +368,16 @@ async function isolated(stage: string, saved: string | undefined) {
     for (const [index, id] of result.controls.entries()) {
       assert.equal(await retireDispatchDetails(id, farFuture), 'ineligible');
       assert.equal(await preservedEvidence(owner, id), result.snapshots[index]);
+    }
+    if (stage === 'retained') {
+      let reads = 0;
+      assert.equal(await reconcileOccurrence(connectFixture, result.pendingId, {
+        readback: attempt => { reads++; return fake.readback(attempt); },
+      }), 'pending');
+      assert.equal(reads, 1);
+      const pending = await attempt(owner, result.pendingId);
+      assert.equal(fake.createCount(pending.tenant_id, result.pendingId), 1);
+      assert.equal(pending.resolved_at, null);
     }
     console.log(JSON.stringify(result));
   } finally { fake.close(); await owner.end(); }

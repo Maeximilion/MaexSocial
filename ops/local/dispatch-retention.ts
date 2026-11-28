@@ -40,7 +40,8 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
           WHERE tenant_id=$1 AND occurrence_id=$2 AND action='dispatch_claim' LIMIT 1`, key.slice(0, 2));
         return legacy.rowCount ? 'ineligible' : 'already-retired';
       }
-      if (clock) await db.query("SELECT set_config('pilot.retention_clock',$1,true)", [clock()]);
+      await db.query(`SELECT set_config('pilot.retention_fixture',$1,true),
+        set_config('pilot.retention_clock',$2,true)`, [fixture.id, clock?.() ?? '']);
       const update = await db.query(`UPDATE pilot.attempts a SET details_retired=true,
         id=NULL,approval_id=NULL,claimed_at=NULL,observed_at=NULL,resolved_at=NULL,resource_name=NULL
         FROM pilot.occurrences o JOIN pilot.approvals p

@@ -182,6 +182,17 @@ async function isolated(stage: string, saved?: string) {
       assert.equal((await db.query('SELECT 1 FROM pilot.expired_occurrence_decisions')).rowCount, 3);
       for (const t of [state.expired, state.held, state.fresh]) assert.equal(await expire(t, state.expired.boundary), 'ineligible');
       await verifyDomain(db, request, state.domain);
+      // The event-clock operation cannot retire either publication class, even with a clear decision.
+      const publications = await db.query(`SELECT tenant_id AS tenant,id,created_at::text AS at FROM pilot.audit
+        WHERE action IN ('dispatch_claim','occurrence_export')`);
+      assert.equal(publications.rowCount, 2);
+      const before = await auditDigest(db);
+      for (const event of publications.rows) {
+        const selected = { ...event, boundary: '2099-01-01T00:00:00Z' };
+        await authorize(db, selected, event.at);
+        assert.equal(await expire(selected), 'ineligible');
+      }
+      assert.deepEqual(await auditDigest(db), before);
     }
   } finally { await db.end(); }
 }
