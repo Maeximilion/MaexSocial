@@ -17,7 +17,8 @@ CREATE FUNCTION pilot.guard_draft_instruction() RETURNS trigger LANGUAGE plpgsql
 BEGIN
     IF TG_OP='INSERT' AND NEW.applied_xid IS NULL AND current_user='pilot_owner' AND current_database()='pilot_fixture' THEN
         IF EXISTS (SELECT 1 FROM public.fixture_identity m WHERE to_jsonb(m)->>'disposable_backup'='true'
-            AND ((m.restore_target AND to_jsonb(m)->>'restore_history_source_id'=NEW.source_id)
+            AND ((m.restore_target AND to_jsonb(m)->>'restore_history_source_id'=NEW.source_id
+                    AND NEW.authorized_at<=clock_timestamp())
                 OR (NOT m.restore_target AND m.purpose='backup' AND m.id=NEW.source_id
                     AND NEW.authorized_at=date_trunc('milliseconds',transaction_timestamp())))) THEN
             RETURN NEW;
@@ -72,7 +73,11 @@ CREATE FUNCTION pilot.guard_erased_approval() RETURNS trigger LANGUAGE plpgsql A
 DECLARE proof text[] := ARRAY['mfa_at','created_at','grant_version','grant_active_at_approval'];
 BEGIN
     IF TG_OP='INSERT' THEN
-        IF num_nonnulls(NEW.mfa_at,NEW.created_at,NEW.grant_version)=3 THEN RETURN NEW; END IF;
+        PERFORM 1 FROM pilot.drafts WHERE (tenant_id,id)=(NEW.tenant_id,NEW.draft_id) FOR UPDATE;
+        IF num_nonnulls(NEW.mfa_at,NEW.created_at,NEW.grant_version)=3 AND NOT EXISTS (
+            SELECT 1 FROM pilot.draft_revisions WHERE (tenant_id,draft_id,id)=(NEW.tenant_id,NEW.draft_id,NEW.revision_id)
+                AND text IS NULL
+        ) THEN RETURN NEW; END IF;
     ELSIF TG_OP='UPDATE' AND current_user='pilot_owner' AND OLD.mfa_at IS NOT NULL
         AND num_nonnulls(NEW.mfa_at,NEW.created_at,NEW.grant_version,NEW.grant_active_at_approval)=0
         AND (to_jsonb(NEW)-proof)=(to_jsonb(OLD)-proof) THEN

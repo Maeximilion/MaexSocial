@@ -140,6 +140,10 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       await assert.rejects(approveOccurrence(connectFixture, request, d.proposal, clock, inspect), /Denied/);
       await assert.rejects(withContext(request, app => app.query(
         "INSERT INTO pilot.draft_revisions(tenant_id,draft_id,revision,text) VALUES($1,$2,3,'later')", scope)), { code: '23514' });
+      await assert.rejects(withContext(request, app => app.query(`INSERT INTO pilot.approvals
+        (tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,grant_version,due_at,timezone,mfa_at)
+        SELECT tenant_id,occurrence_id,draft_id,revision_id,location_id,membership_id,membership_version,1,due_at,timezone,now()
+        FROM pilot.approvals WHERE tenant_id=$1 AND occurrence_id=$2`, [scope[0], d.id])), { code: '23514' });
       await assert.rejects(claimExport(connectFixture, request, d.id, clock, inspect), /Denied/);
       assert.equal(await wake(d.id), 'denied');
       const fake = new FakeGbp();
