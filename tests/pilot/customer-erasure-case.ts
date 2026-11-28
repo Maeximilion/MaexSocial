@@ -59,10 +59,11 @@ export async function seedCase(db: Client, source: string) {
     otp.id
   ]);
   await db.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [peerId]);
+  await db.query("UPDATE pilot.memberships SET role='Manager',version=version+1 WHERE identity_id=$1", [peerId]);
   await db.query(
     `INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
     membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
-    SELECT $2,$3,m.identity_id,2,m.tenant_id,1,m.id,1,'customer',s.created_at,s.last_seen_at,s.expires_at
+    SELECT $2,$3,m.identity_id,2,m.tenant_id,1,m.id,m.version,'customer',s.created_at,s.last_seen_at,s.expires_at
     FROM pilot.memberships m JOIN pilot.sessions s ON s.tenant_id=m.tenant_id WHERE m.identity_id=$1`,
     [peerId, tokenHash(peer.token), tokenHash(peer.csrf)]
   );
@@ -161,6 +162,7 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     (SELECT count(*)::int FROM pilot.pending_access WHERE identity_id IS NULL AND email=$3) AS unbound,
     (SELECT revoked_at IS NOT NULL FROM pilot.invitations WHERE id=$4) AS withdrawn,
     (SELECT count(*)::int FROM pilot.invitations WHERE id=$5 AND email=$3 AND revoked_at IS NULL) AS incoming,
+    (SELECT approval_id IS NOT NULL FROM pilot.occurrences WHERE id=$6) AS claimed_binding,
     (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$6) AS claims,
     (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$7) AS second_claims,
     (SELECT count(*)::int FROM pilot.fixture_audit_disposition d JOIN pilot.audit a ON (a.tenant_id,a.id)=(d.tenant_id,d.audit_id)
@@ -177,6 +179,7 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     unbound: 1,
     withdrawn: erased,
     incoming: 1,
+    claimed_binding: true,
     claims: 1,
     second_claims: 0,
     holds: 1
@@ -228,6 +231,9 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
       await assert.rejects(requireCustomer(db, c.session.token, clock, inspector), /Denied/);
       await assert.rejects(claimDispatch(connectFixture, c.claimed, fake), /Denied/);
       await assert.rejects(claimDispatch(connectFixture, c.unclaimed, fake), /Denied/);
+      const manager = await requireCustomerRequest(db, c.peer, clock, inspect, 'read-only');
+      const proposal = await readApprovalProposal(db, manager, c.unclaimed);
+      assert.equal(proposal.membershipId, manager.membershipId);
     } else
       assert.equal((await requireCustomerRequest(db, c.session, clock, inspector, 'read-only')).identityId, c.event.id);
     for (const [req, id] of [

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Client } from 'pg';
+import { clearUnclaimedApprovals, lockMembershipApprovals } from '../../packages/contracts/management-role-change.js';
 
 export const pilotIssuer = 'https://keycloak:8443/realms/pilot';
 export type CustomerErasure = {
@@ -53,7 +54,13 @@ export async function eraseCustomer(db: Client, source: string, event: CustomerE
   if ((await db.query('SELECT 1 FROM pilot.platform_grants WHERE identity_id=$1', id)).rowCount) {
     throw new Error('Customer-only identity required');
   }
-  await db.query('SELECT id FROM pilot.memberships WHERE identity_id=$1 ORDER BY tenant_id,id FOR UPDATE', id);
+  const memberships = await db.query<{ id: string; tenant_id: string; version: number }>(
+    'SELECT id,tenant_id,version FROM pilot.memberships WHERE identity_id=$1 ORDER BY tenant_id,id FOR UPDATE', id
+  );
+  for (const m of memberships.rows) {
+    const occurrences = await lockMembershipApprovals(db, m.tenant_id, m.id, m.version);
+    await clearUnclaimedApprovals(db, m.tenant_id, occurrences);
+  }
   const sessions = await db.query("DELETE FROM pilot.sessions WHERE identity_id=$1 AND audience='customer'", id);
   const pending = await db.query('DELETE FROM pilot.pending_access WHERE identity_id=$1', id);
   // The recipient has an independent invitation record. Withdraw only the departing issuer's authority.
