@@ -20,9 +20,9 @@ async function stage(name: string) {
   assert.ok(f.purpose === 'backup' || f.pairedRestore);
   const db = await connectFixture(true);
   try {
-    if (name === 'seed' && f.purpose === 'backup' && !f.restoreTarget) return seedCase(db,f.id);
+    if (name === 'seed' && f.purpose === 'backup' && !f.restoreTarget) return await seedCase(db,f.id);
     const c = JSON.parse(await readFile(input,'utf8')) as AccessCase;
-    if (name === 'before' || name === 'after') return inspectCase(db,c,name === 'after',!!f.pairedRestore);
+    if (name === 'before' || name === 'after') return await inspectCase(db,c,name === 'after',!!f.pairedRestore);
     assert.ok(name === 'erase' && f.purpose === 'backup' && !f.restoreTarget);
     const before = await inspectCase(db,c,false,false);
     await assert.rejects(applySourceCustomerErasure,/instruction required/);
