@@ -105,8 +105,7 @@ async function runStage(stage: string) {
   const [a, b] = input.cases;
   if (stage === 'erase' || stage === 'issue-erasure' || stage === 'abort-erasure' || stage === 'refuse-erasure') {
     if (stage === 'erase') {
-      const result = await applySourceFactErasure();
-      console.log(JSON.stringify({ ...result, completedAt: Date.now() }));
+      console.log(JSON.stringify(await applySourceFactErasure()));
       return;
     }
     if (stage === 'refuse-erasure') {
@@ -234,7 +233,7 @@ async function drill(targetDir: string, eraseSource: boolean, laterTarget?: stri
   await save('wx');
   let targetInput = false, laterInput = false;
   let laterFixture: Fixture | undefined;
-  let purgedAt = 0;
+  let purgeStarted = 0, purgeConfirmed = 0;
   let sourceFixture: Fixture | undefined, targetFixture: Fixture | undefined;
   let phase = 'cold capture';
   try {
@@ -305,9 +304,10 @@ async function drill(targetDir: string, eraseSource: boolean, laterTarget?: stri
       stage(f, 'abort-erasure');
       assert.deepEqual(stage(f, 'history'), prior);
       for (const removed of [2, 0]) {
-        const { completedAt, ...result } = stage(f, 'erase');
+        if (removed) purgeStarted = Date.now();
+        const result = stage(f, 'erase');
+        if (removed) purgeConfirmed = Date.now();
         assert.deepEqual(result, { sequence: snapshotSequence + 1, removed });
-        if (removed) purgedAt = completedAt;
         const current = stage(f, 'history') as typeof snapshot;
         assert.equal(current.facts.filter(row => row.tenant_id === a.tenant && row.location_id === a.location).length, 0,
           'Authorized source erasure must remove both A revisions before restore');
@@ -443,7 +443,7 @@ async function drill(targetDir: string, eraseSource: boolean, laterTarget?: stri
     assert.equal(node('dist/pilot/ops/local/backup.js', 'verify'), 'Verified synthetic AppDB and IdP backup pair.');
     if (laterTarget && laterArchive) {
       phase = 'last recoverable copy expiry';
-      const expiry = await proveExpiry(laterTarget, purgedAt, input.label);
+      const expiry = await proveExpiry(laterTarget, purgeStarted, purgeConfirmed, input.label);
       process.chdir(laterTarget);
       await mkdir('work', { recursive: true });
       await save('wx');

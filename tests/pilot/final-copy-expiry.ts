@@ -47,7 +47,7 @@ async function markerPresent(root: string, pair: Pair, marker: Buffer) {
   return present;
 }
 
-export async function proveExpiry(freshTarget: string, purgedAt: number, label: string) {
+export async function proveExpiry(freshTarget: string, purgeStarted: number, purgeConfirmed: number, label: string) {
   const pre = await manifest(pilot), post = await manifest(later);
   assert.equal(pre.fixtureId, post.fixtureId);
   for (const db of databases) {
@@ -55,7 +55,7 @@ export async function proveExpiry(freshTarget: string, purgedAt: number, label: 
     assert.notEqual(pre.archives[db.archive]!.sha256, post.archives[db.archive]!.sha256);
   }
   const captured = Date.parse(pre.capturedAt), recaptured = Date.parse(post.capturedAt);
-  assert.ok(captured < purgedAt && purgedAt < recaptured);
+  assert.ok(captured < purgeStarted && purgeStarted <= purgeConfirmed && purgeConfirmed < recaptured);
   const cutoff = captured + retention;
   const marker = Buffer.from(label + '-1');
   const preMarker = await markerPresent(pilot, pre, marker);
@@ -78,7 +78,8 @@ export async function proveExpiry(freshTarget: string, purgedAt: number, label: 
   at(cutoff, freshTarget, restore, [resolve(pilot)], expired);
   await assert.rejects(lstat(join(freshTarget, pilot)), { code: 'ENOENT' });
   verifyPost(cutoff);
-  verifyPost(purgedAt + retention);
+  // The commit occurred before host confirmation, so this checks even the latest possible purge deadline.
+  verifyPost(purgeConfirmed + retention);
   verifyPost(recaptured + retention - 1);
   verifyPost(recaptured + retention, expired);
   const path = join(pilot, pairDir);
@@ -91,9 +92,10 @@ export async function proveExpiry(freshTarget: string, purgedAt: number, label: 
   }
   verifyPost(cutoff);
   assert.deepEqual(await manifest(later), post);
-  return { captureToPurgeMs: purgedAt - captured, purgeToLaterCaptureMs: recaptured - purgedAt,
-    preCaptureToExpiryMs: retention, purgeToPreExpiryMs: cutoff - purgedAt,
-    purgeToLaterExpiryMs: recaptured + retention - purgedAt, preMarker, postMarker,
+  return { purgeWindowMs: purgeConfirmed - purgeStarted, captureToConfirmationMs: purgeConfirmed - captured,
+    confirmationToLaterCaptureMs: recaptured - purgeConfirmed,
+    preCaptureToExpiryMs: retention, confirmationToPreExpiryMs: cutoff - purgeConfirmed,
+    confirmationToLaterExpiryMs: recaptured + retention - purgeConfirmed, preMarker, postMarker,
     archiveFilesBefore: 2, archiveFilesAfter: 0 };
 }
 
