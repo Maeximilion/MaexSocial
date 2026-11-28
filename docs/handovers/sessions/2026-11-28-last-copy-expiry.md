@@ -2,10 +2,10 @@
 
 ## Status
 
-2026-11-28 11:58 UTC. [Issue #302](https://github.com/Maeximilion/MaexSocial/issues/302)
+2026-11-28 12:12 UTC. [Issue #302](https://github.com/Maeximilion/MaexSocial/issues/302)
 remains open. The local physical drill on `dev-codex/302-last-encrypted-copy-expiry`
-tested `992dfb9184c7a0236223fa7206ecf7c8f77a31e3` on base
-`b81d15e3c1b4d1f9939edb1630a4325d8310978e`. The later pair remained
+tested `7df944e2a5887d321b28a1ed92e25c6635cf6c02` on base
+`7272aef541735245957e28b4abe8d87002210132`. The later pair remained
 eligible at the purge deadline and still contained the seeded A marker.
 [Task 5](https://github.com/Maeximilion/MaexSocial/issues/166) remains at four of five criteria.
 Codex GPT-6.2 Astra High implemented the drill. The PR records its subsequent
@@ -31,21 +31,29 @@ passed ciphertext verification and authenticated decryption. Only presence or ab
 was recorded. The probe does not locate the bytes within PostgreSQL or establish a
 general test for physical erasure.
 
-Elapsed times below use the application's reported completion of the first successful
-source erasure as zero. The runner sampled the clock after the database operation
-returned from commit and before its idempotent retry. Both captures used their actual
-authenticated UTC timestamps. Only the verification and expiry child processes used
-a controlled clock. One day is 86,400,000 ms.
+The first run sampled purge completion in the container. The [Claude API
+finding](https://github.com/Maeximilion/MaexSocial/pull/308#discussion_r4726911656)
+invalidated its cross-clock offsets. This fresh run uses the Windows capture host
+for every instant. Zero is the host's confirmation of the first successful erasure.
+The host sampled immediately before invoking that stage and immediately after its
+return. The committed purge lies in the interval [−1,753 ms, 0 ms]. The retry
+followed that observation. Only verification and expiry probes used a controlled
+child-process clock. One day is 86,400,000 ms.
 
-| Event | Offset from completed purge | Observed result |
+| Event | Offset from host confirmation | Observed result |
 | --- | ---: | --- |
-| Last pre-purge capture | −39,167 ms | A present in offline SQL and AppDB archive |
-| First post-purge capture | +16,805 ms | A absent from offline SQL, marker present in AppDB archive |
-| Earlier capture + 30 days − 1 ms | +2,591,960,832 ms | Verify passed, expiry refused |
-| Earlier capture + 30 days | +2,591,960,833 ms | Verify and restore refused before target creation |
-| Purge + 30 days | +2,592,000,000 ms | Later pair still verified |
-| Later capture + 30 days − 1 ms | +2,592,016,804 ms | Later pair still verified |
-| Later capture + 30 days | +2,592,016,805 ms | Later pair refused verification |
+| Last pre-purge capture | −39,686 ms | A present in offline SQL and AppDB archive |
+| Start of successful erasure stage | −1,753 ms | Lower bound for the committed purge |
+| First post-purge capture | +16,163 ms | A absent from offline SQL, marker present in AppDB archive |
+| Earlier capture + 30 days − 1 ms | +2,591,960,313 ms | Verify passed, expiry refused |
+| Earlier capture + 30 days | +2,591,960,314 ms | Verify and restore refused before target creation |
+| Latest possible purge deadline | +2,592,000,000 ms | Later pair still verified |
+| Later capture + 30 days − 1 ms | +2,592,016,162 ms | Later pair still verified |
+| Later capture + 30 days | +2,592,016,163 ms | Later pair refused verification |
+
+The earlier deadline preceded the actual purge deadline by 37,933–39,686 ms.
+The later deadline exceeded it by **16,163–17,916 ms**. Testing eligibility at
+confirmation + 30 days covers even the latest possible completion of the purge.
 
 Expiry removed exactly two earlier ciphertext files, leaving the original manifest
 and authentication tag. A repeat one millisecond later removed zero files.
@@ -91,7 +99,8 @@ remain in [#166](https://github.com/Maeximilion/MaexSocial/issues/166) and
 
 ## Open
 
-Main owns serial integration and the separate correction decision. Use the
+Main owns serial integration of [PR #308](https://github.com/Maeximilion/MaexSocial/pull/308).
+[Issue #307](https://github.com/Maeximilion/MaexSocial/issues/307) owns the separate correction. Use the
 [drill runbook](../../../ops/local/README.md#restore-before-dispatch-and-terminal-export-258)
 with fresh disposable resources. In PowerShell, start from
 `Set-Location "$env:USERPROFILE/.codex/worktrees/issue-302-last-encrypted-copy-expiry/MaexSocial"`
