@@ -7,6 +7,7 @@ const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const historyPath = 'work/pilot/restore-history.json';
 type Event =
   | { kind: 'delete-facts'; tenantId: string; id: string }
+  | { kind: 'erase-draft'; tenantId: string; id: string; authorizedAt: string }
   | { kind: 'revoke-grant'; tenantId: string; id: string; version: number }
   | { kind: 'revoke-device'; id: string; version: number };
 
@@ -21,6 +22,11 @@ function parseEvent(value: unknown, seq: number): Event {
   if (row.seq !== seq || typeof id !== 'string' || !uuid.test(id)) return incompatible();
   if (kind !== 'revoke-device' && (typeof tenantId !== 'string' || !uuid.test(tenantId))) return incompatible();
   if (kind === 'delete-facts') return { kind, id, tenantId: tenantId as string };
+  if (kind === 'erase-draft') {
+    const at = row.authorizedAt;
+    if (typeof at !== 'string' || !Number.isFinite(Date.parse(at)) || new Date(at).toISOString() !== at) return incompatible();
+    return { kind, id, tenantId: tenantId as string, authorizedAt: at };
+  }
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1 || version >= 2_147_483_647) {
     return incompatible();
   }
@@ -50,6 +56,29 @@ export async function readBoundHistory(source: string, after: number, digest: st
   return history.records.map((row, i) => parseEvent(row, after + i + 1));
 }
 
+// Caller owns the transaction. Claim, download, edit and approval use this same draft lock.
+export async function eraseBoundDraft(db: Client, source: string, sequence: number,
+  event: Extract<Event, { kind: 'erase-draft' }>, digest: string) {
+  const scope = [event.tenantId, event.id];
+  const draft = await db.query('SELECT id FROM pilot.drafts WHERE tenant_id=$1 AND id=$2 FOR UPDATE', scope);
+  if (draft.rowCount !== 1) return incompatible();
+  const binding = [source, sequence, ...scope, event.authorizedAt, digest];
+  const permit = await db.query(`SELECT applied_xid IS NOT NULL AS applied FROM pilot.fixture_draft_erasure
+    WHERE source_id=$1 AND sequence=$2 AND tenant_id=$3 AND draft_id=$4 AND authorized_at=$5 AND history_digest=$6
+    FOR UPDATE`, binding);
+  if (!permit.rowCount) return incompatible();
+  if (permit.rows[0].applied) return 0;
+  // An existing claim can have sent its text to the independent fake. Never attest to erasing that copy.
+  const claims = await db.query(`SELECT 1 FROM pilot.attempts a JOIN pilot.occurrences o
+    ON o.tenant_id=a.tenant_id AND o.id=a.occurrence_id WHERE o.tenant_id=$1 AND o.draft_id=$2 LIMIT 1`, scope);
+  if (claims.rowCount) throw new Error('Previously claimed draft requires separate disposition');
+  await db.query('UPDATE pilot.fixture_draft_erasure SET applied_xid=pg_current_xact_id() WHERE source_id=$1 AND sequence=$2',
+    [source, sequence]);
+  const result = await db.query('UPDATE pilot.draft_revisions SET text=NULL WHERE tenant_id=$1 AND draft_id=$2 AND text IS NOT NULL', scope);
+  if (!result.rowCount) return incompatible();
+  return result.rowCount;
+}
+
 export async function replayRestoreHistory(db: Client, fixtureId: string, args: string[]) {
   const [mode, start, end, digest] = args;
   const after = Number(start), through = Number(end);
@@ -72,13 +101,18 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
     return { applied: 0 };
   }
 
-  for (const event of events) {
+  for (const [index, event] of events.entries()) {
     if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.
       await db.query('ALTER TABLE pilot.business_fact_revisions DISABLE TRIGGER immutable_business_facts');
       await db.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',
         [event.tenantId, event.id]);
       await db.query('ALTER TABLE pilot.business_fact_revisions ENABLE TRIGGER immutable_business_facts');
+    } else if (event.kind === 'erase-draft') {
+      const seq = after + index + 1;
+      await db.query(`INSERT INTO pilot.fixture_draft_erasure(source_id,sequence,tenant_id,draft_id,authorized_at,history_digest)
+        VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`, [anchor.source, seq, event.tenantId, event.id, event.authorizedAt, digest]);
+      await eraseBoundDraft(db, anchor.source, seq, event, digest);
     } else if (event.kind === 'revoke-grant') {
       const revoked = await db.query(`UPDATE pilot.locations SET grant_active=false,version=version+1
         WHERE tenant_id=$1 AND id=$2 AND grant_active AND version=$3`, [event.tenantId, event.id, event.version]);

@@ -9,7 +9,7 @@ import { claimDispatch } from './dispatch.js';
 import { FakeGbp, providerStateDirectory } from './fake-gbp.js';
 import { reconcileOccurrence } from './reconcile.js';
 
-async function wake(occurrenceId: string) {
+export async function wake(occurrenceId: string) {
   let adapter: FakeGbp | undefined;
   const fake = () => adapter ??= new FakeGbp();
   const readback: GbpReadback = { readback: attempt => fake().readback(attempt) };
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   console.log(JSON.stringify({ state: await wake(occurrenceId) }));
 }
 
-main().catch(() => {
+if (require.main === module) main().catch(() => {
   console.error('Local worker wake refused or failed.');
   process.exitCode = 1;
 });
