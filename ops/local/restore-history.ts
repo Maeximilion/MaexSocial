@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import type { Client } from 'pg';
-import { eraseCustomer, pilotIssuer, type CustomerErasure } from './customer-erasure.js';
+import { eraseCustomer, pilotIssuer, verifyErasedCustomer, type CustomerErasure } from './customer-erasure.js';
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const historyPath = 'work/pilot/restore-history.json';
@@ -66,17 +66,22 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       || !digest || !/^[a-f0-9]{64}$/.test(digest)) return incompatible();
 
   // Imported targets have a source column, including legacy pairs whose source remains unbound.
-  const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null }>(
+  const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null; disposable: boolean }>(
     `SELECT CASE WHEN to_jsonb(marker) ? 'restore_history_source_id'
-      THEN to_jsonb(marker)->>'restore_history_source_id' ELSE id END AS source, restore_history_digest
+      THEN to_jsonb(marker)->>'restore_history_source_id' ELSE id END AS source, restore_history_digest,
+      (to_jsonb(marker)->>'restore_history_source_id' IS NOT NULL AND to_jsonb(marker)->>'purpose'='backup'
+        AND to_jsonb(marker)->>'disposable_backup'='true') AS disposable
     FROM public.fixture_identity AS marker WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
   if (!anchor?.source) return incompatible();
 
   const events = await readBoundHistory(anchor.source, after, digest);
-  if (events.length !== through - after) return incompatible();
+  if (events.length !== through - after || (events.some(event => event.kind === 'delete-customer') && !anchor.disposable)) return incompatible();
 
   if (anchor.restore_history_digest !== null) {
     if (anchor.restore_history_digest !== digest) return incompatible();
+    for (const event of events) {
+      if (event.kind === 'delete-customer') await verifyErasedCustomer(db, event.id);
+    }
     return { applied: 0 };
   }
 
@@ -87,7 +92,8 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       const applied = installed && (await db.query(`SELECT 1 FROM pilot.fixture_customer_erasure
         WHERE fixture_id=$1 AND identity_id=$2 AND subject_binding=$3 AND identity_version=$4
           AND history_digest=$5 AND applied_xid IS NOT NULL`, [anchor.source,event.id,event.binding,event.version,digest])).rowCount;
-      if (!applied) await eraseCustomer(db, anchor.source, event, true);
+      if (applied) await verifyErasedCustomer(db, event.id);
+      else await eraseCustomer(db, anchor.source, event, true);
     } else if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.
       await db.query('ALTER TABLE pilot.business_fact_revisions DISABLE TRIGGER immutable_business_facts');

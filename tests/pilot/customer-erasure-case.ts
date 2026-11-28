@@ -17,68 +17,141 @@ import { binding, inspect, seedDispatchApproval } from './dispatch-fixture.js';
 const clock = () => new Date();
 const subject = '14300000-0000-4000-8000-000000000001';
 const email = 'step-up-enrolled@example.invalid';
-const fake = { policy: 'synthetic-organic-text' as const, async create(intent: { attemptId: string; location: string }) {
-  return { attemptId: intent.attemptId, location: intent.location };
-} };
+const fake = {
+  policy: 'synthetic-organic-text' as const,
+  async create(intent: { attemptId: string; location: string }) {
+    return { attemptId: intent.attemptId, location: intent.location };
+  }
+};
 async function liveInspector() {
-  return createIdentityInspector({ issuer: pilotIssuer, clientId: 'pilot-status',
-    clientSecret: await readFile('work/pilot/status-secret','utf8'), ca: await readFile('work/pilot/keycloak.crt','utf8') });
+  return createIdentityInspector({
+    issuer: pilotIssuer,
+    clientId: 'pilot-status',
+    clientSecret: await readFile('work/pilot/status-secret', 'utf8'),
+    ca: await readFile('work/pilot/keycloak.crt', 'utf8')
+  });
 }
 
 export async function seedCase(db: Client, source: string) {
-  const session = binding(), other = binding(), peer = binding();
+  const session = binding(),
+    other = binding(),
+    peer = binding();
   const target = await seedDispatchApproval(session, true);
   const control = await seedDispatchApproval(other, true);
-  const peerId = (await db.query('SELECT identity_id FROM pilot.memberships WHERE tenant_id=$1 AND role=$2',
-    [target.tenant,'Employee'])).rows[0].identity_id as string;
+  const peerId = (
+    await db.query('SELECT identity_id FROM pilot.memberships WHERE tenant_id=$1 AND role=$2', [
+      target.tenant,
+      'Employee'
+    ])
+  ).rows[0].identity_id as string;
   const inspector = await liveInspector();
   const status = await inspector(subject);
-  const otp = status.credentials.find(c => c.type === 'otp');
+  const otp = status.credentials.find((c) => c.type === 'otp');
   assert.ok(status.enabled && status.verified && otp);
-  await db.query(`UPDATE pilot.sessions SET created_at=now()-interval '1 minute',last_seen_at=now(),
-    expires_at=now()+interval '2 hours',mfa_at=now() WHERE identity_id=ANY($1)`, [[target.user,control.user]]);
-  await db.query('UPDATE pilot.identities SET subject=$2,version=version+1 WHERE id=$1', [target.user,subject]);
-  await db.query('UPDATE pilot.sessions SET identity_version=3,mfa_credential_id=$2 WHERE identity_id=$1', [target.user,otp.id]);
+  await db.query(
+    `UPDATE pilot.sessions SET created_at=now()-interval '1 minute',last_seen_at=now(),
+    expires_at=now()+interval '2 hours',mfa_at=now() WHERE identity_id=ANY($1)`,
+    [[target.user, control.user]]
+  );
+  await db.query('UPDATE pilot.identities SET subject=$2,version=version+1 WHERE id=$1', [target.user, subject]);
+  await db.query('UPDATE pilot.sessions SET identity_version=3,mfa_credential_id=$2 WHERE identity_id=$1', [
+    target.user,
+    otp.id
+  ]);
   await db.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [peerId]);
-  await db.query(`INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
+  await db.query(
+    `INSERT INTO pilot.sessions(token_hash,csrf_hash,identity_id,identity_version,tenant_id,tenant_version,
     membership_id,membership_version,audience,created_at,last_seen_at,expires_at)
     SELECT $2,$3,m.identity_id,2,m.tenant_id,1,m.id,1,'customer',s.created_at,s.last_seen_at,s.expires_at
     FROM pilot.memberships m JOIN pilot.sessions s ON s.tenant_id=m.tenant_id WHERE m.identity_id=$1`,
-  [peerId,tokenHash(peer.token),tokenHash(peer.csrf)]);
-  const extra = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Separate synthetic workspace') RETURNING id")).rows[0].id;
-  await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Employee')", [extra,target.user]);
-  for (const [id,recipient] of [[target.user,email],[peerId,'peer@example.invalid'],[control.user,'control@example.invalid'],[null,email]]) {
+    [peerId, tokenHash(peer.token), tokenHash(peer.csrf)]
+  );
+  const extra = (await db.query("INSERT INTO pilot.tenants(name) VALUES('Separate synthetic workspace') RETURNING id"))
+    .rows[0].id;
+  await db.query("INSERT INTO pilot.memberships(tenant_id,identity_id,role) VALUES($1,$2,'Employee')", [
+    extra,
+    target.user
+  ]);
+  for (const [id, recipient] of [
+    [target.user, email],
+    [peerId, 'peer@example.invalid'],
+    [control.user, 'control@example.invalid'],
+    [null, email]
+  ]) {
     // No shipping signup/verification/reset writer. Exercise the schema, including an unbound mailbox collision.
-    await db.query(`INSERT INTO pilot.pending_access(identity_id,email,purpose,token_hash,expires_at)
-      VALUES($1,$2,'verification',$3,now()+interval '1 hour')`, [id,recipient,tokenHash(randomUUID())]);
+    await db.query(
+      `INSERT INTO pilot.pending_access(identity_id,email,purpose,token_hash,expires_at)
+      VALUES($1,$2,'verification',$3,now()+interval '1 hour')`,
+      [id, recipient, tokenHash(randomUUID())]
+    );
   }
   const mailboxCa = await readFile('work/pilot/mailbox.crt');
-  const outbound = await issueEmployeeInvitation({ connect: connectFixture, clock, mailboxCa,
-    authorize: c => requireCustomerRequest(c,session,clock,inspector) }, 'peer@example.invalid');
-  const incoming = await issueEmployeeInvitation({ connect: connectFixture, clock, mailboxCa,
-    authorize: c => requireCustomerRequest(c,other,clock,inspect) }, email);
-  assert.equal(outbound.delivery,'captured'); assert.equal(incoming.delivery,'captured');
-  const unclaimed = (await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
+  const outbound = await issueEmployeeInvitation(
+    {
+      connect: connectFixture,
+      clock,
+      mailboxCa,
+      authorize: (c) => requireCustomerRequest(c, session, clock, inspector)
+    },
+    'peer@example.invalid'
+  );
+  const incoming = await issueEmployeeInvitation(
+    { connect: connectFixture, clock, mailboxCa, authorize: (c) => requireCustomerRequest(c, other, clock, inspect) },
+    email
+  );
+  assert.equal(outbound.delivery, 'captured');
+  assert.equal(incoming.delivery, 'captured');
+  const unclaimed = (
+    await db.query(
+      `INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
     SELECT tenant_id,draft_id,location_id,gen_random_uuid(),due_at,timezone FROM pilot.occurrences WHERE id=$1 RETURNING id`,
-  [target.id])).rows[0].id as string;
+      [target.id]
+    )
+  ).rows[0].id as string;
   await db.query('BEGIN');
-  const proposal = await readApprovalProposal(db, await requireCustomerRequest(db,session,clock,inspector,'read-only'),unclaimed);
+  const proposal = await readApprovalProposal(
+    db,
+    await requireCustomerRequest(db, session, clock, inspector, 'read-only'),
+    unclaimed
+  );
   await db.query('COMMIT');
-  await approveOccurrence(connectFixture,session,proposal,clock,inspector);
+  await approveOccurrence(connectFixture, session, proposal, clock, inspector);
   await db.query('UPDATE pilot.dispatch_control SET stopped=false');
-  assert.equal((await claimDispatch(connectFixture,target.id,fake)).state,'in_flight');
-  await db.query(`INSERT INTO pilot.fixture_audit_disposition(fixture_id,tenant_id,audit_id,event_at,incident_state)
-    SELECT $1,tenant_id,id,created_at,'held' FROM pilot.audit WHERE occurrence_id=$2 AND action='dispatch_claim'`, [source,target.id]);
-  const event: CustomerErasure = { kind:'delete-customer', issuer:pilotIssuer, id:target.user,
-    binding:subjectBinding(source,target.user,subject), version:3 };
-  return { event, session, peer, other, peerId, controlId:control.user, claimed:target.id, unclaimed, tenant:target.tenant,
-    issued:outbound.id, incoming:incoming.id };
+  assert.equal((await claimDispatch(connectFixture, target.id, fake)).state, 'in_flight');
+  await db.query(
+    `INSERT INTO pilot.fixture_audit_disposition(fixture_id,tenant_id,audit_id,event_at,incident_state)
+    SELECT $1,tenant_id,id,created_at,'held' FROM pilot.audit WHERE occurrence_id=$2 AND action='dispatch_claim'`,
+    [source, target.id]
+  );
+  const event: CustomerErasure = {
+    kind: 'delete-customer',
+    issuer: pilotIssuer,
+    id: target.user,
+    binding: subjectBinding(source, target.user, subject),
+    version: 3
+  };
+  return {
+    event,
+    session,
+    peer,
+    other,
+    peerId,
+    controlId: control.user,
+    claimed: target.id,
+    unclaimed,
+    tenant: target.tenant,
+    issued: outbound.id,
+    incoming: incoming.id
+  };
 }
 
 export type AccessCase = Awaited<ReturnType<typeof seedCase>>;
 
 export async function inspectCase(db: Client, c: AccessCase, erased: boolean, offline: boolean) {
-  const { rows: [r] } = await db.query(`SELECT
+  const {
+    rows: [r]
+  } = await db.query(
+    `SELECT
     (SELECT count(*)::int FROM pilot.identities WHERE subject=$2) AS subjects,
     (SELECT verified FROM pilot.identities WHERE id=$1) AS verified,
     (SELECT count(*)::int FROM pilot.memberships WHERE identity_id=$1 AND active) AS live,
@@ -91,11 +164,45 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$6) AS claims,
     (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$7) AS second_claims,
     (SELECT count(*)::int FROM pilot.fixture_audit_disposition d JOIN pilot.audit a ON (a.tenant_id,a.id)=(d.tenant_id,d.audit_id)
-      WHERE a.actor_id=$1 AND d.incident_state='held') AS holds`, [c.event.id,subject,email,c.issued,c.incoming,c.claimed,c.unclaimed]);
-  assert.deepEqual(r,{ subjects:erased?0:1, verified:!erased, live:erased?0:2, memberships:erased?1:2,
-    sessions:erased?0:1, pending:erased?0:1, unbound:1, withdrawn:erased, incoming:1, claims:1, second_claims:0, holds:1 });
+      WHERE a.actor_id=$1 AND d.incident_state='held') AS holds`,
+    [c.event.id, subject, email, c.issued, c.incoming, c.claimed, c.unclaimed]
+  );
+  assert.deepEqual(r, {
+    subjects: erased ? 0 : 1,
+    verified: !erased,
+    live: erased ? 0 : 2,
+    memberships: erased ? 1 : 2,
+    sessions: erased ? 0 : 1,
+    pending: erased ? 0 : 1,
+    unbound: 1,
+    withdrawn: erased,
+    incoming: 1,
+    claims: 1,
+    second_claims: 0,
+    holds: 1
+  });
+  // The disposable fixture is small enough to check every persisted application row, including free text.
+  const tables = await db.query(
+    "SELECT format('%I.%I', schemaname, tablename) AS relation FROM pg_tables WHERE schemaname='pilot'"
+  );
+  const matches = { subjects: 0, contacts: 0 };
+  for (const { relation } of tables.rows) {
+    const {
+      rows: [row]
+    } = await db.query(
+      `SELECT
+      count(*) FILTER (WHERE strpos(to_jsonb(r)::text,$1)>0)::int AS subjects,
+      count(*) FILTER (WHERE strpos(to_jsonb(r)::text,$2)>0)::int AS contacts FROM ${relation} r`,
+      [subject, email]
+    );
+    matches.subjects += row.subjects;
+    matches.contacts += row.contacts;
+  }
+  assert.deepEqual(matches, { subjects: erased ? 0 : 1, contacts: erased ? 2 : 3 });
   // Compare every control access row. Offline recovery independently revokes all restored sessions.
-  const snapshot = (await db.query(`SELECT
+  const snapshot = (
+    await db.query(
+      `SELECT
     (SELECT jsonb_agg(i ORDER BY id) FROM pilot.identities i WHERE id=ANY($1)) AS identities,
     (SELECT jsonb_agg(m ORDER BY id) FROM pilot.memberships m WHERE identity_id=ANY($1)) AS memberships,
     (SELECT jsonb_agg(to_jsonb(s)-'revoked_at' ORDER BY id) FROM pilot.sessions s WHERE identity_id=ANY($1)) AS sessions,
@@ -104,62 +211,105 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     (SELECT jsonb_agg(a ORDER BY id) FROM pilot.approvals a) AS approvals,
     (SELECT jsonb_agg(a ORDER BY id) FROM pilot.audit a) AS audit,
     (SELECT jsonb_agg(a ORDER BY id) FROM pilot.attempts a) AS attempts,
-    (SELECT jsonb_agg(r ORDER BY id) FROM pilot.draft_revisions r) AS revisions`, [[c.peerId,c.controlId],c.incoming])).rows[0];
+    (SELECT jsonb_agg(r ORDER BY id) FROM pilot.draft_revisions r) AS revisions`,
+      [[c.peerId, c.controlId], c.incoming]
+    )
+  ).rows[0];
   if (offline) {
-    assert.equal((await db.query(`SELECT count(*)::int AS n FROM pilot.sessions WHERE revoked_at IS NULL`)).rows[0].n,0);
-    await assert.rejects(connectFixture(), (e: {code: string}) => ['28000','28P01'].includes(e.code));
+    assert.equal(
+      (await db.query(`SELECT count(*)::int AS n FROM pilot.sessions WHERE revoked_at IS NULL`)).rows[0].n,
+      0
+    );
+    await assert.rejects(connectFixture(), (e: { code: string }) => ['28000', '28P01'].includes(e.code));
   } else {
     const inspector = await liveInspector();
     assert.ok((await inspector(subject)).enabled);
     if (erased) {
-      await assert.rejects(requireCustomer(db,c.session.token,clock,inspector), /Denied/);
-      await assert.rejects(claimDispatch(connectFixture,c.claimed,fake), /Denied/);
-      await assert.rejects(claimDispatch(connectFixture,c.unclaimed,fake), /Denied/);
-    } else assert.equal((await requireCustomerRequest(db,c.session,clock,inspector,'read-only')).identityId,c.event.id);
-    for (const [req,id] of [[c.peer,c.peerId],[c.other,c.controlId]] as const) {
-      assert.equal((await requireCustomerRequest(db,req,clock,inspect,'read-only')).identityId,id);
+      await assert.rejects(requireCustomer(db, c.session.token, clock, inspector), /Denied/);
+      await assert.rejects(claimDispatch(connectFixture, c.claimed, fake), /Denied/);
+      await assert.rejects(claimDispatch(connectFixture, c.unclaimed, fake), /Denied/);
+    } else
+      assert.equal((await requireCustomerRequest(db, c.session, clock, inspector, 'read-only')).identityId, c.event.id);
+    for (const [req, id] of [
+      [c.peer, c.peerId],
+      [c.other, c.controlId]
+    ] as const) {
+      assert.equal((await requireCustomerRequest(db, req, clock, inspect, 'read-only')).identityId, id);
     }
   }
   return tokenHash(JSON.stringify(snapshot));
 }
 
 export async function authorizeCase(db: Client, f: string, c: AccessCase, digest: string) {
-  const {id,binding,version} = c.event;
-  const r = await db.query(`INSERT INTO pilot.fixture_customer_erasure(fixture_id,identity_id,subject_binding,identity_version,sequence,history_digest)
+  const { id, binding, version } = c.event;
+  const r = await db.query(
+    `INSERT INTO pilot.fixture_customer_erasure(fixture_id,identity_id,subject_binding,identity_version,sequence,history_digest)
     SELECT id,$2,$3,$4,restore_history_after+1,$5 FROM public.fixture_identity
     WHERE id=$1 AND purpose='backup' AND disposable_backup AND NOT restore_target RETURNING authorized_at`,
-  [f,id,binding,version,digest]);
-  assert.equal(r.rowCount,1);
+    [f, id, binding, version, digest]
+  );
+  assert.equal(r.rowCount, 1);
   return r.rows[0].authorized_at as Date;
 }
 
 export async function exerciseSource(db: Client, c: AccessCase) {
   const app = await connectFixture();
   try {
-    await assert.rejects(app.query('SELECT * FROM pilot.fixture_customer_erasure'), {code:'42501'});
+    await assert.rejects(app.query('SELECT * FROM pilot.fixture_customer_erasure'), { code: '42501' });
     const inspector = await liveInspector();
     await db.query(`CREATE CONSTRAINT TRIGGER test_customer_rollback AFTER UPDATE ON pilot.fixture_customer_erasure
       DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION pilot.reject_mutation()`);
-    try { await assert.rejects(applySourceCustomerErasure, {code:'23514'}); }
-    finally { await db.query('DROP TRIGGER test_customer_rollback ON pilot.fixture_customer_erasure'); }
-    await inspectCase(db,c,false,false);
+    try {
+      await assert.rejects(applySourceCustomerErasure, { code: '23514' });
+    } finally {
+      await db.query('DROP TRIGGER test_customer_rollback ON pilot.fixture_customer_erasure');
+    }
+    await inspectCase(db, c, false, false);
     await app.query('BEGIN');
-    const rotated = await rotateCustomerSession(app,c.session.token,c.tenant,clock,inspector);
+    const rotated = await rotateCustomerSession(app, c.session.token, c.tenant, clock, inspector);
     const pid = (await app.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
     const erasure = applySourceCustomerErasure();
+    // The connection may fail before the lock observer finishes. Consume that rejection immediately.
+    void erasure.catch(() => {});
     try {
       let blocked = false;
-      for (let i=0;i<100 && !blocked;i++) {
-        blocked = (await db.query('SELECT EXISTS(SELECT FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))) AS waiting',[pid])).rows[0].waiting;
+      for (let i = 0; i < 100 && !blocked; i++) {
+        blocked = (
+          await db.query('SELECT EXISTS(SELECT FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))) AS waiting', [
+            pid
+          ])
+        ).rows[0].waiting;
         if (!blocked) await delay(25);
       }
-      assert.ok(blocked,'Erasure must wait for the established session rotation');
+      assert.ok(blocked, 'Erasure must wait for the established session rotation');
       await app.query('COMMIT');
-    } finally { await app.query('ROLLBACK'); }
-    assert.deepEqual(await erasure,{sessions:2,pending:1,invitationsRevoked:1,membershipsDeleted:1,membershipsDeactivated:1,identitiesDeleted:0});
+    } finally {
+      await app.query('ROLLBACK');
+    }
+    assert.deepEqual(await erasure, {
+      sessions: 2,
+      pending: 1,
+      invitationsRevoked: 1,
+      membershipsDeleted: 1,
+      membershipsDeactivated: 1,
+      identitiesDeleted: 0
+    });
     const confirmed = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at as Date;
-    await assert.rejects(requireCustomer(app,rotated.token,clock,inspector), /Denied/);
-    assert.equal(await applySourceCustomerErasure(),null);
+    await assert.rejects(requireCustomer(app, rotated.token, clock, inspector), /Denied/);
+    assert.equal(await applySourceCustomerErasure(), null);
+    const added = await db.query(
+      `INSERT INTO pilot.pending_access(identity_id,email,purpose,token_hash,expires_at)
+      VALUES($1,'late-fixture@example.invalid','verification',$2,now()+interval '1 hour') RETURNING id`,
+      [c.event.id, tokenHash(randomUUID())]
+    );
+    try {
+      await assert.rejects(applySourceCustomerErasure, /receipt conflicts/);
+    } finally {
+      await db.query('DELETE FROM pilot.pending_access WHERE id=$1', [added.rows[0].id]);
+    }
+    assert.equal(await applySourceCustomerErasure(), null);
     return confirmed;
-  } finally { await app.end(); }
+  } finally {
+    await app.end();
+  }
 }
