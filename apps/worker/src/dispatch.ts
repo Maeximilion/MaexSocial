@@ -60,8 +60,8 @@ async function persistClaim(db: Client, occurrenceId: string): Promise<GbpCreate
         AND NOT EXISTS (SELECT 1 FROM pilot.draft_revisions newer
           WHERE newer.tenant_id=r.tenant_id AND newer.draft_id=r.draft_id AND newer.revision>r.revision)
         AND NOT EXISTS (SELECT 1 FROM pilot.attempts p WHERE p.tenant_id=o.tenant_id AND p.occurrence_id=o.id)
-        AND NOT EXISTS (SELECT 1 FROM pilot.audit h
-          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.action='occurrence_hold')
+        AND NOT EXISTS (SELECT 1 FROM pilot.occurrence_decisions h
+          WHERE h.tenant_id=o.tenant_id AND h.occurrence_id=o.id AND h.approval_id IS NULL)
       FOR SHARE OF l,m`, [tenantId, occurrenceId, approverId, tenant.version, candidate.approval_id])).rows[0] ?? deny();
 
     // The stop writer can proceed only before the claim or after its attempt is durable.

@@ -19,6 +19,7 @@ test('migration guards preserve populated state and upgrade a historical approva
       assert.equal((await db.query("SELECT to_regclass('pilot.business_fact_revisions') AS name")).rows[0].name, 'pilot.business_fact_revisions');
     });
     await db.query(await readFile('db/migrations/017_fixture_draft_erasure.down.sql', 'utf8'));
+    await db.query(await readFile('db/migrations/016_occurrence_decisions.down.sql', 'utf8'));
     await db.query(await readFile('db/migrations/015_fixture_audit_retention.down.sql', 'utf8'));
     await db.query(await readFile('db/migrations/014_fixture_fact_erasure.down.sql', 'utf8'));
     await db.query(await readFile('db/migrations/013_attempt_retention.down.sql', 'utf8'));
