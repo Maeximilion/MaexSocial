@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Writable } from 'node:stream';
@@ -27,6 +28,16 @@ export async function captureAfterPurge(fixtureId: string) {
     for (const file of ['compose.env', 'fixture.json']) await copyFile(join(pilot, file), join(dir, file));
     await captureContinuedFixture(fixtureId, join(dir, pairDir));
   }
+  // Cross the deadline after archive verification, immediately before publication.
+  const original = await manifest(pilot);
+  const cutoff = Date.parse(original.capturedAt) + retention;
+  const destination = join(roots[2], 'unpublished');
+  const now = Date.now;
+  try {
+    Date.now = () => existsSync(join(destination + '.pending', 'pair.json')) ? cutoff : now();
+    await assert.rejects(captureContinuedFixture(fixtureId, destination), /Backup pair has expired/);
+  } finally { Date.now = now; }
+  for (const dir of [destination, destination + '.pending']) await assert.rejects(lstat(dir), { code: 'ENOENT' });
   return resolve(later);
 }
 

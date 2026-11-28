@@ -204,12 +204,18 @@ Keep the pair and the fixture's generated configuration private for [Task 5](htt
 
 ## Rolling expiry of disposable backup pairs (#250)
 
-New pairs record the UTC snapshot time once the cold source has stopped. Verify and paired restore
-refuse new access at or after that instant plus 30 × 24 hours. The deadline uses elapsed UTC time
-regardless of local time or daylight saving changes. Legacy pairs whose format carries no capture
-time remain eligible for compatible offline verification and quarantine with unknown retention
-eligibility. A copy's filesystem timestamps do not establish age. History replay still requires
-the independent capture evidence and replay interval described below.
+A fresh pair records its UTC capture time after the source stops. Formats 2 and 3 expire
+30 elapsed days after capture. Format 1 has no trustworthy capture time and remains eligible
+for compatible offline inspection and quarantine with unknown retention eligibility.
+
+New disposable format-3 pairs authenticate their capture time as `lineageCapturedAt`.
+A continued format-4 pair records its own actual `capturedAt` and inherits the authenticated
+`lineageCapturedAt` from its parent. Both PostgreSQL system identifiers, catalog versions
+and the original capture journal must match. At the lineage start plus 30 elapsed days,
+capture publication, verification and restore admission refuse the pair. Older readers
+refuse format 4. Existing format-3 pairs without the lineage start retain their recorded
+lifetime and cannot seed another capture. Historical copies require separate disposition.
+History replay requires the independent capture evidence and replay interval described below.
 
 To test physical expiry, create a fresh disposable pair in its own clean local worktree:
 
