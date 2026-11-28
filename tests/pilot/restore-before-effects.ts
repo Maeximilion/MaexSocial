@@ -357,6 +357,7 @@ async function drill(targetDir: string, eraseSource: boolean, laterTarget?: stri
       }
     }
     const laterArchive = laterTarget ? await captureAfterPurge(f.id) : undefined;
+    if (laterArchive) compose(f, ['down']);
     const archive = resolve(fixturePath);
     phase = 'offline paired restore';
     process.chdir(target);
