@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import { test } from 'node:test';
 import { decryptArchive, encryptArchive, sealManifest } from '../../ops/local/backup-crypto.js';
-import { archiveFile, databases, hashSources, verifyPair, type Pair } from '../../ops/local/backup.js';
+import { archiveFile, continuedRetention, databases, hashSources, verifyPair, type Pair } from '../../ops/local/backup.js';
 import { postgresImage } from '../../ops/local/stack.js';
 
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
@@ -150,6 +150,12 @@ test('encrypted pairs bind metadata, ciphertext, source and role before import c
   await rm(join(path, 'pair.auth'));
   await sealManifest(path, continued, key);
   await verify(continued);
+  assert.deepEqual(continuedRetention(continued, continued.archives), {
+    format: 4, disposable: true, lineageCapturedAt: continued.lineageCapturedAt,
+  });
+  assert.throws(() => continuedRetention(pair, pair.archives), /capture lineage/);
+  assert.throws(() => continuedRetention(continued,
+    { ...continued.archives, [app.archive]: continued.archives[idp.archive]! }), /original PostgreSQL clusters/);
   await assert.rejects(verify({ ...continued, lineageCapturedAt: continued.capturedAt }), /manifest authentication/);
   for (const lineageCapturedAt of [undefined, 'unknown', new Date(Date.parse(pair.capturedAt) + 1).toISOString()]) {
     const invalid = { ...continued, lineageCapturedAt };

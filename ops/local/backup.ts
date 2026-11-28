@@ -354,6 +354,14 @@ function cleanRevision(): string {
 type CaptureMetadata = Pick<Pair, 'fixtureId' | 'revision' | 'compatibility' | 'appliedAppSchema'
   | 'identitySchema' | 'postgresImage' | 'historyAnchor' | 'disposable'>;
 
+export function continuedRetention(parent: Pair, archives: Pair['archives']) {
+  if (!parent.lineageCapturedAt || !databases.every(db => {
+    const prior = parent.archives[db.archive], next = archives[db.archive];
+    return prior && next && prior.systemId === next.systemId && prior.catalogVersion === next.catalogVersion;
+  })) throw new Error('Continued capture requires the original PostgreSQL clusters and capture lineage.');
+  return { format: 4 as const, disposable: true as const, lineageCapturedAt: parent.lineageCapturedAt };
+}
+
 async function writeStoppedPair(f: Fixture, sources: Map<string, Container>, pending: string, destination: string,
   key: KeyObject, metadata: CaptureMetadata | Pair): Promise<void> {
   const before = stoppedState(f, sources);
@@ -361,15 +369,9 @@ async function writeStoppedPair(f: Fixture, sources: Map<string, Container>, pen
   const archives: Pair['archives'] = {};
   for (const db of databases) archives[db.archive] = await copyCluster(f, db, pending, key);
   if (!isDeepStrictEqual(before, stoppedState(f, sources))) throw new Error('The backup source restarted during capture.');
-  let pair: Pair = { ...metadata, format: 3, capturedAt, archives,
-    ...(metadata.disposable ? { lineageCapturedAt: capturedAt } : {}) };
-  if ('archives' in metadata) {
-    if (!metadata.lineageCapturedAt || !databases.every(db => {
-      const prior = metadata.archives[db.archive]!, next = archives[db.archive]!;
-      return prior.systemId === next.systemId && prior.catalogVersion === next.catalogVersion;
-    })) throw new Error('Continued capture requires the original PostgreSQL clusters and capture lineage.');
-    pair = { ...pair, format: 4, disposable: true, lineageCapturedAt: metadata.lineageCapturedAt };
-  }
+  const retention = 'archives' in metadata ? continuedRetention(metadata, archives)
+    : { format: 3 as const, ...(metadata.disposable ? { lineageCapturedAt: capturedAt } : {}) };
+  const pair: Pair = { ...metadata, ...retention, capturedAt, archives };
   await sealManifest(pending, pair, key);
   await verifyPair(pending, f.id, await compatibility(f), pair, key);
   if (cleanRevision() !== metadata.revision) throw new Error('The source revision changed during capture.');
@@ -391,6 +393,9 @@ export async function captureContinuedFixture(expectedId: string, destination: s
     throw new Error('Continued capture requires a disposable encrypted pair at the same revision.');
   }
   await verifyPair(directory, f.id, await compatibility(f), original, key);
+  if (await hashFile('work/pilot/capture-history.json') !== original.historyAnchor.evidenceSha256) {
+    throw new Error('Continued capture requires the original capture history.');
+  }
   const sources = containers(f);
   validateDatabases(f, sources, docker(['image', 'inspect', '--format', '{{.Id}}', postgresImage]));
   const pending = destination + '.pending';
