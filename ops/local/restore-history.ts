@@ -107,6 +107,14 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
         [event.tenantId, event.id]);
       await db.query('ALTER TABLE pilot.business_fact_revisions ENABLE TRIGGER immutable_business_facts');
     } else if (event.kind === 'erase-draft') {
+      const { rows: [target] } = await db.query(`SELECT EXISTS (
+          SELECT 1 FROM pilot.drafts WHERE tenant_id=$1 AND id=$2) AS present
+        FROM public.fixture_identity m WHERE m.id=$3 AND m.restore_target
+          AND to_jsonb(m)->>'disposable_backup'='true' AND to_jsonb(m)->>'restore_history_source_id'=$4
+          AND $5::timestamptz<=clock_timestamp()`, [event.tenantId, event.id, fixtureId, anchor.source, event.authorizedAt]);
+      if (!target) return incompatible();
+      // The independent history can include a draft first created after this snapshot.
+      if (!target.present) continue;
       const seq = after + index + 1;
       await db.query(`INSERT INTO pilot.fixture_draft_erasure(source_id,sequence,tenant_id,draft_id,authorized_at,history_digest)
         VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`, [anchor.source, seq, event.tenantId, event.id, event.authorizedAt, digest]);

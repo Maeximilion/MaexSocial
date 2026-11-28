@@ -90,12 +90,16 @@ export async function seedSamples(): Promise<Samples> {
 export async function issue(db: Client, samples: Samples, after: number) {
   const f = await loadFixture();
   assert.ok(f.purpose === 'backup' && !f.restoreTarget);
+  const selected = samples.drafts[0]!.proposal;
+  const laterDraft = await withContext(samples.auth, (app, ctx) =>
+    createDraft(app, ctx, selected.locationId, 'Invented after the snapshot'));
   await db.query('BEGIN');
   try {
     const authorizedAt = (await db.query('SELECT transaction_timestamp() AS instant')).rows[0].instant.toISOString();
     const records = samples.drafts.slice(0, 2).map((d, i) => ({
       seq: after + 1 + i, kind: 'erase-draft', tenantId: d.proposal.tenantId, id: d.draft, authorizedAt,
     }));
+    records.push({ seq: after + 3, kind: 'erase-draft', tenantId: selected.tenantId, id: laterDraft, authorizedAt });
     const history = JSON.stringify({ schema: 1, fixtureId: f.id, after, through: after + records.length, records });
     for (const e of records) {
       await db.query(`INSERT INTO pilot.fixture_draft_erasure(source_id,tenant_id,draft_id,sequence,authorized_at,history_digest)

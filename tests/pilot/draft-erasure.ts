@@ -73,8 +73,8 @@ async function drill() {
     const log = JSON.parse(history);
     for (const wrong of [
       { ...log, fixtureId: 'wrong' },
-      { ...log, records: [{ ...log.records[0], kind: 'delete-facts' }, log.records[1]] },
-      { ...log, records: [{ ...log.records[0], id: samples.drafts[2]!.draft }, log.records[1]] },
+      { ...log, records: [{ ...log.records[0], kind: 'delete-facts' }, ...log.records.slice(1)] },
+      { ...log, records: [{ ...log.records[0], id: samples.drafts[2]!.draft }, ...log.records.slice(1)] },
     ]) {
       await writeFile(journal, JSON.stringify(wrong), { mode: 0o600 });
       run(f, 'refuse');
@@ -86,12 +86,14 @@ async function drill() {
     compose(f, ['start', '--wait', '--wait-timeout', '120', 'postgres']);
     const results: Awaited<ReturnType<typeof applySourceDraftErasure>>[] = run(f, 'race');
     assert.deepEqual(results.map(r => [r.removed, r.timing]), [[2, 'within-seven-days'], [2, 'within-seven-days']]);
+    const later = cli(erase, String(log.through));
+    assert.deepEqual([later.sequence, later.removed, later.timing], [log.through, 1, 'within-seven-days']);
     const elapsedMs = results.map(r => Date.parse(r.confirmedBy) - Date.parse(r.authorizedAt));
     assert.ok(elapsedMs.every(n => n >= 0 && n <= 7 * 86400_000));
     run(f, 'after');
     compose(f, ['stop', 'postgres']);
     compose(f, ['start', '--wait', '--wait-timeout', '120', 'postgres']);
-    for (const result of results) {
+    for (const result of [...results, later]) {
       const retry = cli(erase, String(result.sequence));
       assert.deepEqual([retry.removed, retry.timing], [0, 'already-applied']);
     }
@@ -120,7 +122,7 @@ async function drill() {
     assert.throws(() => replay(sha(incomplete)));
     run(t, 'before');
     await writeFile(journal, history);
-    assert.equal(replay(sha(history)).history.applied, 2);
+    assert.equal(replay(sha(history)).history.applied, 3);
     run(t, 'after');
     compose(t, ['stop', 'postgres']);
     compose(t, ['start', '--wait', '--wait-timeout', '120', 'postgres']);
@@ -129,7 +131,7 @@ async function drill() {
     assert.deepEqual(await originals(archive), prior);
     return { revision: pair.revision, authorization: results[0]!.authorizedAt, confirmedBy: results.map(r => r.confirmedBy),
       continuedBackupDeadline: new Date(backupDeadline).toISOString(), elapsedMs, removed: [2, 2], unaffectedRevisions: 4, selectedNewAttempts: 0, originalCreates: 2,
-      restoredDatabases: target.verifiedDatabases, held: target.quarantined, historyApplied: [2, 0] };
+      restoredDatabases: target.verifiedDatabases, held: target.quarantined, postSnapshotRemoved: later.removed, postSnapshotConfirmedBy: later.confirmedBy, historyApplied: [3, 0] };
   } finally {
     if (active && (await loadFixture(true)).id === active.id) compose(active, ['down']);
   }
