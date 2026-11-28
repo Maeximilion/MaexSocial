@@ -142,12 +142,19 @@ async function drill() {
     const extended = { ...journal, through, records: [first, last] };
     const bytes = JSON.stringify(extended);
     // Change the already-issued entry while preserving the later entry and interval length.
-    const changed = JSON.stringify({ ...extended, records: [{ ...first, version: first.version + 1 }, last] });
+    const changed = [
+      JSON.stringify({ ...extended, records: [{ ...first, id: c.peerId }, last] }),
+      JSON.stringify({ ...extended, records: [{ ...first, version: first.version + 1 }, last] }),
+      // Parsed scope is identical, but adding a field changes the bytes the source owner authorized.
+      JSON.stringify({ ...extended, records: [{ ...first, annotation: 'changed' }, last] })
+    ];
     const issuedPair = await captureInterval('issued-customer');
     startSource();
-    await writeFile(historyPath, changed);
-    run(f, 'refuse-extension');
-    assert.equal(run(f, 'before'), before);
+    for (const altered of changed) {
+      await writeFile(historyPath, altered);
+      run(f, 'refuse-extension');
+      assert.equal(run(f, 'before'), before);
+    }
     await writeFile(historyPath, bytes);
     const confirmed: string = run(f, 'erase');
     assert.ok(Date.parse(confirmed) >= Date.parse(authorized));
@@ -173,7 +180,7 @@ async function drill() {
       const invalid = index === 0 ? [
         JSON.stringify({ ...extended, records: [] }), JSON.stringify({ ...extended, fixtureId: t.id }),
         JSON.stringify({ ...extended, records: [{ ...first, id: c.peerId }, last] })
-      ] : [changed];
+      ] : changed;
       for (const bad of invalid) {
         await writeFile(historyPath, bad, { mode: 0o600 });
         assert.equal(recover(bad).status, 1);
