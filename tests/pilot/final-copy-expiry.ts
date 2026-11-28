@@ -8,20 +8,25 @@ import { decryptArchive, loadBackupKey } from '../../ops/local/backup-crypto.js'
 import { loadFixture } from '../../ops/local/fixture.js';
 
 const pilot = 'work/pilot';
-const later = 'work/post-purge';
+const roots = ['.', 'work/post-purge', 'work/repeated-capture'] as const;
+const later = join(roots[1], pilot);
 const pairDir = 'cold-backup';
 const retention = 30 * 24 * 60 * 60 * 1000;
 
-async function manifest(root: string): Promise<Pair & { format: 3 }> {
+async function manifest(root: string): Promise<Pair & { format: 3 | 4 }> {
   const pair = JSON.parse(await readFile(join(root, pairDir, 'pair.json'), 'utf8'));
-  assert.equal(pair.format, 3);
+  assert.ok(pair.format === 3 || pair.format === 4);
   return pair;
 }
 
 export async function captureAfterPurge(fixtureId: string) {
-  await mkdir(later, { mode: 0o700 });
-  for (const file of ['compose.env', 'fixture.json']) await copyFile(join(pilot, file), join(later, file));
-  await captureContinuedFixture(fixtureId, join(later, pairDir));
+  for (const root of roots.slice(1)) {
+    await mkdir(root, { mode: 0o700 });
+    const dir = join(root, pilot);
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+    for (const file of ['compose.env', 'fixture.json']) await copyFile(join(pilot, file), join(dir, file));
+    await captureContinuedFixture(fixtureId, join(dir, pairDir));
+  }
   return resolve(later);
 }
 
@@ -47,6 +52,13 @@ async function markerPresent(root: string, pair: Pair, marker: Buffer) {
   return present;
 }
 
+function at(now: number, cwd: string, script: string, args: string[], error?: string) {
+  const clock = 'data:text/javascript,' + encodeURIComponent('Date.now = () => ' + now);
+  const r = spawnSync(process.execPath, ['--import', clock, script, ...args], { cwd, encoding: 'utf8', timeout: 180_000 });
+  assert.equal(r.status, error ? 1 : 0, r.error?.message ?? r.stderr);
+  if (error) assert.equal(r.stderr.trim(), error);
+}
+
 export async function proveExpiry(freshTarget: string, purgeStarted: number, purgeConfirmed: number, label: string) {
   const pre = await manifest(pilot), post = await manifest(later);
   assert.equal(pre.fixtureId, post.fixtureId);
@@ -63,43 +75,49 @@ export async function proveExpiry(freshTarget: string, purgeStarted: number, pur
   const postMarker = await markerPresent(later, post, marker);
   const backup = resolve('dist/pilot/ops/local/backup.js');
   const restore = resolve('dist/pilot/ops/local/restore.js');
-  const at = (now: number, cwd: string, script: string, args: string[], error?: string) => {
-    const clock = 'data:text/javascript,' + encodeURIComponent('Date.now = () => ' + now);
-    const r = spawnSync(process.execPath, ['--import', clock, script, ...args], { cwd, encoding: 'utf8', timeout: 180_000 });
-    assert.equal(r.status, error ? 1 : 0, r.error?.message ?? r.stderr);
-    if (error) assert.equal(r.stderr.trim(), error);
-  };
-  const cwd = process.cwd();
-  const verifyPost = (now: number, error?: string) => at(now, cwd, __filename, [], error);
-  const expired = 'Backup pair has expired.';
-  at(cutoff - 1, cwd, backup, ['verify']);
-  at(cutoff - 1, cwd, backup, ['expire'], 'Backup pair has not expired.');
-  at(cutoff, cwd, backup, ['verify'], expired);
-  at(cutoff, freshTarget, restore, [resolve(pilot)], expired);
-  await assert.rejects(lstat(join(freshTarget, pilot)), { code: 'ENOENT' });
-  verifyPost(cutoff);
-  // The commit occurred before host confirmation, so this checks even the latest possible purge deadline.
-  verifyPost(purgeConfirmed + retention);
-  verifyPost(recaptured + retention - 1);
-  verifyPost(recaptured + retention, expired);
-  const path = join(pilot, pairDir);
-  const metadata = await Promise.all(['pair.auth', 'pair.json'].map(file => readFile(join(path, file))));
-  assert.deepEqual((await readdir(path)).sort(), ['app-db.tar.enc', 'identity-db.tar.enc', 'pair.auth', 'pair.json']);
-  for (const when of [cutoff, cutoff + 1]) {
-    at(when, cwd, backup, ['expire']);
-    assert.deepEqual((await readdir(path)).sort(), ['pair.auth', 'pair.json']);
-    assert.deepEqual(await Promise.all(['pair.auth', 'pair.json'].map(file => readFile(join(path, file)))), metadata);
+  assert.deepEqual(postMarker, [true, false]);
+  const repeated = await manifest(join(roots[2], pilot));
+  assert.equal(pre.format, 3);
+  assert.equal(pre.lineageCapturedAt, pre.capturedAt);
+  for (const copy of [post, repeated]) {
+    assert.equal(copy.format, 4);
+    assert.equal(copy.fixtureId, pre.fixtureId);
+    assert.deepEqual(copy.historyAnchor, pre.historyAnchor);
+    assert.equal(copy.lineageCapturedAt, pre.capturedAt);
+    for (const db of databases) assert.equal(copy.archives[db.archive]!.systemId, pre.archives[db.archive]!.systemId);
   }
-  verifyPost(cutoff);
-  assert.deepEqual(await manifest(later), post);
-  return { purgeWindowMs: purgeConfirmed - purgeStarted, captureToConfirmationMs: purgeConfirmed - captured,
-    confirmationToLaterCaptureMs: recaptured - purgeConfirmed,
-    preCaptureToExpiryMs: retention, confirmationToPreExpiryMs: cutoff - purgeConfirmed,
-    confirmationToLaterExpiryMs: recaptured + retention - purgeConfirmed, preMarker, postMarker,
-    archiveFilesBefore: 2, archiveFilesAfter: 0 };
+  assert.ok(Date.parse(repeated.capturedAt) > recaptured);
+  for (const root of roots) {
+    const dir = resolve(root, pilot);
+    at(cutoff - 1, process.cwd(), __filename, [dir]);
+    at(cutoff - 1, root, backup, ['expire'], 'Backup pair has not expired.');
+    for (const when of [cutoff, cutoff + 1, purgeStarted + retention, purgeConfirmed + retention]) {
+      at(when, process.cwd(), __filename, [dir], 'Backup pair has expired.');
+      at(when, freshTarget, restore, [dir], 'Backup pair has expired.');
+      await assert.rejects(lstat(join(freshTarget, pilot)), { code: 'ENOENT' });
+    }
+  }
+  return { capturedAt: pre.capturedAt, purgeStarted, purgeConfirmed, cutoff, recapturedAt: post.capturedAt,
+    repeatedAt: repeated.capturedAt, preMarker, postMarker };
+}
+
+export async function expireOwnedCopies(cutoff: number) {
+  const backup = resolve('dist/pilot/ops/local/backup.js');
+  for (const root of roots) {
+    const dir = join(root, pilot, pairDir);
+    const metadata = () => Promise.all(['pair.auth', 'pair.json'].map(file => readFile(join(dir, file))));
+    const before = await metadata();
+    assert.deepEqual((await readdir(dir)).sort(), ['app-db.tar.enc', 'identity-db.tar.enc', 'pair.auth', 'pair.json']);
+    for (const when of [cutoff, cutoff + 1]) {
+      at(when, root, backup, ['expire']);
+      assert.deepEqual((await readdir(dir)).sort(), ['pair.auth', 'pair.json']);
+      assert.deepEqual(await metadata(), before);
+    }
+  }
 }
 
 if (require.main === module) (async () => {
+  const dir = process.argv[2]!;
   const f = await loadFixture(true);
-  await verifyPair(join(later, pairDir), f.id, await compatibility(f), await manifest(later));
+  await verifyPair(join(dir, pairDir), f.id, await compatibility(f), await manifest(dir));
 })().catch(error => { console.error(error.message); process.exitCode = 1; });

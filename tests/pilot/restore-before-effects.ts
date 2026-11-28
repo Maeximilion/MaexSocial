@@ -13,7 +13,7 @@ import { compose, connectFixture, loadFixture, safeDiagnostics, verifyContainers
 import { applySourceFactErasure } from '../../ops/local/source-fact-erasure.js';
 import { restore } from '../../ops/local/restore.js';
 import { binding, clock, inspect, seedDispatchApproval, type Case } from './dispatch-fixture.js';
-import { captureAfterPurge, proveExpiry } from './final-copy-expiry.js';
+import { captureAfterPurge, expireOwnedCopies, proveExpiry } from './final-copy-expiry.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 
 const command = 'dist/pilot/tests/pilot/restore-before-effects.js';
@@ -466,7 +466,8 @@ async function drill(targetDir: string, eraseSource: boolean, laterTarget?: stri
       assert.equal(await readFile(replayPath, 'utf8'), historyBytes);
       assert.ok((await readFile(captureHistoryPath)).equals(captureHistory));
       checkFake();
-      return { revision, expiry, preReplay: { a: 2, b: 2 }, laterImport: { a: 0, b: 2 }, ...quarantine };
+      await expireOwnedCopies(expiry.cutoff);
+      return { revision, expiry, expiredPairCount: 3, preReplay: { a: 2, b: 2 }, laterImport: { a: 0, b: 2 }, ...quarantine };
     }
     return { revision, source: after, target: expected, fakeCreates: 1,
       targetAuthDenials: [...first.authDenials, ...repeated.authDenials], ...quarantine,
