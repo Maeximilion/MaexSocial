@@ -65,6 +65,19 @@ and checks the provider-state directory across rejected structured and media wak
 The [handover](../../docs/handovers/sessions/2026-11-23-isolated-worker-wake.md) records the
 measured scope and the open integrated acceptance work.
 
+## Disposable grant retirement (#310)
+
+Use a fresh worktree with no active fixture and the pinned, cached pilot images. Build, run
+`npm run pilot:up -- grant-retirement`, `npm run pilot:migrate -- up`, then
+`node dist/pilot/tests/pilot/grant-retirement.js` and `npm run pilot:down`.
+The drill requires a new database and creates its own external temporary directory. Only the
+drill and its worker runners mount that directory. The database holds fixture-only digests
+and version-bound revocation records. A location lock covers verification and the fake call.
+The drill brackets the revocation commit on the database clock, exercises denial and restart,
+then runs on-demand removal and observes file absence again with its private clock advanced
+to the 24-hour boundary. The drill removes the temporary store on exit. Scheduling, physical
+media sanitization and deployed credential custody remain open.
+
 ## Private terminal text export (#252)
 
 The private `claimExport` entry point reuses a bound customer session and the occurrence's immutable approval.
