@@ -21,8 +21,8 @@ export async function applySourceDraftErasure(sequence: number) {
     const removed = await eraseBoundDraft(db, f.id, sequence, event, permit.history_digest);
     await db.query('COMMIT');
     // On the issuing database's clock this observation bounds actual completion, including the commit.
-    const { rows: [observation] } = await db.query('SELECT clock_timestamp() AS confirmed');
-    return { sequence, removed, authorizedAt: event.authorizedAt, confirmedBy: observation.confirmed.toISOString() as string };
+    const { rows: [observation] } = await db.query<{ confirmed: Date }>('SELECT clock_timestamp() AS confirmed');
+    return { sequence, removed, authorizedAt: event.authorizedAt, confirmedBy: observation!.confirmed.toISOString() };
   } catch (error) {
     await db.query('ROLLBACK');
     throw error;

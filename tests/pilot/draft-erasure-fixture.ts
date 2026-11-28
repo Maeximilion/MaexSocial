@@ -76,6 +76,7 @@ export async function seedSamples(): Promise<Samples> {
 
 export async function issue(db: Client, samples: Samples, after: number) {
   const f = await loadFixture();
+  assert.ok(f.purpose === 'backup' && !f.restoreTarget);
   await db.query('BEGIN');
   try {
     const authorizedAt = (await db.query('SELECT transaction_timestamp() AS instant')).rows[0].instant.toISOString();
@@ -89,7 +90,10 @@ export async function issue(db: Client, samples: Samples, after: number) {
     }
     await db.query('COMMIT');
     return history;
-  } finally { await db.query('ROLLBACK'); }
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  }
 }
 
 export async function state(db: Client, samples: Samples, erased: boolean, target: boolean) {
@@ -100,6 +104,19 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
     const { rows } = await db.query('SELECT revision,text FROM pilot.draft_revisions WHERE tenant_id=$1 AND draft_id=$2 ORDER BY revision', scope);
     assert.ok(rows.length === 2 && rows.every((r, n) => r.revision === n + 1 && (removed ? r.text === null : digest(r.text) === d.hashes[n])),
       'Revision payloads differ from scoped expectations');
+    const proof = await db.query(`SELECT num_nonnulls(mfa_at,created_at,grant_version,grant_active_at_approval) AS fields
+      FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
+    assert.equal(proof.rowCount, i === 0 ? 3 : 1);
+    assert.ok(proof.rows.every(row => row.fields === (removed ? 0 : 4)));
+    const { rows: [copies] } = await db.query(`SELECT count(*)::int AS n FROM (
+        SELECT to_jsonb(a)::text AS body FROM pilot.approvals a WHERE tenant_id=$1 AND draft_id=$2
+        UNION ALL SELECT to_jsonb(o)::text FROM pilot.occurrences o WHERE tenant_id=$1 AND draft_id=$2
+        UNION ALL SELECT to_jsonb(a)::text FROM pilot.attempts a JOIN pilot.occurrences o
+          ON o.tenant_id=a.tenant_id AND o.id=a.occurrence_id WHERE o.tenant_id=$1 AND o.draft_id=$2
+        UNION ALL SELECT to_jsonb(a)::text FROM pilot.audit a JOIN pilot.occurrences o
+          ON o.tenant_id=a.tenant_id AND o.id=a.occurrence_id WHERE o.tenant_id=$1 AND o.draft_id=$2
+      ) rows WHERE strpos(body,$3)>0`, [...scope, 'Invented ' + i + '-']);
+    assert.equal(copies.n, 0);
     const durable = (await db.query(`SELECT o.state,to_jsonb(o)->>'restore_previous_state' AS prior,
       (SELECT count(*)::int FROM pilot.approvals a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id) AS approvals,
       (SELECT count(*)::int FROM pilot.attempts a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id) AS attempts,
@@ -118,7 +135,10 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
     if (removed) {
       await assert.rejects(withContext(request, (db, ctx) => renderDraft(db, ctx, d.draft, 'local')), /Denied/);
       await assert.rejects(withContext(request, (db, ctx) => editDraft(db, ctx, d.draft, d.proposal.revisionId, 'later')), /Denied/);
+      await assert.rejects(withContext(request, (db, ctx) => readApprovalProposal(db, ctx, d.id)), /Denied/);
       await assert.rejects(approveOccurrence(connectFixture, request, d.proposal, clock, inspect), /Denied/);
+      await assert.rejects(withContext(request, app => app.query(
+        "INSERT INTO pilot.draft_revisions(tenant_id,draft_id,revision,text) VALUES($1,$2,3,'later')", scope)), { code: '23514' });
       await assert.rejects(claimExport(connectFixture, request, d.id, clock, inspect), /Denied/);
       assert.equal(await wake(d.id), 'denied');
       const fake = new FakeGbp();
@@ -152,6 +172,12 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
 }
 
 export async function abortPurge(db: Client, seq: number) {
+  await assert.rejects(db.query('UPDATE pilot.fixture_draft_erasure SET sequence=sequence+100 WHERE sequence=$1', [seq]), { code: '23514' });
+  const app = await connectFixture();
+  try {
+    await assert.rejects(app.query('SELECT * FROM pilot.fixture_draft_erasure'), { code: '42501' });
+    await assert.rejects(app.query('UPDATE pilot.draft_revisions SET text=NULL'), { code: '42501' });
+  } finally { await app.end(); }
   await db.query(`CREATE CONSTRAINT TRIGGER reject_draft_purge AFTER UPDATE ON pilot.fixture_draft_erasure
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION pilot.reject_mutation()`);
   try { await assert.rejects(applySourceDraftErasure(seq), { code: '23514' }); }

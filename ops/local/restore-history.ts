@@ -72,6 +72,8 @@ export async function eraseBoundDraft(db: Client, source: string, sequence: numb
     [source, sequence]);
   const result = await db.query('UPDATE pilot.draft_revisions SET text=NULL WHERE tenant_id=$1 AND draft_id=$2 AND text IS NOT NULL', scope);
   if (!result.rowCount) return incompatible();
+  await db.query(`UPDATE pilot.approvals SET mfa_at=NULL,created_at=NULL,grant_version=NULL,grant_active_at_approval=NULL
+    WHERE tenant_id=$1 AND draft_id=$2 AND mfa_at IS NOT NULL`, scope);
   return result.rowCount;
 }
 

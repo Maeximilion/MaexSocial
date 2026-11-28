@@ -33,6 +33,16 @@ CREATE TRIGGER immutable_draft_instruction BEFORE INSERT OR UPDATE OR DELETE ON 
 CREATE TRIGGER immutable_draft_instruction_set BEFORE TRUNCATE ON pilot.fixture_draft_erasure
     FOR EACH STATEMENT EXECUTE FUNCTION pilot.reject_mutation();
 
+CREATE FUNCTION pilot.applying_draft_erasure(tenant uuid, draft uuid) RETURNS boolean LANGUAGE sql VOLATILE AS $$
+    SELECT current_user='pilot_owner' AND current_database()='pilot_fixture' AND EXISTS (
+        SELECT 1 FROM public.fixture_identity m JOIN pilot.fixture_draft_erasure e
+            ON e.source_id=CASE WHEN m.restore_target THEN to_jsonb(m)->>'restore_history_source_id' ELSE m.id END
+        WHERE to_jsonb(m)->>'disposable_backup'='true' AND (m.restore_target OR m.purpose='backup')
+            AND (e.tenant_id,e.draft_id)=(tenant,draft) AND e.applied_xid=pg_current_xact_id()
+    );
+$$;
+REVOKE ALL ON FUNCTION pilot.applying_draft_erasure(uuid,uuid) FROM PUBLIC;
+
 ALTER TABLE pilot.draft_revisions ALTER COLUMN text DROP NOT NULL;
 CREATE FUNCTION pilot.guard_draft_revision() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -44,11 +54,7 @@ BEGIN
         END IF;
     ELSIF TG_OP='UPDATE' AND current_user='pilot_owner' AND current_database()='pilot_fixture'
         AND OLD.text IS NOT NULL AND NEW.text IS NULL AND (to_jsonb(NEW)-'text')=(to_jsonb(OLD)-'text') THEN
-        IF EXISTS (SELECT 1 FROM public.fixture_identity m JOIN pilot.fixture_draft_erasure e
-            ON e.source_id=CASE WHEN m.restore_target THEN to_jsonb(m)->>'restore_history_source_id' ELSE m.id END
-            WHERE to_jsonb(m)->>'disposable_backup'='true'
-            AND (m.restore_target OR m.purpose='backup') AND (e.tenant_id,e.draft_id)=(OLD.tenant_id,OLD.draft_id)
-            AND e.applied_xid=pg_current_xact_id()) THEN
+        IF pilot.applying_draft_erasure(OLD.tenant_id,OLD.draft_id) THEN
             RETURN NEW;
         END IF;
     END IF;
@@ -58,3 +64,23 @@ REVOKE ALL ON FUNCTION pilot.guard_draft_instruction(), pilot.guard_draft_revisi
 DROP TRIGGER immutable_revision ON pilot.draft_revisions;
 CREATE TRIGGER immutable_revision BEFORE INSERT OR UPDATE OR DELETE ON pilot.draft_revisions
     FOR EACH ROW EXECUTE FUNCTION pilot.guard_draft_revision();
+
+-- Withdrawals and attempt recovery keep their bindings. Neither needs the proof instant or historical grant state.
+ALTER TABLE pilot.approvals ALTER COLUMN mfa_at DROP NOT NULL,
+    ALTER COLUMN created_at DROP NOT NULL, ALTER COLUMN grant_version DROP NOT NULL;
+CREATE FUNCTION pilot.guard_erased_approval() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE proof text[] := ARRAY['mfa_at','created_at','grant_version','grant_active_at_approval'];
+BEGIN
+    IF TG_OP='INSERT' THEN
+        IF num_nonnulls(NEW.mfa_at,NEW.created_at,NEW.grant_version)=3 THEN RETURN NEW; END IF;
+    ELSIF TG_OP='UPDATE' AND current_user='pilot_owner' AND OLD.mfa_at IS NOT NULL
+        AND num_nonnulls(NEW.mfa_at,NEW.created_at,NEW.grant_version,NEW.grant_active_at_approval)=0
+        AND (to_jsonb(NEW)-proof)=(to_jsonb(OLD)-proof) THEN
+        IF pilot.applying_draft_erasure(OLD.tenant_id,OLD.draft_id) THEN RETURN NEW; END IF;
+    END IF;
+    RAISE EXCEPTION 'Immutable pilot record' USING ERRCODE='23514';
+END $$;
+REVOKE ALL ON FUNCTION pilot.guard_erased_approval() FROM PUBLIC;
+DROP TRIGGER immutable_approval ON pilot.approvals;
+CREATE TRIGGER immutable_approval BEFORE INSERT OR UPDATE OR DELETE ON pilot.approvals
+    FOR EACH ROW EXECUTE FUNCTION pilot.guard_erased_approval();

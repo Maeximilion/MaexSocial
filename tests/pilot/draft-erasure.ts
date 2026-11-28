@@ -103,8 +103,9 @@ async function drill() {
     run(t, 'before');
     const replay = (digest: string) => cli(recover, 'replay-history', String(log.after), String(log.through), digest);
     assert.throws(() => replay(sha(history)));
-    await writeFile(journal, JSON.stringify({ ...log, records: log.records.slice(0, 1) }), { flag: 'wx', mode: 0o600 });
-    assert.throws(() => replay(sha(history)));
+    const incomplete = JSON.stringify({ ...log, records: log.records.slice(0, 1) });
+    await writeFile(journal, incomplete, { flag: 'wx', mode: 0o600 });
+    assert.throws(() => replay(sha(incomplete)));
     run(t, 'before');
     await writeFile(journal, history);
     assert.equal(replay(sha(history)).history.applied, 2);
