@@ -33,14 +33,18 @@ export async function seedDispatchApproval(request: CustomerRequest, grant: bool
       VALUES($1,$2,$3,2,$4,1,$5,1,'customer','2020-01-01T09:55Z','2020-01-01T09:56Z',
         '2020-01-01T11:00Z','2020-01-01T09:59Z','synthetic-otp')`,
     [tokenHash(request.token), tokenHash(request.csrf), f.user, f.tenant, f.membership]);
-    const app = await connectFixture();
-    const proposal = await (async () => {
-      try {
-        await app.query('BEGIN');
-        return await readApprovalProposal(app, await requireCustomerRequest(app, request, clock, inspect, 'read-only'), id);
-      } finally { await app.end(); }
-    })();
-    const approvalId = await approveOccurrence(connectFixture, request, proposal, clock, inspect);
+    const { approvalId, proposal } = await approveDispatchOccurrence(request, id);
     return { id, approvalId, tenant: f.tenant, user: f.user, revision: f.revision, proposal };
   } finally { await owner.end(); }
+}
+
+export async function approveDispatchOccurrence(request: CustomerRequest, id: string) {
+  const app = await connectFixture();
+  const proposal = await (async () => {
+    try {
+      await app.query('BEGIN');
+      return await readApprovalProposal(app, await requireCustomerRequest(app, request, clock, inspect, 'read-only'), id);
+    } finally { await app.end(); }
+  })();
+  return { approvalId: await approveOccurrence(connectFixture, request, proposal, clock, inspect), proposal };
 }

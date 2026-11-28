@@ -112,6 +112,7 @@ const compatibleIdpConfigs = new Set([
   'c729c7ec9dad4175bc32abbb0f33d693d7980bcc1132b1d1a3fc88ee80c0cf18', // fixture provenance
   '072a8dbf6bc2883f3ec9451637105adbaefd47fb4163a7898e96339f59fe9e10', // dispatch retention
   'b1271154041a1354e66f287a8f0c5b2e716c436bce702b2babe91033ad8e10b8', // audit retention
+  'afa8dd9ee07fd1685c55fb836ab9b778444d8eb6e279347803bd9be6f0bf5cb2', // disposable grant retirement
 ]);
 
 // Exact schema revisions eligible for forward offline import, oldest first.

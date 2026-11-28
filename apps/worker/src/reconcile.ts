@@ -17,7 +17,7 @@ interface StoredAttempt {
 
 // The worker supplies a stored global occurrence ID, never provider or tenant IDs from a request.
 export async function reconcileOccurrence(connect: () => Promise<Client>, occurrenceId: string,
-  provider: GbpReadback): Promise<Outcome | null> {
+  provider: { readback(attempt: Parameters<GbpReadback['readback']>[0]): Promise<GbpObservation | null> }): Promise<Outcome | null> {
   if (typeof occurrenceId !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(occurrenceId)) return null;
   const reader = await connect();
   const original = await readAttempt(reader, occurrenceId).finally(() => reader.end());

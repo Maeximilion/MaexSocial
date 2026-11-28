@@ -15,6 +15,10 @@ authenticated integration and acceptance evidence for [#123](https://github.com/
 
 [P1 tracker #162](https://github.com/Maeximilion/MaexSocial/issues/162) records the audit, owners, native dependencies and closure evidence. The accepted local sequence is storage [Task 1 / #114](https://github.com/Maeximilion/MaexSocial/issues/114), portal and approval Task 2 (#117/#131/#123/#124), signed Windows DEV/Admin [Task 3 / #164](https://github.com/Maeximilion/MaexSocial/issues/164), fake dispatch and terminal export [Task 4 / #165](https://github.com/Maeximilion/MaexSocial/issues/165), stop, rollback and isolated restore [Task 5 / #166](https://github.com/Maeximilion/MaexSocial/issues/166), and whole-slice evidence Task 6 under [#10](https://github.com/Maeximilion/MaexSocial/issues/10). Tasks 3–6 consume the preceding integrated evidence in that order.
 
+[Task 5 component #310](https://github.com/Maeximilion/MaexSocial/issues/310) measures
+immediate loss of local grant use and bounded on-demand file removal in the
+[dedicated synthetic fixture](../ops/local/README.md#disposable-grant-retirement-310).
+
 [Task 5 component #266](https://github.com/Maeximilion/MaexSocial/issues/266) covers the
 [ordinary local stop, reconciliation, retained restart and explicit reopen](../ops/local/README.md#explicit-reopen-266).
 Integrated recovery evidence remains under [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
