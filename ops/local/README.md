@@ -389,6 +389,24 @@ publishing readiness. The two sources stay stopped during restore and are read i
 before and after. This also limits Docker network allocation to one fixture at a time.
 Real identity, device revocation and operating recovery remain in #131 and #82.
 
+## Authorized draft text erasure (#312)
+
+From a clean, built task checkout with fresh fixture paths, set the separate private
+`MAEX_COLD_BACKUP_KEY_FILE` as for the encrypted backup drill and run
+`node dist/pilot/tests/pilot/draft-erasure.js`. The drill creates two new local databases
+and restores the captured pair into a separate, offline Docker project in the same checkout.
+Its fixture owner issues three exact draft instructions, including one for a draft created after capture. Each binds the source, tenant,
+draft, sequence, journal digest and millisecond timestamp on the source database clock.
+The owner appends records to the same compact JSON interval. Earlier permits pin the complete interval as originally issued. Both source erasure and restore verify that prefix, including every earlier record. Restore also verifies the independently supplied SHA-256 of the complete current file. A location fact deletion has its own event type.
+
+The private operator command is `node dist/pilot/ops/local/source-draft-erasure.js SEQUENCE`.
+It accepts an existing instruction on a disposable backup source. It locks the draft,
+erases every revision payload and clears four historical approval fields in one transaction.
+The receipt commits with the updates. A post-commit observation bounds the elapsed time from
+authorization on the same database clock. A repeated command reports the existing application.
+The operator invokes the command manually. See the [Task 5 evidence](../../docs/handovers/sessions/2026-11-28-authorized-draft-erasure.md)
+for concurrency, retained fields, provider boundaries and restoration.
+
 ## Restore before dispatch and terminal export (#258)
 
 Use two clean, disposable worktrees at the same revision, each without `work/pilot`.
