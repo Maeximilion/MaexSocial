@@ -375,6 +375,18 @@ publishing readiness. The two sources stay stopped during restore and are read i
 before and after. This also limits Docker network allocation to one fixture at a time.
 Real identity, device revocation and operating recovery remain in #131 and #82.
 
+### Bound customer access erasure (#314)
+
+In one clean, built task checkout, use the pinned local images and the external disposable backup key described above. The drill requires fresh `work/pilot`, `work/customer-erasure-source` and `work/customer-erasure-case.json` paths.
+
+    node dist/pilot/tests/pilot/customer-erasure-drill.js
+
+The drill issues one owner-only instruction after capturing the physical pair. The subject binding covers the source fixture, pilot issuer, local identity and exact issuer subject. The instruction also pins the identity version, journal sequence and whole-journal digest. The on-demand operation locks the identity before deleting customer sessions and bound challenges. It removes unreferenced memberships and identities. A foreign key required by an invitation, approval, business fact or audit event keeps its historical key. The retained identity loses its issuer subject and verification. A retained membership becomes inactive. The application receives no maintenance permission.
+
+An issued invitation keeps the other recipient's data and loses the departing issuer's authority. An incoming invitation or unbound challenge carrying the same mailbox alone cannot establish subject ownership. The independent journal, restricted receipt and historical keys remain linkable. The ordinary fixture status client can read the separate Keycloak account. The issuer lifecycle decision remains with [#131](https://github.com/Maeximilion/MaexSocial/issues/131) and [#82](https://github.com/Maeximilion/MaexSocial/issues/82).
+
+The source and restored target run sequentially. After stopping the source, the drill moves its fixture directory under `work/customer-erasure-source` and imports the original encrypted pair into a fresh `work/pilot`. Replay requires the independently authorized source, interval and digest. Both application and IdP access stay locked on the target. Test bindings and account material stay in ignored `work/`. The existing same-source backup cutoff applies. The drill reports an upper bound between authorization and confirmed logical cleanup on one database clock.
+
 ## Restore before dispatch and terminal export (#258)
 
 Use two clean, disposable worktrees at the same revision, each without `work/pilot`.
