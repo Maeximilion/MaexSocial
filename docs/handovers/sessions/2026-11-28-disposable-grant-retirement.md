@@ -2,9 +2,9 @@
 
 ## Status
 
-Local verification finished at 2026-11-28T12:32Z. Node 24.22.2 and npm 11.19.1 built the
-pilot. The six ordinary dispatch, stop, reconciliation, worker wake, fake and terminal
-export files passed (10 outer tests). Repository validation passed. Python ran 134 tests
+Local verification finished at 2026-11-28T13:23Z. Node 24.22.2 and npm 11.19.1 built the
+pilot. The integrated base was `a089ac569f659fcd0d3265f830dc1dcc2d571d42`. The six ordinary dispatch, stop, reconciliation, worker wake, fake and terminal
+export files passed (10 outer tests). The predecessor audit-retention drill passed across restart. Repository validation passed. Python ran 134 tests
 with 32 skips and Node foundation tests passed 20/20.
 
 ## Artifacts
@@ -12,8 +12,8 @@ with 32 skips and Node foundation tests passed 20/20.
 - Repository — [Maeximilion/MaexSocial](https://github.com/Maeximilion/MaexSocial).
 - Task — [#310](https://github.com/Maeximilion/MaexSocial/issues/310) within [#166](https://github.com/Maeximilion/MaexSocial/issues/166).
 - Branch — `dev-codex/310-disposable-grant-retirement`.
-- Work head before the handover commit — `546744b247cd3970e291a1dea3e690baa9bff5ec`.
-- Implementer — Codex, gpt-6.2-astra with High reasoning. At this checkpoint PR publication, automatic Claude API review and candidate CI await the coordinator-confirmed base.
+- Work head before the handover commit — `f9527d83bd0e6d7f09d18a09509f7a8bafedb81c`.
+- Implementer — Codex, gpt-6.2-astra with High reasoning. At this pre-publication checkpoint, automatic Claude API review and hosted candidate CI are pending. The PR linked from #310 carries their current receipts.
 - [Reproduction commands](../../../ops/local/README.md#disposable-grant-retirement-310) and [executable drill](../../../tests/pilot/grant-retirement.ts).
 
 ## Decisions
@@ -27,10 +27,10 @@ attempt with zero creates even after restart. The stale approval had zero attemp
 old grant's two readbacks both preceded revocation. Subsequent wakes reported unknown.
 Independent B and reissued A each had one create and remained readable after removal.
 
-The DB clock bracketed commit within 3.175 ms. Denial and the physical presence check
-completed within 993.798 ms of the pre-commit sample. A fresh runner exercised a
+The DB clock bracketed commit within 2.240 ms. Denial and the physical presence check
+completed within 1,129.273 ms of the pre-commit sample. A fresh runner exercised a
 wrong-store refusal, a failed digest check and safe retry. File absence was observed
-within 8,729.267 ms of that sample. At the simulated 24-hour observation the old file
+within 10,406.641 ms of that sample. At the simulated 24-hour observation the old file
 was absent, with two live files present. The drill verified removal of its temporary
 directory. Standard shutdown stopped the containers and retained disposable volumes.
 
@@ -42,7 +42,7 @@ scheduling, credential custody, provider consent and media erasure remain outsid
 
 ## Open
 
-Reconcile the coordinator-confirmed base, publish the normal PR and report current
+Publish the normal PR on the integrated base and report current
 Claude, candidate CI and thread evidence. The coordinator owns integration.
 
 Console — PowerShell. Select `$env:USERPROFILE/.codex/worktrees/issue-310-disposable-grant-retirement/MaexSocial`
