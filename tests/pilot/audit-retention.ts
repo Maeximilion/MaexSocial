@@ -8,7 +8,7 @@ import { expireAuditEvent } from '../../ops/local/audit-retention.js';
 import { connectFixture, loadFixture, runIsolatedFixture, safeDiagnostics, usesLocalDocker } from '../../ops/local/fixture.js';
 import { createOrganization } from '../../packages/contracts/management-organization.js';
 import { seedDomain, seedSecurity, verifyDomain } from './audit-retention-domain.js';
-import { binding } from './dispatch-fixture.js';
+import { binding, clock } from './dispatch-fixture.js';
 import { seedManagementSession } from './fixtures.js';
 
 const entry = 'dist/pilot/tests/pilot/audit-retention.js';
@@ -17,7 +17,7 @@ const authFile = 'work/pilot/audit-drill-session.json';
 type Target = { tenant: string; id: string; boundary: string; previous: string };
 const expire = (t: Target, at = t.boundary) => expireAuditEvent(t.tenant, t.id, () => at);
 
-async function target(db: Client, tenant: string, action: string, expected: Date): Promise<Target> {
+async function target(db: Client, tenant: string, action: string, expected: Date | string): Promise<Target> {
   const { rows } = await db.query(`SELECT tenant_id AS tenant,id,
     (created_at+interval '2160 hours')::text AS boundary,
     (created_at+interval '2160 hours'-interval '1 microsecond')::text AS previous
@@ -26,7 +26,7 @@ async function target(db: Client, tenant: string, action: string, expected: Date
   return rows[0];
 }
 
-async function authorize(db: Client, t: Target, at: Date) {
+async function authorize(db: Client, t: Target, at: Date | string) {
   await db.query(`INSERT INTO pilot.fixture_audit_disposition(fixture_id,tenant_id,audit_id,event_at,incident_state)
     VALUES($1,$2,$3,$4,'clear')`, [(await loadFixture()).id, t.tenant, t.id, at]);
 }
@@ -70,6 +70,7 @@ async function checkRefusals(db: Client, t: Target) {
   const app = await connectFixture();
   try {
     for (const sql of ['DELETE FROM pilot.audit', 'UPDATE pilot.audit SET reason=reason',
+      'INSERT INTO pilot.expired_occurrence_decisions DEFAULT VALUES', 'DELETE FROM pilot.expired_occurrence_decisions',
       'SELECT * FROM pilot.fixture_audit_disposition']) await assert.rejects(app.query(sql), { code: '42501' });
   } finally { await app.end(); }
   const before = await auditDigest(db);
@@ -78,11 +79,23 @@ async function checkRefusals(db: Client, t: Target) {
   try { await assert.rejects(expire(t), { code: '23514' }); }
   finally { await db.query('DROP TRIGGER reject_expiry_test ON pilot.audit'); }
   assert.deepEqual(await auditDigest(db), before);
+  assert.equal((await db.query('SELECT 1 FROM pilot.expired_occurrence_decisions')).rowCount, 0);
   assert.equal((await db.query('SELECT 1 FROM pilot.fixture_audit_disposition WHERE expiry_xid IS NOT NULL')).rowCount, 0);
 }
 
-async function seed(db: Client, request: ReturnType<typeof binding>) {
-  const domain = await seedDomain(db, request);
+type Sessions = Parameters<typeof seedDomain>[1];
+
+async function seed(db: Client, sessions: Sessions) {
+  const domain = await seedDomain(db, sessions);
+  const down = await readFile('db/migrations/016_occurrence_decisions.down.sql', 'utf8');
+  const up = await readFile('db/migrations/016_occurrence_decisions.up.sql', 'utf8');
+  await db.query('BEGIN');
+  await db.query(down);
+  assert.equal((await db.query("SELECT 1 FROM pilot.audit WHERE action IN ('approval_withdrawal','occurrence_hold')")).rowCount, 4);
+  await db.query(up);
+  await db.query('COMMIT');
+  assert.equal((await db.query('SELECT 1 FROM pilot.expired_occurrence_decisions')).rowCount, 0);
+  assert.equal((await db.query('SELECT 1 FROM pilot.occurrence_decisions')).rowCount, 4);
   // Put every domain event strictly before the old organization's trusted millisecond clock.
   const old = new Date((await db.query("SELECT clock_timestamp()+interval '1 second' AS at")).rows[0].at);
   const young = new Date(old.getTime()+86_400_000);
@@ -95,27 +108,41 @@ async function seed(db: Client, request: ReturnType<typeof binding>) {
   const expired = await organization('Synthetic expired', old);
   const held = await organization('Synthetic incident', old);
   const fresh = await organization('Synthetic fresh', young);
-  const others = await seedSecurity(db, request, domain.withdrawn.tenant, old);
+  const others = await seedSecurity(db, sessions.manager, domain.withdrawn.tenant, old);
   assert.equal(await expire(expired), 'ineligible');
   for (const t of [expired, held, fresh]) await authorize(db, t, t === fresh ? young : old);
-  await checkRefusals(db, expired);
+  const domainTargets = [];
+  for (const [tenant, action, at] of [
+    [domain.held.tenant, 'occurrence_hold', clock().toISOString()],
+    [domain.withdrawn.tenant, 'approval_withdrawal', domain.firstAt],
+    [domain.withdrawn.tenant, 'approval_withdrawal', domain.secondAt],
+  ] as const) {
+    const t = await target(db, tenant, action, at);
+    await authorize(db, t, at);
+    domainTargets.push(t);
+  }
+  const incident = await target(db, domain.revokedSend.tenant, 'approval_withdrawal', domain.incidentAt);
+  await authorize(db, incident, domain.incidentAt);
+  await checkRefusals(db, domainTargets[0]!);
+  await applyHoldFirst(db, incident);
   await applyHoldFirst(db, held);
   const protectedDetails = async () => (await db.query(`SELECT md5(string_agg(to_jsonb(a)::text,',' ORDER BY id)) AS digest
-    FROM pilot.audit a WHERE occurrence_id IS NOT NULL OR id=ANY($1::uuid[])`, [[held.id, fresh.id]])).rows[0].digest;
+    FROM pilot.audit a WHERE id=ANY($1::uuid[])`, [[incident.id, held.id, fresh.id]])).rows[0].digest;
   const originalDetails = await protectedDetails();
-  // Even explicit clearance cannot make a lasting domain guard eligible.
-  const guards = await db.query(`SELECT tenant_id AS tenant,id,created_at::text AS at FROM pilot.audit
-    WHERE action IN ('occurrence_hold','approval_withdrawal')`);
-  assert.equal(guards.rowCount, 3);
-  for (const g of guards.rows) {
-    await db.query(`INSERT INTO pilot.fixture_audit_disposition(fixture_id,tenant_id,audit_id,event_at,incident_state)
-      VALUES($1,$2,$3,$4,'clear')`, [(await loadFixture()).id, g.tenant, g.id, g.at]);
-    await assert.rejects(expireAuditEvent(g.tenant, g.id, () => expired.boundary), { code: '23514' });
-  }
   const before = await auditDigest(db);
+  for (const t of domainTargets) {
+    assert.equal(await expire(t, t.previous), 'ineligible');
+    assert.equal((await db.query('SELECT 1 FROM pilot.audit WHERE tenant_id=$1 AND id=$2', [t.tenant,t.id])).rowCount, 1);
+    assert.deepEqual((await Promise.all([expire(t), expire(t)])).sort(), ['expired','ineligible']);
+    assert.equal((await db.query('SELECT 1 FROM pilot.occurrence_decisions')).rowCount, 4);
+  }
+  await db.query('BEGIN');
+  try { await assert.rejects(db.query(down), { code: '23514', message: 'Expired decision detail prevents this downgrade' }); }
+  finally { await db.query('ROLLBACK'); }
+  const afterDomain = await auditDigest(db);
   assert.equal(await expire(expired, expired.previous), 'ineligible');
   assert.equal(await expire(fresh, expired.boundary), 'ineligible');
-  assert.deepEqual(await auditDigest(db), before);
+  assert.deepEqual(await auditDigest(db), afterDomain);
   assert.deepEqual((await Promise.all([expire(expired), expire(expired)])).sort(), ['expired','ineligible']);
   for (const info of others) {
     const t = await target(db, info.tenant, info.action, info.at);
@@ -127,12 +154,12 @@ async function seed(db: Client, request: ReturnType<typeof binding>) {
     assert.equal(await expire(t), 'ineligible');
   }
   const remaining = await auditDigest(db);
-  assert.equal(remaining.count, before.count-5);
+  assert.equal(remaining.count, before.count-8);
   assert.equal((await db.query(`SELECT 1 FROM pilot.audit WHERE action IN ('occurrence_hold','approval_withdrawal')
-    AND created_at<$1`, [old])).rowCount, 3);
+    AND created_at<$1`, [old])).rowCount, 1);
   assert.equal(await protectedDetails(), originalDetails);
   assert.equal((await db.query('SELECT 1 FROM pilot.audit WHERE id=ANY($1::uuid[])', [[held.id, fresh.id]])).rowCount, 2);
-  return { expired, held, fresh, remaining, domain };
+  return { expired, held, fresh, incident, domainTargets, remaining, domain, beforeCount: before.count };
 }
 
 async function isolated(stage: string, saved?: string) {
@@ -142,7 +169,7 @@ async function isolated(stage: string, saved?: string) {
   try {
     assert.equal((await db.query("SELECT 1 FROM public.fixture_identity WHERE id=$1 AND purpose='audit-retention' AND NOT restore_target",
       [f.id])).rowCount, 1);
-    const request = JSON.parse(await readFile(authFile, 'utf8')) as ReturnType<typeof binding>;
+    const request = JSON.parse(await readFile(authFile, 'utf8')) as Sessions;
     if (stage === 'expiry') {
       assert.equal((await db.query('SELECT 1 FROM pilot.tenants LIMIT 1')).rowCount, 0, 'Fresh empty fixture required');
       console.log(JSON.stringify(await seed(db, request)));
@@ -150,6 +177,9 @@ async function isolated(stage: string, saved?: string) {
       assert.equal(stage, 'retained');
       const state = JSON.parse(saved!) as Awaited<ReturnType<typeof seed>>;
       assert.deepEqual(await auditDigest(db), state.remaining);
+      for (const t of state.domainTargets) assert.equal(await expire(t), 'ineligible');
+      assert.equal(await expire(state.incident), 'ineligible');
+      assert.equal((await db.query('SELECT 1 FROM pilot.expired_occurrence_decisions')).rowCount, 3);
       for (const t of [state.expired, state.held, state.fresh]) assert.equal(await expire(t, state.expired.boundary), 'ineligible');
       await verifyDomain(db, request, state.domain);
     }
@@ -161,10 +191,11 @@ async function drill() {
   assert.ok(usesLocalDocker() && f.purpose === 'audit-retention' && !f.restoreTarget && !f.pairedRestore);
   const phase = (...args: string[]) => runIsolatedFixture(f, [entry, ...args], true).output;
   const start = performance.now();
-  await writeFile(authFile, JSON.stringify(binding()), { flag: 'wx', mode: 0o600 });
+  await writeFile(authFile, JSON.stringify({ manager: binding(), heldManager: binding() }), { flag: 'wx', mode: 0o600 });
   try {
     const saved = phase('expiry');
-    console.log('Five classes expired at 90 days. Each remained one microsecond earlier. Incident hold, rollback and retry verified.');
+    const result = JSON.parse(saved) as Awaited<ReturnType<typeof seed>>;
+    console.log(`Seven classes expired at 90 days: ${result.beforeCount} to ${result.remaining.count} online rows. Three decision keys retained.`);
     for (const args of [['down'], ['up', 'audit-retention']]) {
       execFileSync(process.execPath, [stack, ...args], { stdio: 'pipe', timeout: 180_000 });
     }

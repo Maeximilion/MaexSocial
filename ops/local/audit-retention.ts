@@ -19,6 +19,11 @@ export async function expireAuditEvent(tenant: string, event: string, clock?: ()
     const marker = await db.query(`SELECT 1 FROM public.fixture_identity WHERE id=$1 AND purpose='audit-retention'
       AND NOT restore_target AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE`, [fixture.id]);
     if (marker.rowCount !== 1) throw new Error('Audit retention database marker mismatch');
+    // Serialize domain detail replacement with decisions on the occurrence before locking its disposition.
+    await db.query(`SELECT o.id FROM pilot.occurrences o JOIN pilot.audit a
+      ON (o.tenant_id,o.id)=(a.tenant_id,a.occurrence_id)
+      WHERE a.tenant_id=$1 AND a.id=$2 AND a.action IN ('occurrence_hold','approval_withdrawal') FOR UPDATE OF o`,
+    [tenant, event]);
     // UPDATE rechecks the committed incident disposition after a competing row lock.
     const permit = await db.query(`UPDATE pilot.fixture_audit_disposition d
       SET expiry_xid=pg_current_xact_id(),checked_at=t.instant
