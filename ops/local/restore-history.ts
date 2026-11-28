@@ -2,10 +2,12 @@ import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import type { Client } from 'pg';
+import { eraseCustomer, pilotIssuer, verifyErasedCustomer, type CustomerErasure } from './customer-erasure.js';
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const historyPath = 'work/pilot/restore-history.json';
 type Event =
+  | CustomerErasure
   | { kind: 'delete-facts'; tenantId: string; id: string }
   | { kind: 'erase-draft'; tenantId: string; id: string; authorizedAt: string }
   | { kind: 'revoke-grant'; tenantId: string; id: string; version: number }
@@ -20,6 +22,12 @@ function parseEvent(value: unknown, seq: number): Event {
   const row = value as Record<string, unknown>;
   const { kind, tenantId, id, version } = row;
   if (row.seq !== seq || typeof id !== 'string' || !uuid.test(id)) return incompatible();
+  if (kind === 'delete-customer') {
+    if (row.issuer !== pilotIssuer || tenantId !== undefined || typeof row.binding !== 'string'
+        || !/^[a-f0-9]{64}$/.test(row.binding) || typeof version !== 'number' || !Number.isInteger(version)
+        || version < 1 || version >= 2_147_483_647) return incompatible();
+    return { kind, issuer: pilotIssuer, id, binding: row.binding, version };
+  }
   if (kind !== 'revoke-device' && (typeof tenantId !== 'string' || !uuid.test(tenantId))) return incompatible();
   if (kind === 'delete-facts') return { kind, id, tenantId: tenantId as string };
   if (kind === 'erase-draft') {
@@ -71,9 +79,9 @@ async function readJournal(source: string, after: number) {
   return { events, digest, covers };
 }
 
-export async function readBoundHistory(source: string, after: number, digest: string, draftSequence?: number): Promise<Event[]> {
+export async function readBoundHistory(source: string, after: number, digest: string, issuedSequence?: number): Promise<Event[]> {
   const journal = await readJournal(source, after);
-  if (draftSequence === undefined ? journal.digest !== digest : !journal.covers(digest, draftSequence)) return incompatible();
+  if (issuedSequence === undefined ? journal.digest !== digest : !journal.covers(digest, issuedSequence)) return incompatible();
   return journal.events;
 }
 
@@ -106,18 +114,39 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
       || !digest || !/^[a-f0-9]{64}$/.test(digest)) return incompatible();
 
   // Imported targets have a source column, including legacy pairs whose source remains unbound.
-  const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null }>(
+  const { rows: [anchor] } = await db.query<{ source: string | null; restore_history_digest: string | null; disposable: boolean }>(
     `SELECT CASE WHEN to_jsonb(marker) ? 'restore_history_source_id'
-      THEN to_jsonb(marker)->>'restore_history_source_id' ELSE id END AS source, restore_history_digest
+      THEN to_jsonb(marker)->>'restore_history_source_id' ELSE id END AS source, restore_history_digest,
+      (to_jsonb(marker)->>'restore_history_source_id' IS NOT NULL AND to_jsonb(marker)->>'purpose'='backup'
+        AND to_jsonb(marker)->>'disposable_backup'='true') AS disposable
     FROM public.fixture_identity AS marker WHERE id=$1 AND restore_history_after=$2::bigint FOR SHARE`, [fixtureId, after]);
   if (!anchor?.source) return incompatible();
 
   const journal = await readJournal(anchor.source, after);
   const { events } = journal;
-  if (journal.digest !== digest || events.length !== through - after) return incompatible();
+  if (journal.digest !== digest || events.length !== through - after
+      || (events.some(event => event.kind === 'delete-customer') && !anchor.disposable)) return incompatible();
+
+  // A continued pair carries the original owner instruction, even before the source has applied it.
+  let appliedCustomerSequence: number | undefined;
+  if ((await db.query("SELECT to_regclass('pilot.fixture_customer_erasure') IS NOT NULL AS present")).rows[0].present) {
+    const permits = await db.query(`SELECT fixture_id, sequence, identity_id, identity_version, subject_binding,
+      history_digest, applied_xid IS NOT NULL AS applied FROM pilot.fixture_customer_erasure`);
+    for (const permit of permits.rows) {
+      const sequence = Number(permit.sequence);
+      const event = events[sequence - after - 1];
+      if (!anchor.disposable || permit.fixture_id !== anchor.source || event?.kind !== 'delete-customer'
+          || event.id !== permit.identity_id || event.version !== permit.identity_version
+          || event.binding !== permit.subject_binding || !journal.covers(permit.history_digest, sequence)) return incompatible();
+      if (permit.applied) appliedCustomerSequence = sequence;
+    }
+  }
 
   if (anchor.restore_history_digest !== null) {
     if (anchor.restore_history_digest !== digest) return incompatible();
+    for (const event of events) {
+      if (event.kind === 'delete-customer') await verifyErasedCustomer(db, event.id);
+    }
     return { applied: 0 };
   }
 
@@ -136,7 +165,10 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
   }
 
   for (const [index, event] of events.entries()) {
-    if (event.kind === 'delete-facts') {
+    if (event.kind === 'delete-customer') {
+      if (appliedCustomerSequence === after + index + 1) await verifyErasedCustomer(db, event.id);
+      else await eraseCustomer(db, anchor.source, event, true);
+    } else if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.
       await db.query('ALTER TABLE pilot.business_fact_revisions DISABLE TRIGGER immutable_business_facts');
       await db.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',

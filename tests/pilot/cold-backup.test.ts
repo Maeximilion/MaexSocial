@@ -66,6 +66,10 @@ test('cold pair verification refuses mixed, incomplete, altered and incompatible
   await assert.rejects(verifyPair(path, fixtureId, schema015, { ...pair, compatibility: schema016 }), /incompatible/);
   const schema017 = { ...compatibility, appSchema: await hashSources((await readdir('db/migrations'))
     .filter(name => name.endsWith('.up.sql') && name <= '017_fixture_draft_erasure.up.sql').sort().map(name => 'db/migrations/' + name)) };
+  const current = { ...compatibility, appSchema: await hashSources((await readdir('db/migrations'))
+    .filter(name => name.endsWith('.up.sql') && name <= '018_fixture_customer_erasure.up.sql').sort().map(name => 'db/migrations/' + name)) };
+  await verifyPair(path, fixtureId, current, { ...pair, compatibility: schema017 });
+  await assert.rejects(verifyPair(path, fixtureId, schema017, { ...pair, compatibility: current }), /incompatible/);
   await verifyPair(path, fixtureId, schema017, { ...pair, compatibility: schema016 });
   await assert.rejects(verifyPair(path, fixtureId, schema016, { ...pair, compatibility: schema017 }), /incompatible/);
   await verifyPair(path, fixtureId, schema015, { ...pair, compatibility: schema014 });

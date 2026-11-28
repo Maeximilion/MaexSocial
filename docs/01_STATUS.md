@@ -54,6 +54,8 @@ Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) prot
 synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
+[Task 5 component #314](https://github.com/Maeximilion/MaexSocial/issues/314) measures on-demand AppDB customer-access erasure on a disposable source and three offline restores. The [local evidence](handovers/sessions/2026-11-28-customer-access-erasure.md) records removed fields, retained historical bindings and the separate issuer decision. Task 5 remains open.
+
 [Task 5 component #312](https://github.com/Maeximilion/MaexSocial/issues/312) covers individually authorized
 draft text on a disposable source and offline replay into an encrypted-pair restore. The
 [local evidence](handovers/sessions/2026-11-28-authorized-draft-erasure.md) records the retained approval

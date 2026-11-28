@@ -82,6 +82,10 @@ export async function invalidateMembershipAuthority(db: Client, tenantId: string
     AND membership_version<=$3 AND audience='customer' AND revoked_at IS NULL`, [tenantId, membershipId, version, now]);
   await db.query(`UPDATE pilot.invitations SET revoked_at=$4 WHERE tenant_id=$1 AND issuer_membership_id=$2
     AND issuer_version<=$3 AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at>$4`, [tenantId, membershipId, version, now]);
+  await clearUnclaimedApprovals(db, tenantId, occurrenceIds);
+}
+
+export async function clearUnclaimedApprovals(db: Client, tenantId: string, occurrenceIds: string[]) {
   await db.query(`UPDATE pilot.occurrences o SET approval_id=NULL,state=CASE WHEN state='approved' THEN 'draft' ELSE state END
     WHERE tenant_id=$1 AND id=ANY($2::uuid[])
     AND NOT EXISTS (SELECT 1 FROM pilot.attempts a WHERE a.tenant_id=o.tenant_id AND a.occurrence_id=o.id)`,
