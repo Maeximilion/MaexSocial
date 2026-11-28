@@ -283,7 +283,7 @@ async function captureHistory(f: Fixture, app: Container, disposable: boolean): 
   const evidenceSha256 = createHash('sha256').update(evidence).digest('hex');
   query(app, db, `ALTER TABLE public.fixture_identity
     ADD COLUMN restore_history_after bigint NOT NULL DEFAULT ${through},
-    ADD COLUMN disposable_backup boolean NOT NULL DEFAULT ${disposable},
+    ADD COLUMN disposable_backup boolean NOT NULL DEFAULT ${disposable ? 'true' : 'false'},
     ADD COLUMN restore_history_evidence text NOT NULL DEFAULT '${evidenceSha256}'`);
   return { after: through, evidenceSha256 };
 }

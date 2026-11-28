@@ -276,6 +276,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
     if (eraseSource) {
       const prior = { ...snapshot, devices: revokedDevices };
       stage(f, 'refuse-erasure');
+      assert.deepEqual(stage(f, 'history'), prior);
       const issue = async (bytes: string) => {
         await writeFile(replayPath, bytes, { mode: 0o600 });
         input.permitDigest = sha256(bytes);
@@ -424,6 +425,7 @@ async function drill(targetDir: string, eraseSource: boolean) {
     }
     assert.ok((await readFile(captureHistoryPath)).equals(captureHistory), 'Capture history changed');
     assert.equal(await readFile(historyPath, 'utf8'), historyBytes);
+    if (eraseSource) assert.equal(await readFile(replayPath, 'utf8'), historyBytes);
     checkFake();
     assert.ok((await readFile(pairPath)).equals(pair), 'Pair manifest changed');
     assert.equal(node('dist/pilot/ops/local/backup.js', 'verify'), 'Verified synthetic AppDB and IdP backup pair.');
