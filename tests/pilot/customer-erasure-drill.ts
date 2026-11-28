@@ -83,11 +83,13 @@ async function drill() {
     await writeFile(input,JSON.stringify(c),{flag:'wx',mode:0o600});
     await writeFile(historyPath,bytes,{flag:'wx',mode:0o600});
     compose(f,['start','--wait','--wait-timeout','120']);
+    runIsolatedFixture(f,['dist/pilot/ops/local/stack.js','check']);
     const before=run(f,'before');
     const times=run(f,'erase');
     assert.equal(run(f,'after'),before);
     compose(f,['stop']);
     compose(f,['start','--wait','--wait-timeout','120']);
+    runIsolatedFixture(f,['dist/pilot/ops/local/stack.js','check']);
     assert.equal(run(f,'after'),before);
     compose(f,['down']); owned=undefined;
     // Keep the original ciphertext in the same task checkout. Only a fresh fixture occupies work/pilot.

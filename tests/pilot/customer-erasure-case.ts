@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Client } from 'pg';
+import { approveOccurrence, readApprovalProposal } from '../../apps/web/src/routes/content.js';
 import { createIdentityInspector } from '../../apps/web/src/server/identity.js';
 import { issueEmployeeInvitation } from '../../apps/web/src/server/invitation-issue.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
@@ -11,8 +12,9 @@ import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { pilotIssuer, subjectBinding, type CustomerErasure } from '../../ops/local/customer-erasure.js';
 import { connectFixture } from '../../ops/local/fixture.js';
 import { applySourceCustomerErasure } from '../../ops/local/source-customer-erasure.js';
-import { binding, clock, inspect, seedDispatchApproval } from './dispatch-fixture.js';
+import { binding, inspect, seedDispatchApproval } from './dispatch-fixture.js';
 
+const clock = () => new Date();
 const subject = '14300000-0000-4000-8000-000000000001';
 const email = 'step-up-enrolled@example.invalid';
 const fake = { policy: 'synthetic-organic-text' as const, async create(intent: { attemptId: string; location: string }) {
@@ -33,6 +35,8 @@ export async function seedCase(db: Client, source: string) {
   const status = await inspector(subject);
   const otp = status.credentials.find(c => c.type === 'otp');
   assert.ok(status.enabled && status.verified && otp);
+  await db.query(`UPDATE pilot.sessions SET created_at=now()-interval '1 minute',last_seen_at=now(),
+    expires_at=now()+interval '2 hours',mfa_at=now() WHERE identity_id=ANY($1)`, [[target.user,control.user]]);
   await db.query('UPDATE pilot.identities SET subject=$2,version=version+1 WHERE id=$1', [target.user,subject]);
   await db.query('UPDATE pilot.sessions SET identity_version=3,mfa_credential_id=$2 WHERE identity_id=$1', [target.user,otp.id]);
   await db.query('UPDATE pilot.identities SET verified=true,version=version+1 WHERE id=$1', [peerId]);
@@ -54,13 +58,20 @@ export async function seedCase(db: Client, source: string) {
   const incoming = await issueEmployeeInvitation({ connect: connectFixture, clock, mailboxCa,
     authorize: c => requireCustomerRequest(c,other,clock,inspect) }, email);
   assert.equal(outbound.delivery,'captured'); assert.equal(incoming.delivery,'captured');
+  const unclaimed = (await db.query(`INSERT INTO pilot.occurrences(tenant_id,draft_id,location_id,creation_key,due_at,timezone)
+    SELECT tenant_id,draft_id,location_id,gen_random_uuid(),due_at,timezone FROM pilot.occurrences WHERE id=$1 RETURNING id`,
+  [target.id])).rows[0].id as string;
+  await db.query('BEGIN');
+  const proposal = await readApprovalProposal(db, await requireCustomerRequest(db,session,clock,inspector,'read-only'),unclaimed);
+  await db.query('COMMIT');
+  await approveOccurrence(connectFixture,session,proposal,clock,inspector);
   await db.query('UPDATE pilot.dispatch_control SET stopped=false');
   assert.equal((await claimDispatch(connectFixture,target.id,fake)).state,'in_flight');
   await db.query(`INSERT INTO pilot.fixture_audit_disposition(fixture_id,tenant_id,audit_id,event_at,incident_state)
     SELECT $1,tenant_id,id,created_at,'held' FROM pilot.audit WHERE occurrence_id=$2 AND action='dispatch_claim'`, [source,target.id]);
   const event: CustomerErasure = { kind:'delete-customer', issuer:pilotIssuer, id:target.user,
     binding:subjectBinding(source,target.user,subject), version:3 };
-  return { event, session, peer, other, peerId, controlId:control.user, claimed:target.id, tenant:target.tenant,
+  return { event, session, peer, other, peerId, controlId:control.user, claimed:target.id, unclaimed, tenant:target.tenant,
     issued:outbound.id, incoming:incoming.id };
 }
 
@@ -78,10 +89,11 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     (SELECT revoked_at IS NOT NULL FROM pilot.invitations WHERE id=$4) AS withdrawn,
     (SELECT count(*)::int FROM pilot.invitations WHERE id=$5 AND email=$3 AND revoked_at IS NULL) AS incoming,
     (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$6) AS claims,
+    (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=$7) AS second_claims,
     (SELECT count(*)::int FROM pilot.fixture_audit_disposition d JOIN pilot.audit a ON (a.tenant_id,a.id)=(d.tenant_id,d.audit_id)
-      WHERE a.actor_id=$1 AND d.incident_state='held') AS holds`, [c.event.id,subject,email,c.issued,c.incoming,c.claimed]);
+      WHERE a.actor_id=$1 AND d.incident_state='held') AS holds`, [c.event.id,subject,email,c.issued,c.incoming,c.claimed,c.unclaimed]);
   assert.deepEqual(r,{ subjects:erased?0:1, verified:!erased, live:erased?0:2, memberships:erased?1:2,
-    sessions:erased?0:1, pending:erased?0:1, unbound:1, withdrawn:erased, incoming:1, claims:1, holds:1 });
+    sessions:erased?0:1, pending:erased?0:1, unbound:1, withdrawn:erased, incoming:1, claims:1, second_claims:0, holds:1 });
   // Compare every control access row. Offline recovery independently revokes all restored sessions.
   const snapshot = (await db.query(`SELECT
     (SELECT jsonb_agg(i ORDER BY id) FROM pilot.identities i WHERE id=ANY($1)) AS identities,
@@ -102,6 +114,7 @@ export async function inspectCase(db: Client, c: AccessCase, erased: boolean, of
     if (erased) {
       await assert.rejects(requireCustomer(db,c.session.token,clock,inspector), /Denied/);
       await assert.rejects(claimDispatch(connectFixture,c.claimed,fake), /Denied/);
+      await assert.rejects(claimDispatch(connectFixture,c.unclaimed,fake), /Denied/);
     } else assert.equal((await requireCustomerRequest(db,c.session,clock,inspector,'read-only')).identityId,c.event.id);
     for (const [req,id] of [[c.peer,c.peerId],[c.other,c.controlId]] as const) {
       assert.equal((await requireCustomerRequest(db,req,clock,inspect,'read-only')).identityId,id);
