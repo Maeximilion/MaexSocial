@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import type { Client } from 'pg';
 import { approveOccurrence, createDraft, editDraft, readApprovalProposal, renderDraft, renderDrafts, renderOccurrence, withdrawApproval } from '../../apps/web/src/routes/content.js';
 import { requireCustomerRequest } from '../../apps/web/src/server/request.js';
@@ -126,10 +127,14 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
     assert.equal(proof.rowCount, i === 0 ? 5 : 1);
     assert.ok(proof.rows.every(row => row.fields === (removed ? 0 : 4)));
-    if (i === 1) {
-      const terminal = await db.query(`SELECT num_nonnulls(membership_id,membership_version,tenant_version,
-        location_id,due_at,timezone,provider_location) AS fields FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
-      assert.deepEqual(terminal.rows, [{ fields: removed ? 0 : 7 }], 'Terminal export approval detail');
+    const authority = await db.query(`SELECT num_nonnulls(membership_id,membership_version,tenant_version) AS authority,
+      num_nonnulls(location_id,due_at,timezone,provider_location) AS destination FROM pilot.approvals
+      WHERE tenant_id=$1 AND draft_id=$2 AND occurrence_id=$3`, [...scope, d.id]);
+    assert.deepEqual(authority.rows, [{ authority: removed && i === 1 ? 0 : 3, destination: removed ? 0 : 4 }]);
+    if (removed) {
+      await assert.rejects(db.query("UPDATE pilot.approvals SET provider_location='unexpected' WHERE tenant_id=$1 AND draft_id=$2",
+        scope), { code: '23514' });
+      await assert.rejects(db.query(await readFile('db/migrations/020_erased_approval_detail.down.sql', 'utf8')), /cannot be reconstructed/);
     }
     const { rows: [copies] } = await db.query(`SELECT count(*)::int AS n FROM (
         SELECT to_jsonb(a)::text AS body FROM pilot.approvals a WHERE tenant_id=$1 AND draft_id=$2
@@ -190,6 +195,12 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       FROM pilot.occurrences o WHERE o.id=$1`, [d.id, held ? 'occurrence_hold' : 'approval_withdrawal', held ? null : d.approval]);
     assert.deepEqual(result.rows, [{ state: target ? 'quarantined' : d.state, approval_id: held ? d.approval : null,
       prior: target ? d.state : null, decisions: 1, attempts: 0 }]);
+    if (erased) {
+      const fields = await db.query(`SELECT num_nonnulls(membership_id,membership_version,tenant_version) AS authority,
+        num_nonnulls(location_id,due_at,timezone,provider_location) AS destination FROM pilot.approvals
+        WHERE id=$1 AND occurrence_id=$2`, [d.approval, d.id]);
+      assert.deepEqual(fields.rows, [{ authority: held ? 2 : 3, destination: 0 }]);
+    }
     if (erased && !target) {
       assert.equal(await wake(d.id), 'denied');
       if (!held) assert.equal(await withdrawApproval(connectFixture, samples.auth, d.id, d.approval, clock, inspect), false);
@@ -202,6 +213,7 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       WHERE a.occurrence_id=$1`, [id])).rows[0];
     if (erased) {
       const row = await readBinding();
+      await assert.rejects(db.query("UPDATE pilot.occurrences SET due_at=due_at+interval '1 hour' WHERE id=$1", [id]), { code: '23514' });
       const expected = row.outcome === 'unknown' ? samples.drafts[0]!.proposal.providerLocation : null;
       assert.ok(row.provider_location === expected, 'Only the open attempt needs its approved readback destination');
     }
