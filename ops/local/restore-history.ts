@@ -2,10 +2,12 @@ import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import type { Client } from 'pg';
+import { eraseCustomer, pilotIssuer, type CustomerErasure } from './customer-erasure.js';
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const historyPath = 'work/pilot/restore-history.json';
 type Event =
+  | CustomerErasure
   | { kind: 'delete-facts'; tenantId: string; id: string }
   | { kind: 'revoke-grant'; tenantId: string; id: string; version: number }
   | { kind: 'revoke-device'; id: string; version: number };
@@ -19,6 +21,12 @@ function parseEvent(value: unknown, seq: number): Event {
   const row = value as Record<string, unknown>;
   const { kind, tenantId, id, version } = row;
   if (row.seq !== seq || typeof id !== 'string' || !uuid.test(id)) return incompatible();
+  if (kind === 'delete-customer') {
+    if (row.issuer !== pilotIssuer || tenantId !== undefined || typeof row.binding !== 'string'
+        || !/^[a-f0-9]{64}$/.test(row.binding) || typeof version !== 'number' || !Number.isInteger(version)
+        || version < 1 || version >= 2_147_483_647) return incompatible();
+    return { kind, issuer: pilotIssuer, id, binding: row.binding, version };
+  }
   if (kind !== 'revoke-device' && (typeof tenantId !== 'string' || !uuid.test(tenantId))) return incompatible();
   if (kind === 'delete-facts') return { kind, id, tenantId: tenantId as string };
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1 || version >= 2_147_483_647) {
@@ -73,7 +81,14 @@ export async function replayRestoreHistory(db: Client, fixtureId: string, args: 
   }
 
   for (const event of events) {
-    if (event.kind === 'delete-facts') {
+    if (event.kind === 'delete-customer') {
+      // A later same-source copy may already contain the committed source receipt.
+      const installed = (await db.query("SELECT to_regclass('pilot.fixture_customer_erasure') AS receipt")).rows[0].receipt;
+      const applied = installed && (await db.query(`SELECT 1 FROM pilot.fixture_customer_erasure
+        WHERE fixture_id=$1 AND identity_id=$2 AND subject_binding=$3 AND identity_version=$4
+          AND history_digest=$5 AND applied_xid IS NOT NULL`, [anchor.source,event.id,event.binding,event.version,digest])).rowCount;
+      if (!applied) await eraseCustomer(db, anchor.source, event, true);
+    } else if (event.kind === 'delete-facts') {
       // Remove all revisions so recovery cannot expose an older fact as the latest.
       await db.query('ALTER TABLE pilot.business_fact_revisions DISABLE TRIGGER immutable_business_facts');
       await db.query('DELETE FROM pilot.business_fact_revisions WHERE tenant_id=$1 AND location_id=$2',
