@@ -160,7 +160,7 @@ async function freshWorktree(cwd: string) {
   return git('rev-parse', 'HEAD');
 }
 
-async function drill(targetDir: string) {
+async function drill(targetDir: string, eraseSource: boolean) {
   const source = process.cwd();
   const target = resolve(targetDir);
   assert.notEqual(source.toLowerCase(), target.toLowerCase());
@@ -223,6 +223,12 @@ async function drill(targetDir: string) {
     stage(f, 'revoke-device');
     const revokedDevices = snapshot.devices.map(row => row.id === a.device ? { ...row, active: false, version: 2 } : row);
     assert.deepEqual(stage(f, 'history'), { ...snapshot, devices: revokedDevices });
+    if (eraseSource) {
+      const current = stage(f, 'history') as typeof snapshot;
+      assert.equal(current.facts.filter(row => row.tenant_id === a.tenant && row.location_id === a.location).length, 0,
+        'Authorized source erasure must remove both A revisions before restore');
+      assert.deepEqual(current.facts, snapshot.facts.filter(row => row.location_id === b.location));
+    }
     const before = stage(f, 'source');
     for (const c of before) {
       assert.equal(c.row.state, 'approved');
@@ -367,10 +373,11 @@ async function drill(targetDir: string) {
 
 const [argument, ...extra] = process.argv.slice(2);
 const inRunner = process.env.PILOT_CONTAINER === '1';
-if (!argument || extra.length || (inRunner && !['seed', 'deliver', 'source', 'target', 'history', 'revoke-device'].includes(argument))) {
+const eraseSource = !inRunner && extra.length === 1 && extra[0] === '--erase-source';
+if (!argument || (extra.length && !eraseSource) || (inRunner && !['seed', 'deliver', 'source', 'target', 'history', 'revoke-device'].includes(argument))) {
   throw new Error('Run from a fresh built source worktree with one fresh built target worktree path.');
 }
-(inRunner ? runStage(argument) : drill(argument).then(result => console.log(JSON.stringify(result)))).catch(error => {
+(inRunner ? runStage(argument) : drill(argument, eraseSource).then(result => console.log(JSON.stringify(result)))).catch(error => {
   const detail = error instanceof Error
     ? safeDiagnostics(String((error as { stderr?: string }).stderr || error.message)) : 'Unknown drill failure.';
   console.error(detail);
