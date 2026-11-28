@@ -59,6 +59,8 @@ Bounded Task 5 component [#215](https://github.com/Maeximilion/MaexSocial/issues
 loss and recovery measurements for Task 5, including refusal of the unmodified 010 pair by build 009.
 Bounded Task 5 [#285](https://github.com/Maeximilion/MaexSocial/issues/285) protects new
 synthetic cold pairs with a [separate disposable backup key](../ops/local/README.md#synthetic-cold-backup-pair-216).
+The [continued-source expiry drill](handovers/sessions/2026-11-28-last-copy-expiry.md)
+records the physical final-copy gap in #302 and #166.
 Named operator custody and operating recovery evidence remain in #82 and #10.
 
 Bounded Task 5 [#291](https://github.com/Maeximilion/MaexSocial/issues/291) adds

@@ -4,6 +4,8 @@ Source-only disposition for [#149](https://github.com/Maeximilion/MaexSocial/iss
 
 ## 2026-11-28 assessment of the community response
 
+The [proposed G2 lifecycle amendment](../superpowers/specs/2026-11-28-keycloak-lifecycle-amendment-design.md) compares two designs that retain Keycloak and identifies the owner decision and evidence needed before implementation.
+
 **Decision for [#131](https://github.com/Maeximilion/MaexSocial/issues/131).** Keep authenticated Employee invitations/removal ([#221](https://github.com/Maeximilion/MaexSocial/issues/221)) and Manager approval/reapproval ([#223](https://github.com/Maeximilion/MaexSocial/issues/223)) closed to users. A fresh enrolled-factor event is obtainable under the private OTP policy. The proposed settings and signed logout messages together still leave two questions unanswered at authorization time: whether that enrollment remains valid, and whether the intended recovery completed with exclusive new authority.
 
 The [community response](https://github.com/keycloak/keycloak/discussions/55440#discussioncomment-19843003) was posted on 2026-11-23 at 23:22:46 UTC. On 28 November GitHub reported author association `NONE`, one top-level comment, zero replies and no accepted answer. Treat it as a lead. The [local fixture](../../ops/local/compose.yaml) pins 26.8.2 by image digest. The [release tag](https://github.com/keycloak/keycloak/releases/tag/26.8.2) resolves to source commit `e514445f9dcdabc5bdcf67cab56c1e49655de067`. The following verdicts apply to that stock version and the approved architecture.

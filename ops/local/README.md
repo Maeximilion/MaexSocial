@@ -398,6 +398,17 @@ The source checks both fixture markers, locks the instruction and location, and 
 the erasure and receipt together. The drill stops the source before offline import.
 Both variants use the same independent replay format and preserve the control location.
 
+For the final-copy timing case, build one fresh source and two distinct fresh target worktrees
+at the same revision and provision the same external disposable key. Run from the source:
+
+    node dist/pilot/tests/pilot/restore-before-effects.js <first-target> --last-copy-expiry <later-target>
+
+This variant applies the source erasure, cold-copies both continuing volumes again, and imports
+both pairs offline. It verifies each capture deadline to the millisecond and expires only the
+earlier disposable pair. A one-run synthetic fact marker distinguishes remaining archive bytes
+from rows visible to SQL after restore. The result reports booleans, counts and elapsed times.
+See the [measured retention gap](../../docs/handovers/sessions/2026-11-28-last-copy-expiry.md).
+
 The ordinary importer restores both databases, all four revisions and both active devices
 into the offline target. Missing history, a correctly hashed incomplete interval, and a wrong
 digest each leave the target held without a replay receipt. The complete source-bound interval
