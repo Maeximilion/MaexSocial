@@ -102,7 +102,7 @@ const forwardAppSchemas = [
   '876960c39b38d3df70bd58acd7fee6398913fd6c95cb7d784d34e7678618dc13', // 012
   '7f0b097431fc0aa8bcd65ab4efba90eafe67d4f3f6df1fd853f2dd74731a3fb5', // 013
   '459bf0884e01499bfc2568026aa24b728776efae865932aa9766bb4cdc7cf341', // 014
-  '0b511b79e0542f93833ba62bf6656941e22a27f8a1364bb9d9e08a02220b90dd', // 015
+  '9266f480fe7c90e8d6ac8b9edaab2b68c86b4e27f9b963ba93946c52786c5494', // 015
 ];
 
 export async function verifyPair(path: string, fixtureId: string, expected: Pair['compatibility'], pair: Pair,

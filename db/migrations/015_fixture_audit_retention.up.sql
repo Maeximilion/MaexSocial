@@ -15,9 +15,9 @@ REVOKE ALL ON pilot.fixture_audit_disposition FROM PUBLIC, pilot_app;
 CREATE FUNCTION pilot.guard_fixture_audit_delete() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF current_user = 'pilot_owner' AND current_database() = 'pilot_fixture'
-        AND OLD.action = 'organization_create' AND OLD.outcome = 'created'
-        AND OLD.device_id IS NOT NULL AND OLD.occurrence_id IS NULL AND OLD.approval_id IS NULL
-        AND OLD.membership_id IS NULL AND OLD.membership_version IS NULL
+        AND OLD.action IN ('organization_create','invitation_issue','membership_role_changed',
+            'membership_revoked','employee_membership_revoked')
+        AND OLD.occurrence_id IS NULL AND OLD.approval_id IS NULL
         AND EXISTS (
             SELECT 1 FROM pilot.fixture_audit_disposition d JOIN public.fixture_identity m ON m.id=d.fixture_id
             WHERE m.purpose='audit-retention' AND NOT m.restore_target

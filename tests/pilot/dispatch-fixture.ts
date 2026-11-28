@@ -20,7 +20,7 @@ export interface Case {
   revision: string;
 }
 
-export async function seedDispatchApproval(request: CustomerRequest, grant: boolean): Promise<Case> {
+export async function seedDispatchApproval(request: CustomerRequest, grant: boolean): Promise<Case & { proposal: Awaited<ReturnType<typeof readApprovalProposal>> }> {
   const owner = await connectFixture(true);
   try {
     const f = await seedTenant(owner);
@@ -41,6 +41,6 @@ export async function seedDispatchApproval(request: CustomerRequest, grant: bool
       } finally { await app.end(); }
     })();
     const approvalId = await approveOccurrence(connectFixture, request, proposal, clock, inspect);
-    return { id, approvalId, tenant: f.tenant, user: f.user, revision: f.revision };
+    return { id, approvalId, tenant: f.tenant, user: f.user, revision: f.revision, proposal };
   } finally { await owner.end(); }
 }
