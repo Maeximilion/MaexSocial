@@ -30,7 +30,7 @@ The source inventory at `b81d15e` contained nine action classes. Local synthetic
 
 ## Gate
 
-[#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains compound retention and recovery acceptance. This evidence covers logical online expiry for five classes. Full retained occurrence and withdrawal audit records do not satisfy detail expiry. A decision on any alternate minimal durable authorization state belongs to the owner. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains real custodians, lawful incident decisions, monthly reviews, external sinks, backups and operating evidence.
+[#166](https://github.com/Maeximilion/MaexSocial/issues/166) retains compound retention and recovery acceptance. This evidence covers logical online expiry for five classes. Full retained occurrence and withdrawal audit records do not satisfy detail expiry. A future synthetic implementation can preserve the same [hold and withdrawal guarantees](../../17_ACCESS_SECURITY.md) in minimal durable state. It would need migration, concurrency, retry and authorization evidence for existing data. Changes to those guarantees or real-data retention require a product decision. [#82](https://github.com/Maeximilion/MaexSocial/issues/82) retains real custodians, lawful incident decisions, monthly reviews, external sinks, backups and operating evidence.
 
 ## Open
 
