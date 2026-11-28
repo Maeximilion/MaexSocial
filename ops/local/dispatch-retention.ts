@@ -18,6 +18,7 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
     await db.query('SELECT pg_advisory_xact_lock_shared(114, 1)');
     const marker = await db.query(`SELECT 1 FROM public.fixture_identity
       WHERE id=$1 AND purpose='dispatch-retention' AND NOT restore_target
+        AND to_regprocedure('pilot.retire_dispatch_claim_audit()') IS NOT NULL
         AND current_database()='pilot_fixture' AND current_user='pilot_owner' FOR SHARE`, [fixture.id]);
     if (marker.rowCount !== 1) throw new Error('Dispatch retention database marker mismatch');
 
@@ -34,7 +35,12 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
             WHERE h.tenant_id=a.tenant_id AND h.occurrence_id=a.occurrence_id AND h.approval_id IS NULL)
         FOR UPDATE OF a`, key);
       if (!attempt.rows[0]) return 'ineligible';
-      if (attempt.rows[0].details_retired) return 'already-retired';
+      if (attempt.rows[0].details_retired) {
+        const legacy = await db.query(`SELECT 1 FROM pilot.audit
+          WHERE tenant_id=$1 AND occurrence_id=$2 AND action='dispatch_claim' LIMIT 1`, key.slice(0, 2));
+        return legacy.rowCount ? 'ineligible' : 'already-retired';
+      }
+      if (clock) await db.query("SELECT set_config('pilot.retention_clock',$1,true)", [clock()]);
       const update = await db.query(`UPDATE pilot.attempts a SET details_retired=true,
         id=NULL,approval_id=NULL,claimed_at=NULL,observed_at=NULL,resolved_at=NULL,resource_name=NULL
         FROM pilot.occurrences o JOIN pilot.approvals p
@@ -43,9 +49,7 @@ export async function retireDispatchDetails(occurrenceId: string, clock?: () => 
         WHERE a.tenant_id=$1 AND a.occurrence_id=$2 AND a.outcome=$3
           AND o.tenant_id=a.tenant_id AND o.id=a.occurrence_id AND o.state=a.outcome AND p.id=a.approval_id
           AND isfinite(a.claimed_at) AND isfinite(a.observed_at) AND a.observed_at>=a.claimed_at
-          AND a.resolved_at>=a.claimed_at AND (a.outcome='rejected' OR a.resource_name IS NOT NULL)
-          AND a.resolved_at + interval '2160 hours' <= COALESCE($4::timestamptz,clock_timestamp())`,
-      [...key, clock?.() ?? null]);
+          AND a.resolved_at>=a.claimed_at AND (a.outcome='rejected' OR a.resource_name IS NOT NULL)`, key);
       return update.rowCount === 1 ? 'retired' : 'ineligible';
     })();
     await db.query('COMMIT');
