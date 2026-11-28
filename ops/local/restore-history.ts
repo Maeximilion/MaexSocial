@@ -68,10 +68,6 @@ export async function eraseBoundDraft(db: Client, source: string, sequence: numb
     FOR UPDATE`, binding);
   if (!permit.rowCount) return incompatible();
   if (permit.rows[0].applied) return 0;
-  // An existing claim can have sent its text to the independent fake. Never attest to erasing that copy.
-  const claims = await db.query(`SELECT 1 FROM pilot.attempts a JOIN pilot.occurrences o
-    ON o.tenant_id=a.tenant_id AND o.id=a.occurrence_id WHERE o.tenant_id=$1 AND o.draft_id=$2 LIMIT 1`, scope);
-  if (claims.rowCount) throw new Error('Previously claimed draft requires separate disposition');
   await db.query('UPDATE pilot.fixture_draft_erasure SET applied_xid=pg_current_xact_id() WHERE source_id=$1 AND sequence=$2',
     [source, sequence]);
   const result = await db.query('UPDATE pilot.draft_revisions SET text=NULL WHERE tenant_id=$1 AND draft_id=$2 AND text IS NOT NULL', scope);

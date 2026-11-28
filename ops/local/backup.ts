@@ -18,7 +18,7 @@ export type Database = typeof databases[number];
 const digest = /^[a-f0-9]{64}$/;
 const retentionMs = 30 * 24 * 60 * 60 * 1000;
 
-async function hashFile(path: string): Promise<string> {
+export async function hashFile(path: string): Promise<string> {
   const hash = createHash('sha256');
   for await (const bytes of createReadStream(path)) hash.update(bytes);
   return hash.digest('hex');
