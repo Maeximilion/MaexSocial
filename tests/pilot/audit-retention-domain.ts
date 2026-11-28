@@ -72,6 +72,10 @@ export async function verifyDomain(db: Client, sessions: Sessions, domain: Await
   const denied = (p: Promise<unknown>) => assert.rejects(p, { message: 'Denied' });
   const fake = { policy: 'synthetic-organic-text' as const, async create() { return assert.fail('Unexpected create'); } };
   assert.equal((await db.query('SELECT state FROM pilot.occurrences WHERE id=$1', [held.id])).rows[0].state, 'held');
+  const operator = await seedManagementContext(db, held.tenant, clock(), clock());
+  assert.equal(await holdOccurrence(connectFixture, { ...operator, occurrenceId: held.id }, held.tenant, held.id,
+    'Synthetic retry', clock), 'held');
+  assert.equal((await db.query("SELECT 1 FROM pilot.audit WHERE occurrence_id=$1 AND action='occurrence_hold'", [held.id])).rowCount, 0);
   await denied(claimDispatch(connectFixture, held.id, fake));
   await denied(claimExport(connectFixture, sessions.heldManager, held.id, clock, inspect));
   // Exercise the historical-hold predicate even if lifecycle state no longer says held.

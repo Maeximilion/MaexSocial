@@ -578,7 +578,7 @@ node dist/pilot/tests/pilot/audit-retention.js
 npm run pilot:down
 ```
 
-The drill generates five security event classes through their private writers. The restricted fixture
+The drill generates seven security event classes through their private writers. The restricted fixture
 owner supplies an exact incident disposition and the clock instant used by the writer. For a prepared
 record, `npm run pilot:expire-audit-event -- <tenant-uuid> <audit-uuid>` uses PostgreSQL time.
 A successful transaction deletes one online audit event and its disposition. A missing event or
@@ -587,9 +587,11 @@ Unavailable disposition storage or mismatched fixture markers refuse the operati
 serializes an incident decision and expiry on the same disposition row. Incident setup must confirm
 that its write affected the exact live row. The maintenance CLI supplies no hold or release decision.
 
-The elapsed interval is 2,160 hours from the recorded event. Occurrence holds, approval withdrawals,
-dispatch claims and exports retain their full audit rows. The drill covers logical online expiry.
-Physical remnants, archives, external sinks and operating decisions are tracked in #166 and #82.
+The elapsed interval is 2,160 hours from the recorded event. An eligible occurrence hold or approval
+withdrawal leaves its tenant and occurrence keys and, for withdrawals, the exact approval key. The
+application reads these decisions alongside live evidence and has no write grant on compact decisions.
+An incident hold retains full detail. Dispatch claims and exports remain separate publication records.
+Physical remnants, encrypted archives, external sinks and operating decisions are tracked in #166 and #82.
 
 ## Resolved dispatch detail retention (#282)
 
