@@ -14,27 +14,78 @@ import { holdOccurrence } from '../../packages/contracts/occurrence.js';
 import { binding, clock, inspect, seedDispatchApproval } from './dispatch-fixture.js';
 import { seedManagementContext, seedTenant } from './fixtures.js';
 
-export async function seedDomain(db: Client, request: CustomerRequest) {
-  const held = await seedDispatchApproval(binding(), true);
+type Sessions = { manager: CustomerRequest; heldManager: CustomerRequest };
+
+async function preview(request: CustomerRequest, id: string) {
+  const app = await connectFixture();
+  try {
+    await app.query('BEGIN');
+    return await readApprovalProposal(app, await requireCustomerRequest(app, request, clock, inspect, 'read-only'), id);
+  } finally { await app.end(); }
+}
+
+// The audit default uses the writer's transaction start. Witness it before the mutation, with DB precision.
+async function witnessedWithdrawal(request: CustomerRequest, id: string, approval: string) {
+  const app = await connectFixture();
+  let instant: string | undefined;
+  const observe = async (subject: string) => {
+    instant ??= (await app.query('SELECT transaction_timestamp()::text AS at')).rows[0].at;
+    return inspect(subject);
+  };
+  assert.ok(await withdrawApproval(async () => app, request, id, approval, clock, observe));
+  assert.ok(instant);
+  return instant;
+}
+
+export async function seedDomain(db: Client, sessions: Sessions) {
+  const request = sessions.manager;
+  const held = await seedDispatchApproval(sessions.heldManager, true);
   const operator = await seedManagementContext(db, held.tenant, clock(), clock());
   const proof = { ...operator, occurrenceId: held.id };
   assert.equal(await holdOccurrence(connectFixture, proof, held.tenant, held.id, 'Synthetic hold', clock), 'held');
   const withdrawn = await seedDispatchApproval(request, false);
-  assert.equal(await withdrawApproval(connectFixture, request, withdrawn.id, withdrawn.approvalId, clock, inspect), true);
+  const firstAt = await witnessedWithdrawal(request, withdrawn.id, withdrawn.approvalId);
+  const intermediate = await preview(request, withdrawn.id);
+  assert.equal(intermediate.withdrawalCount, '1');
+  const secondApproval = await approveOccurrence(connectFixture, request, intermediate, clock, inspect);
+  const secondAt = await witnessedWithdrawal(request, withdrawn.id, secondApproval);
   const sender = binding();
   const revokedSend = await seedDispatchApproval(sender, true);
-  assert.ok(await withdrawApproval(connectFixture, sender, revokedSend.id, revokedSend.approvalId, clock, inspect));
+  const incidentAt = await witnessedWithdrawal(sender, revokedSend.id, revokedSend.approvalId);
   const control = await seedDispatchApproval(binding(), true);
   await db.query('UPDATE pilot.dispatch_control SET stopped=false WHERE singleton');
-  return { held, withdrawn, revokedSend, control };
+  const independent = await seedDispatchApproval(binding(), false);
+  return { held, withdrawn, intermediate, secondApproval, firstAt, secondAt, incidentAt, revokedSend, control, independent };
 }
 
-export async function verifyDomain(db: Client, request: CustomerRequest, domain: Awaited<ReturnType<typeof seedDomain>>) {
-  const { held, withdrawn, revokedSend, control } = domain;
+export async function verifyDomain(db: Client, sessions: Sessions, domain: Awaited<ReturnType<typeof seedDomain>>) {
+  const { held, withdrawn, revokedSend, control, independent } = domain;
+  const request = sessions.manager;
+  async function effects(id: string) {
+    return (await db.query(`SELECT o.state,o.approval_id,
+      (SELECT count(*)::int FROM pilot.attempts WHERE occurrence_id=o.id) AS attempts,
+      (SELECT count(*)::int FROM pilot.audit WHERE occurrence_id=o.id AND action='occurrence_export') AS exports
+      FROM pilot.occurrences o WHERE id=$1`, [id])).rows[0];
+  }
+  const isolated = { state: 'approved', approval_id: independent.approvalId, attempts: 0, exports: 0 };
+  assert.deepEqual(await effects(independent.id), isolated);
   const denied = (p: Promise<unknown>) => assert.rejects(p, { message: 'Denied' });
   const fake = { policy: 'synthetic-organic-text' as const, async create() { return assert.fail('Unexpected create'); } };
   assert.equal((await db.query('SELECT state FROM pilot.occurrences WHERE id=$1', [held.id])).rows[0].state, 'held');
+  const operator = await seedManagementContext(db, held.tenant, clock(), clock());
+  assert.equal(await holdOccurrence(connectFixture, { ...operator, occurrenceId: held.id }, held.tenant, held.id,
+    'Synthetic retry', clock), 'held');
+  assert.equal((await db.query("SELECT 1 FROM pilot.audit WHERE occurrence_id=$1 AND action='occurrence_hold'", [held.id])).rowCount, 0);
   await denied(claimDispatch(connectFixture, held.id, fake));
+  await denied(claimExport(connectFixture, sessions.heldManager, held.id, clock, inspect));
+  // Exercise the historical-hold predicate even if lifecycle state no longer says held.
+  await db.query("UPDATE pilot.occurrences SET state='approved' WHERE id=$1", [held.id]);
+  await denied(claimDispatch(connectFixture, held.id, fake));
+  await db.query('UPDATE pilot.locations SET grant_active=false,version=version+1 WHERE tenant_id=$1', [held.tenant]);
+  await denied(claimExport(connectFixture, sessions.heldManager, held.id, clock, inspect));
+  await denied(withdrawApproval(connectFixture, sessions.heldManager, held.id, held.approvalId, clock, inspect));
+  await db.query("UPDATE pilot.occurrences SET state='held' WHERE id=$1", [held.id]);
+  assert.deepEqual(await effects(held.id), { state: 'held', approval_id: held.approvalId, attempts: 0, exports: 0 });
   await denied(claimDispatch(connectFixture, revokedSend.id, fake));
   let sends = 0;
   const provider = { policy: 'synthetic-organic-text' as const, async create(intent: { attemptId: string; locationId: string }) {
@@ -47,16 +98,18 @@ export async function verifyDomain(db: Client, request: CustomerRequest, domain:
   await denied(claimExport(connectFixture, request, withdrawn.id, clock, inspect));
   assert.equal(await withdrawApproval(connectFixture, request, withdrawn.id, withdrawn.approvalId, clock, inspect), false);
   await denied(approveOccurrence(connectFixture, request, withdrawn.proposal, clock, inspect));
-  const app = await connectFixture();
-  const fresh = await (async () => {
-    try {
-      await app.query('BEGIN');
-      return await readApprovalProposal(app, await requireCustomerRequest(app, request, clock, inspect, 'read-only'), withdrawn.id);
-    } finally { await app.end(); }
-  })();
-  assert.equal(fresh.withdrawalCount, '1');
-  assert.notEqual(await approveOccurrence(connectFixture, request, fresh, clock, inspect), withdrawn.approvalId);
+  await denied(approveOccurrence(connectFixture, request, domain.intermediate, clock, inspect));
+  const fresh = await preview(request, withdrawn.id);
+  assert.equal(fresh.withdrawalCount, '2');
+  const next = await approveOccurrence(connectFixture, request, fresh, clock, inspect);
+  for (const old of [withdrawn.approvalId, domain.secondApproval]) {
+    assert.notEqual(next, old);
+    assert.equal(await withdrawApproval(connectFixture, request, withdrawn.id, old, clock, inspect), false);
+  }
+  assert.deepEqual(await effects(withdrawn.id), { state: 'approved', approval_id: next, attempts: 0, exports: 0 });
   assert.equal((await claimExport(connectFixture, request, withdrawn.id, clock, inspect)).state, 'exported');
+  assert.deepEqual(await effects(withdrawn.id), { state: 'exported', approval_id: next, attempts: 0, exports: 1 });
+  assert.deepEqual(await effects(independent.id), isolated);
 }
 
 // Exercise the four other non-occurrence security writers; their authority lives in memberships and invitations.
