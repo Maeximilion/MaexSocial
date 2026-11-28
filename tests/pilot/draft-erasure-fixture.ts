@@ -126,6 +126,11 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
       FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
     assert.equal(proof.rowCount, i === 0 ? 5 : 1);
     assert.ok(proof.rows.every(row => row.fields === (removed ? 0 : 4)));
+    if (i === 1) {
+      const terminal = await db.query(`SELECT num_nonnulls(membership_id,membership_version,tenant_version,
+        location_id,due_at,timezone,provider_location) AS fields FROM pilot.approvals WHERE tenant_id=$1 AND draft_id=$2`, scope);
+      assert.deepEqual(terminal.rows, [{ fields: removed ? 0 : 7 }], 'Terminal export approval detail');
+    }
     const { rows: [copies] } = await db.query(`SELECT count(*)::int AS n FROM (
         SELECT to_jsonb(a)::text AS body FROM pilot.approvals a WHERE tenant_id=$1 AND draft_id=$2
         UNION ALL SELECT to_jsonb(o)::text FROM pilot.occurrences o WHERE tenant_id=$1 AND draft_id=$2
@@ -191,10 +196,20 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
     }
   }
   for (const [i, id] of samples.attempts.entries()) {
+    const readBinding = async () => (await db.query(`SELECT a.outcome,p.provider_location
+      FROM pilot.attempts a JOIN pilot.approvals p
+        ON (p.tenant_id,p.occurrence_id,p.id)=(a.tenant_id,a.occurrence_id,a.approval_id)
+      WHERE a.occurrence_id=$1`, [id])).rows[0];
+    if (erased) {
+      const row = await readBinding();
+      const expected = row.outcome === 'unknown' ? samples.drafts[0]!.proposal.providerLocation : null;
+      assert.ok(row.provider_location === expected, 'Only the open attempt needs its approved readback destination');
+    }
     if (erased && !target) assert.equal(await wake(id), 'confirmed');
     const result = await db.query(`SELECT o.state, to_jsonb(o)->>'restore_previous_state' AS prior, a.outcome,
       (SELECT count(*)::int FROM pilot.audit WHERE occurrence_id=o.id AND action='dispatch_claim') AS claims
       FROM pilot.occurrences o JOIN pilot.attempts a ON a.occurrence_id=o.id WHERE o.id=$1`, [id]);
+    if (erased && !target) assert.equal((await readBinding()).provider_location, null, 'Resolution releases the readback destination');
     const final = i === 0 || (erased && !target);
     const status = final ? 'confirmed' : 'in_flight';
     assert.deepEqual(result.rows, [{ state: target ? 'quarantined' : status, prior: target ? status : null,
