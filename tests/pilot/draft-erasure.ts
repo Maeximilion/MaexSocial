@@ -25,7 +25,7 @@ async function stage(name: string) {
     const { rows: [m] } = await db.query('SELECT restore_history_after::int AS after FROM public.fixture_identity');
     const seq = m.after + 1;
     if (name === 'issue') return await issue(db, samples, m.after);
-    if (name === 'abort') await abortPurge(db, seq);
+    if (name === 'abort') await abortPurge(db, seq, samples);
     else if (name === 'race') {
       return [await racePurge(db, samples, seq, 0), await racePurge(db, samples, seq + 1, 1)];
     } else if (name === 'refuse') {
@@ -85,13 +85,16 @@ async function drill() {
     compose(f, ['stop', 'postgres']);
     compose(f, ['start', '--wait', '--wait-timeout', '120', 'postgres']);
     const results: Awaited<ReturnType<typeof applySourceDraftErasure>>[] = run(f, 'race');
-    assert.deepEqual(results.map(r => r.removed), [2, 2]);
+    assert.deepEqual(results.map(r => [r.removed, r.timing]), [[2, 'within-seven-days'], [2, 'within-seven-days']]);
     const elapsedMs = results.map(r => Date.parse(r.confirmedBy) - Date.parse(r.authorizedAt));
     assert.ok(elapsedMs.every(n => n >= 0 && n <= 7 * 86400_000));
     run(f, 'after');
     compose(f, ['stop', 'postgres']);
     compose(f, ['start', '--wait', '--wait-timeout', '120', 'postgres']);
-    for (const result of results) assert.equal(cli(erase, String(result.sequence)).removed, 0);
+    for (const result of results) {
+      const retry = cli(erase, String(result.sequence));
+      assert.deepEqual([retry.removed, retry.timing], [0, 'already-applied']);
+    }
     run(f, 'after');
     compose(f, ['down']);
     active = undefined;

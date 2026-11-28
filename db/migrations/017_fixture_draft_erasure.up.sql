@@ -84,3 +84,17 @@ REVOKE ALL ON FUNCTION pilot.guard_erased_approval() FROM PUBLIC;
 DROP TRIGGER immutable_approval ON pilot.approvals;
 CREATE TRIGGER immutable_approval BEFORE INSERT OR UPDATE OR DELETE ON pilot.approvals
     FOR EACH ROW EXECUTE FUNCTION pilot.guard_erased_approval();
+
+CREATE FUNCTION pilot.require_purged_payloads() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pilot.draft_revisions WHERE (tenant_id,draft_id)=(NEW.tenant_id,NEW.draft_id)
+            AND text IS NOT NULL)
+        OR EXISTS (SELECT 1 FROM pilot.approvals WHERE (tenant_id,draft_id)=(NEW.tenant_id,NEW.draft_id)
+            AND num_nonnulls(mfa_at,created_at,grant_version,grant_active_at_approval)>0) THEN
+        RAISE EXCEPTION 'Incomplete draft erasure' USING ERRCODE='23514';
+    END IF;
+    RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION pilot.require_purged_payloads() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER complete_draft_erasure AFTER UPDATE ON pilot.fixture_draft_erasure
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION pilot.require_purged_payloads();

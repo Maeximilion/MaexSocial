@@ -8,6 +8,7 @@ import { claimDispatch } from '../../apps/worker/src/dispatch.js';
 import { FakeGbp } from '../../apps/worker/src/fake-gbp.js';
 import { wake } from '../../apps/worker/src/main.js';
 import { connectFixture, loadFixture } from '../../ops/local/fixture.js';
+import { eraseBoundDraft } from '../../ops/local/restore-history.js';
 import { applySourceDraftErasure } from '../../ops/local/source-draft-erasure.js';
 import { binding, clock, inspect, seedDispatchApproval } from './dispatch-fixture.js';
 
@@ -171,8 +172,19 @@ export async function state(db: Client, samples: Samples, erased: boolean, targe
   }
 }
 
-export async function abortPurge(db: Client, seq: number) {
+export async function abortPurge(db: Client, seq: number, samples: Samples) {
+  const { rows: [instruction] } = await db.query('SELECT * FROM pilot.fixture_draft_erasure WHERE sequence=$1', [seq]);
+  for (const control of samples.drafts.slice(2)) {
+    await db.query('BEGIN');
+    try {
+      const crossed = { kind: 'erase-draft' as const, id: control.draft, tenantId: control.proposal.tenantId,
+        authorizedAt: instruction.authorized_at.toISOString() };
+      await assert.rejects(eraseBoundDraft(db, instruction.source_id, seq, crossed, instruction.history_digest), /incompatible restore history/);
+    } finally { await db.query('ROLLBACK'); }
+  }
   await assert.rejects(db.query('UPDATE pilot.fixture_draft_erasure SET sequence=sequence+100 WHERE sequence=$1', [seq]), { code: '23514' });
+  await assert.rejects(db.query(
+    'UPDATE pilot.fixture_draft_erasure SET applied_xid=pg_current_xact_id() WHERE sequence=$1', [seq]), { code: '23514' });
   const app = await connectFixture();
   try {
     await assert.rejects(app.query('SELECT * FROM pilot.fixture_draft_erasure'), { code: '42501' });

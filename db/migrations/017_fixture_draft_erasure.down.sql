@@ -18,3 +18,4 @@ DROP FUNCTION pilot.guard_erased_approval();
 DROP FUNCTION pilot.applying_draft_erasure(uuid,uuid);
 DROP TABLE pilot.fixture_draft_erasure;
 DROP FUNCTION pilot.guard_draft_instruction();
+DROP FUNCTION pilot.require_purged_payloads();

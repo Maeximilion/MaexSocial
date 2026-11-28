@@ -19,10 +19,16 @@ export async function applySourceDraftErasure(sequence: number) {
     const event = history[sequence - permit.after - 1];
     if (event?.kind !== 'erase-draft') throw new Error('Source draft erasure instruction mismatch');
     const removed = await eraseBoundDraft(db, f.id, sequence, event, permit.history_digest);
+    const { rows: [ready] } = await db.query<{ at: Date }>('SELECT clock_timestamp() AS at');
     await db.query('COMMIT');
     // On the issuing database's clock this observation bounds actual completion, including the commit.
     const { rows: [observation] } = await db.query<{ confirmed: Date }>('SELECT clock_timestamp() AS confirmed');
-    return { sequence, removed, authorizedAt: event.authorizedAt, confirmedBy: observation!.confirmed.toISOString() };
+    const deadline = Date.parse(event.authorizedAt) + 7 * 86400_000;
+    const confirmed = observation!.confirmed;
+    const timing = !removed ? 'already-applied'
+      : confirmed.getTime() <= deadline ? 'within-seven-days'
+      : ready!.at.getTime() > deadline ? 'late' : 'deadline-crossed-during-commit';
+    return { sequence, removed, authorizedAt: event.authorizedAt, confirmedBy: confirmed.toISOString(), timing };
   } catch (error) {
     await db.query('ROLLBACK');
     throw error;
